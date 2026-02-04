@@ -361,7 +361,7 @@ export default function DirectoriesPage() {
                 <DialogHeader>
                   <DialogTitle>Add Directory</DialogTitle>
                   <DialogDescription>
-                    Enter the path to a directory containing movie files.
+                    Enter the path to a directory containing movie files. Supports local and network paths.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -369,12 +369,17 @@ export default function DirectoriesPage() {
                     <Label htmlFor="path">Directory Path</Label>
                     <Input
                       id="path"
-                      placeholder="C:\Movies or /home/user/movies"
+                      placeholder="C:\Movies or \\server\share\movies"
                       value={newDirPath}
                       onChange={(e) => setNewDirPath(e.target.value)}
-                      className="mt-1.5"
+                      className="mt-1.5 font-mono text-sm"
                       data-testid="directory-path-input"
                     />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Examples:<br />
+                      • Local: <code className="bg-secondary px-1 rounded">C:\Movies</code> or <code className="bg-secondary px-1 rounded">/home/user/movies</code><br />
+                      • Network: <code className="bg-secondary px-1 rounded">\\server\share\movies</code> or <code className="bg-secondary px-1 rounded">//nas/media/films</code>
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="name">Display Name (optional)</Label>
