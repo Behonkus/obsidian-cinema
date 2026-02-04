@@ -466,7 +466,11 @@ export default function DirectoriesPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <FolderOpen className="w-5 h-5 text-primary" />
+                          {dir.path.startsWith('\\\\') || dir.path.startsWith('//') ? (
+                            <Network className="w-5 h-5 text-primary" />
+                          ) : (
+                            <HardDrive className="w-5 h-5 text-primary" />
+                          )}
                         </div>
                         <div>
                           <CardTitle className="text-lg">{dir.name}</CardTitle>
@@ -476,49 +480,83 @@ export default function DirectoriesPage() {
                         </div>
                       </div>
                       
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-destructive"
-                            data-testid={`delete-dir-btn-${dir.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Directory?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will remove the directory and all associated movies from your library.
-                              The actual files will not be deleted.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteDirectory(dir.id)}
-                              className="bg-destructive hover:bg-destructive/90"
-                              data-testid={`confirm-delete-btn-${dir.id}`}
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-primary"
+                          onClick={() => handleScanDirectory(dir.id)}
+                          disabled={scanningDirId === dir.id}
+                          data-testid={`scan-dir-btn-${dir.id}`}
+                        >
+                          <FolderSearch className={`w-4 h-4 ${scanningDirId === dir.id ? "animate-spin" : ""}`} />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground hover:text-destructive"
+                              data-testid={`delete-dir-btn-${dir.id}`}
                             >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Directory?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will remove the directory and all associated movies from your library.
+                                The actual files will not be deleted.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteDirectory(dir.id)}
+                                className="bg-destructive hover:bg-destructive/90"
+                                data-testid={`confirm-delete-btn-${dir.id}`}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center gap-4 text-sm">
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <Film className="w-3 h-3" />
-                        {getMovieCountForDirectory(dir.id)} movies
-                      </Badge>
-                      <span className="text-muted-foreground text-xs flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDate(dir.last_scanned)}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 text-sm">
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <Film className="w-3 h-3" />
+                          {getMovieCountForDirectory(dir.id)} movies
+                        </Badge>
+                        <span className="text-muted-foreground text-xs flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDate(dir.last_scanned)}
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full text-xs"
+                        onClick={() => handleScanDirectory(dir.id)}
+                        disabled={scanningDirId === dir.id}
+                        data-testid={`scan-btn-${dir.id}`}
+                      >
+                        {scanningDirId === dir.id ? (
+                          <>
+                            <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                            Scanning...
+                          </>
+                        ) : (
+                          <>
+                            <FolderSearch className="w-3 h-3 mr-1" />
+                            Scan
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
