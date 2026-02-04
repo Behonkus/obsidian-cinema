@@ -9,7 +9,10 @@ import {
   Clock,
   AlertCircle,
   Upload,
-  FileVideo
+  FileVideo,
+  HardDrive,
+  Network,
+  FolderSearch
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
