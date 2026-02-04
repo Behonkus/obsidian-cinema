@@ -1,0 +1,113 @@
+{
+  "identity": "E1 - The Anti-AI Designer",
+  "project_name": "Obsidian Cinema",
+  "theme_strategy": "dark_only",
+  "emotional_tone": "Cinematic, Immersive, Precision, 'Neon Noir'",
+  "typography": {
+    "font_family": {
+      "headings": "Outfit, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-5xl md:text-7xl font-bold tracking-tighter",
+      "h2": "text-3xl md:text-4xl font-semibold tracking-tight",
+      "h3": "text-xl md:text-2xl font-medium",
+      "body": "text-base leading-relaxed text-muted-foreground",
+      "caption": "text-sm text-muted-foreground/60 uppercase tracking-widest"
+    },
+    "imports": [
+      "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&family=Outfit:wght@400;600;800&display=swap');"
+    ]
+  },
+  "colors": {
+    "palette": {
+      "background": "#050505",
+      "foreground": "#EDEDED",
+      "card": "#0A0A0A",
+      "card_foreground": "#FFFFFF",
+      "popover": "#0A0A0A",
+      "popover_foreground": "#FFFFFF",
+      "primary": "#E11D48",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#1F1F1F",
+      "secondary_foreground": "#A1A1AA",
+      "muted": "#171717",
+      "muted_foreground": "#737373",
+      "accent": "#E11D48",
+      "accent_foreground": "#FFFFFF",
+      "destructive": "#7F1D1D",
+      "destructive_foreground": "#FFFFFF",
+      "border": "#262626",
+      "input": "#262626",
+      "ring": "#E11D48"
+    },
+    "gradients": {
+      "hero_glow": "radial-gradient(circle at 50% 0%, rgba(225, 29, 72, 0.15) 0%, transparent 70%)",
+      "card_hover": "linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%)"
+    }
+  },
+  "layout": {
+    "grid_system": {
+      "library_view": "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6",
+      "dashboard_hero": "grid grid-cols-1 md:grid-cols-12 gap-8"
+    },
+    "spacing": {
+      "container_padding": "p-8 md:p-12",
+      "section_gap": "gap-12"
+    },
+    "structure": {
+      "sidebar_width": "w-64",
+      "sidebar_collapsed": "w-20"
+    }
+  },
+  "components": {
+    "MovieCard": {
+      "style": "relative group overflow-hidden rounded-lg bg-card border border-border/50 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_-10px_rgba(225,29,72,0.3)]",
+      "poster_aspect": "aspect-[2/3]",
+      "overlay": "absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-sm"
+    },
+    "Sidebar": {
+      "style": "fixed left-0 top-0 h-full bg-background/95 backdrop-blur-xl border-r border-border z-50 flex flex-col py-8"
+    },
+    "Modal": {
+      "overlay": "fixed inset-0 bg-black/80 backdrop-blur-md z-50",
+      "content": "bg-[#0A0A0A] border border-border shadow-2xl max-w-5xl w-full rounded-xl overflow-hidden"
+    },
+    "Buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_-5px_rgba(225,29,72,0.5)] rounded-full px-8 py-6 font-semibold tracking-wide transition-all hover:scale-105",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-full px-6 py-4 font-medium transition-all",
+      "ghost": "hover:bg-white/5 text-muted-foreground hover:text-white"
+    }
+  },
+  "motion": {
+    "library": "framer-motion",
+    "transitions": {
+      "default": "transition-all duration-300 ease-out",
+      "page_enter": {
+        "initial": { "opacity": 0, "y": 20 },
+        "animate": { "opacity": 1, "y": 0 },
+        "exit": { "opacity": 0, "y": -20 }
+      }
+    }
+  },
+  "assets": {
+    "icons_library": "lucide-react",
+    "images": {
+      "empty_state_bg": "https://images.unsplash.com/photo-1762541693135-fb989de961e1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHw0fHxjaW5lbWElMjB0aGVhdGVyJTIwZGFyayUyMGludGVyaW9yfGVufDB8fHx8MTc3MDIyMjgyNXww&ixlib=rb-4.1.0&q=85",
+      "placeholder_poster": "https://images.unsplash.com/photo-1761502479994-3a5e07ec243e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwyfHxjaW5lbWElMjB0aGVhdGVyJTIwZGFyayUyMGludGVyaW9yfGVufDB8fHx8MTc3MDIyMjgyNXww&ixlib=rb-4.1.0&q=85"
+    }
+  },
+  "universal_guidelines": [
+    "Use 'Outfit' for all headings to give a premium, modern feel.",
+    "Backgrounds must be #050505 (Obsidian), never pure black #000000.",
+    "Primary color #E11D48 is for high-priority actions only (Play, Add).",
+    "Use 2/3 aspect ratio for all movie posters.",
+    "Implement 'framer-motion' for smooth layout changes when filtering.",
+    "All interactive elements must have a `data-testid`.",
+    "Use 'sonner' for toast notifications.",
+    "Do not use gradients for text.",
+    "Ensure high contrast for text (APCA standards)."
+  ],
+  "instructions_to_main_agent": "1. Install 'lucide-react', 'framer-motion', 'clsx', 'tailwind-merge' if missing. 2. Update 'tailwind.config.js' with the custom colors defined in 'colors.palette'. 3. Create a 'Layout' component that includes the Sidebar and main content area. 4. Build the 'MovieCard' component with the specified hover effects. 5. Use the 'empty_state_bg' image for the 'No Directories' view."
+}
