@@ -269,11 +269,25 @@ export default function DirectoriesPage() {
               Directories
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage your movie directories
+              Manage your movie directories (local & network)
             </p>
           </div>
           
           <div className="flex items-center gap-3">
+            {/* Scan All Button */}
+            {directories.length > 0 && (
+              <Button
+                variant="outline"
+                className="rounded-full"
+                onClick={handleScanAll}
+                disabled={isScanningAll}
+                data-testid="scan-all-btn"
+              >
+                <FolderSearch className={`w-4 h-4 mr-2 ${isScanningAll ? "animate-spin" : ""}`} />
+                {isScanningAll ? "Scanning..." : "Scan All"}
+              </Button>
+            )}
+            
             {/* Import Movies Dialog */}
             <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
               <DialogTrigger asChild>
