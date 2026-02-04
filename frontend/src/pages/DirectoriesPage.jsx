@@ -67,6 +67,8 @@ export default function DirectoriesPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [importText, setImportText] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  const [scanningDirId, setScanningDirId] = useState(null);
+  const [isScanningAll, setIsScanningAll] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -86,6 +88,41 @@ export default function DirectoriesPage() {
       toast.error("Failed to load directories");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleScanDirectory = async (dirId) => {
+    setScanningDirId(dirId);
+    try {
+      const response = await axios.post(`${API}/directories/${dirId}/scan?recursive=true`);
+      toast.success(`Scan complete! Found ${response.data.total_files} files, added ${response.data.new_movies} new movies`);
+      loadData();
+    } catch (err) {
+      toast.error("Failed to scan directory. Make sure the path is accessible.");
+    } finally {
+      setScanningDirId(null);
+    }
+  };
+
+  const handleScanAll = async () => {
+    setIsScanningAll(true);
+    try {
+      const response = await axios.post(`${API}/scan?recursive=true`);
+      toast.success(`Scan complete! Found ${response.data.total_files} files, added ${response.data.new_movies} new movies from ${response.data.directories_scanned} directories`);
+      loadData();
+    } catch (err) {
+      toast.error("Failed to scan directories");
+    } finally {
+      setIsScanningAll(false);
+    }
+  };
+
+  const handleValidatePath = async (path) => {
+    try {
+      const response = await axios.post(`${API}/directories/validate?path=${encodeURIComponent(path)}`);
+      return response.data;
+    } catch (err) {
+      return { valid: false, error: "Failed to validate path" };
     }
   };
 
