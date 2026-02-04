@@ -343,6 +343,121 @@ async def scan_directories(recursive: bool = True):
         directories_scanned=len(directories)
     )
 
+@api_router.post("/directories/{directory_id}/scan")
+async def scan_single_directory(directory_id: str, recursive: bool = True):
+    """
+    Scan a single directory for movie files.
+    Supports network shares and local paths.
+    """
+    directory = await db.directories.find_one({"id": directory_id}, {"_id": 0})
+    if not directory:
+        raise HTTPException(status_code=404, detail="Directory not found")
+    
+    dir_path = directory["path"]
+    
+    # Scan directory for video files
+    video_files = scan_directory_for_videos(dir_path, recursive)
+    new_movies = 0
+    
+    # Add new movies to database
+    for video in video_files:
+        # Check if movie already exists
+        existing = await db.movies.find_one({"file_path": video["file_path"]}, {"_id": 0})
+        if existing:
+            continue
+        
+        # Extract title and year from filename
+        title, year = clean_movie_name(video["file_name"])
+        
+        movie = Movie(
+            file_path=video["file_path"],
+            file_name=video["file_name"],
+            directory_id=directory_id,
+            title=title,
+            year=year
+        )
+        
+        doc = movie.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        
+        await db.movies.insert_one(doc)
+        new_movies += 1
+    
+    # Update last_scanned
+    await db.directories.update_one(
+        {"id": directory_id},
+        {"$set": {"last_scanned": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {
+        "directory_id": directory_id,
+        "total_files": len(video_files),
+        "new_movies": new_movies,
+        "path": dir_path
+    }
+
+@api_router.post("/directories/validate")
+async def validate_directory(path: str):
+    """
+    Validate if a directory path exists and is accessible.
+    Supports local paths and network shares.
+    """
+    try:
+        # Handle different path formats
+        test_path = path
+        if test_path.startswith('//'):
+            test_path = test_path.replace('/', '\\')
+        
+        p = Path(test_path)
+        
+        if not p.exists():
+            return {
+                "valid": False,
+                "accessible": False,
+                "is_network": path.startswith('\\\\') or path.startswith('//'),
+                "error": "Path does not exist or is not accessible"
+            }
+        
+        if not p.is_dir():
+            return {
+                "valid": False,
+                "accessible": False,
+                "is_network": path.startswith('\\\\') or path.startswith('//'),
+                "error": "Path is not a directory"
+            }
+        
+        # Try to list contents to verify access
+        try:
+            list(p.iterdir())
+            accessible = True
+        except PermissionError:
+            accessible = False
+        
+        # Check if it's a network path
+        is_network = (
+            path.startswith('\\\\') or 
+            path.startswith('//') or
+            path.startswith('/mnt/') or
+            path.startswith('/media/') or
+            (len(path) > 2 and path[1] == ':' and path[0].upper() not in 'CDEFGH')
+        )
+        
+        return {
+            "valid": True,
+            "accessible": accessible,
+            "is_network": is_network,
+            "path": str(p),
+            "error": None if accessible else "Permission denied"
+        }
+        
+    except Exception as e:
+        return {
+            "valid": False,
+            "accessible": False,
+            "is_network": path.startswith('\\\\') or path.startswith('//'),
+            "error": str(e)
+        }
+
 @api_router.post("/movies/add")
 async def add_movie(file_path: str, file_name: str, directory_id: str):
     """Add a movie file to the database."""
