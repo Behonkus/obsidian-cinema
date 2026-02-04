@@ -228,21 +228,108 @@ async def delete_directory(directory_id: str):
     await db.movies.delete_many({"directory_id": directory_id})
     return {"message": "Directory deleted", "id": directory_id}
 
+# Helper function to scan directory for video files
+def scan_directory_for_videos(dir_path: str, recursive: bool = True) -> List[dict]:
+    """
+    Scan a directory for video files.
+    Supports local paths, network shares (\\server\share or //server/share), 
+    and mounted network drives.
+    """
+    video_files = []
+    
+    try:
+        # Handle different path formats
+        # Windows UNC: \\server\share or //server/share
+        # Linux/Mac mounted: /mnt/network/share
+        # Local: C:\Movies or /home/user/movies
+        
+        if dir_path.startswith('//'):
+            # Convert forward slashes to backslashes for Windows UNC
+            dir_path = dir_path.replace('/', '\\')
+        
+        path = Path(dir_path)
+        
+        if not path.exists():
+            logging.warning(f"Directory does not exist or is not accessible: {dir_path}")
+            return []
+        
+        if not path.is_dir():
+            logging.warning(f"Path is not a directory: {dir_path}")
+            return []
+        
+        # Scan for video files
+        if recursive:
+            # Use rglob for recursive scanning
+            for file_path in path.rglob('*'):
+                if file_path.is_file() and file_path.suffix.lower() in VIDEO_EXTENSIONS:
+                    video_files.append({
+                        "file_path": str(file_path),
+                        "file_name": file_path.name,
+                        "size": file_path.stat().st_size if file_path.exists() else 0
+                    })
+        else:
+            # Use glob for non-recursive scanning
+            for file_path in path.glob('*'):
+                if file_path.is_file() and file_path.suffix.lower() in VIDEO_EXTENSIONS:
+                    video_files.append({
+                        "file_path": str(file_path),
+                        "file_name": file_path.name,
+                        "size": file_path.stat().st_size if file_path.exists() else 0
+                    })
+    
+    except PermissionError as e:
+        logging.error(f"Permission denied accessing directory {dir_path}: {e}")
+    except OSError as e:
+        logging.error(f"OS error scanning directory {dir_path}: {e}")
+    except Exception as e:
+        logging.error(f"Error scanning directory {dir_path}: {e}")
+    
+    return video_files
+
 # Scan endpoints
 @api_router.post("/scan", response_model=ScanResult)
-async def scan_directories():
-    """Scan all directories for movie files."""
+async def scan_directories(recursive: bool = True):
+    """
+    Scan all directories for movie files.
+    Supports local paths, network shares (UNC paths like \\\\server\\share), 
+    and mounted network drives.
+    """
     directories = await db.directories.find({}, {"_id": 0}).to_list(100)
     
     total_files = 0
     new_movies = 0
     
     for directory in directories:
-        dir_path = Path(directory["path"])
+        dir_path = directory["path"]
+        directory_id = directory["id"]
         
-        # Note: In a real scenario, this would scan actual filesystem
-        # For demo purposes, we'll simulate finding movie files
-        # The actual scanning would happen on the client side
+        # Scan directory for video files
+        video_files = scan_directory_for_videos(dir_path, recursive)
+        total_files += len(video_files)
+        
+        # Add new movies to database
+        for video in video_files:
+            # Check if movie already exists
+            existing = await db.movies.find_one({"file_path": video["file_path"]}, {"_id": 0})
+            if existing:
+                continue
+            
+            # Extract title and year from filename
+            title, year = clean_movie_name(video["file_name"])
+            
+            movie = Movie(
+                file_path=video["file_path"],
+                file_name=video["file_name"],
+                directory_id=directory_id,
+                title=title,
+                year=year
+            )
+            
+            doc = movie.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            
+            await db.movies.insert_one(doc)
+            new_movies += 1
         
         # Update last_scanned
         await db.directories.update_one(
