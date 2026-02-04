@@ -422,11 +422,12 @@ export default function DirectoriesPage() {
         className="mb-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20"
       >
         <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+          <Network className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-blue-200">
-              <strong>Note:</strong> This is a web application. To add movies, use the "Import Movies" button 
-              and paste the full file paths from your computer. The app will organize them by directory.
+              <strong>Network & Local Scanning:</strong> Add directories using local paths (C:\Movies) or network shares 
+              (\\server\share\movies). Click "Scan" to automatically discover movie files. The server will recursively 
+              scan all subdirectories.
             </p>
           </div>
         </div>
