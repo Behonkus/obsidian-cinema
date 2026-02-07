@@ -23,8 +23,18 @@ import { toast } from "sonner";
 import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const placeholderBackdrop = "https://images.unsplash.com/photo-1762541693135-fb989de961e1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHw0fHxjaW5lbWElMjB0aGVhdGVyJTIwZGFyayUyMGludGVyaW9yfGVufDB8fHx8MTc3MDIyMjgyNXww&ixlib=rb-4.1.0&q=85";
+
+// Helper to resolve image URLs (handles both local cached and TMDB URLs)
+const resolveImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('/api/')) {
+    return `${BACKEND_URL}${path}`;
+  }
+  return path;
+};
 
 export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
   const [copied, setCopied] = useState(false);
