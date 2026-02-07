@@ -868,17 +868,39 @@ async def fetch_movie_metadata(movie_id: str):
     details = await get_movie_details(search_result["id"])
     
     if details:
+        # Download and cache poster locally
+        poster_local_url = None
+        backdrop_local_url = None
+        tmdb_poster_path = details.get("poster_path")
+        tmdb_backdrop_path = details.get("backdrop_path")
+        
+        if tmdb_poster_path:
+            cached_poster = await download_and_cache_poster(tmdb_poster_path, "w500")
+            if cached_poster:
+                # Store as API URL for serving
+                poster_filename = get_poster_filename(tmdb_poster_path)
+                poster_local_url = f"/api/posters/w500/{poster_filename}"
+        
+        if tmdb_backdrop_path:
+            cached_backdrop = await download_and_cache_backdrop(tmdb_backdrop_path, "w1280")
+            if cached_backdrop:
+                backdrop_filename = get_poster_filename(tmdb_backdrop_path)
+                backdrop_local_url = f"/api/posters/backdrops/w1280/{backdrop_filename}"
+        
         update_data = {
             "tmdb_id": details["id"],
             "title": details.get("title", movie.get("title")),
             "overview": details.get("overview"),
-            "poster_path": get_poster_url(details.get("poster_path")),
-            "backdrop_path": get_backdrop_url(details.get("backdrop_path")),
+            "poster_path": poster_local_url or get_poster_url(tmdb_poster_path),
+            "backdrop_path": backdrop_local_url or get_backdrop_url(tmdb_backdrop_path),
+            "tmdb_poster_path": tmdb_poster_path,  # Store original TMDB path for reference
+            "tmdb_backdrop_path": tmdb_backdrop_path,
             "rating": details.get("vote_average"),
             "runtime": details.get("runtime"),
             "release_date": details.get("release_date"),
             "genres": [g["name"] for g in details.get("genres", [])],
-            "metadata_fetched": True
+            "metadata_fetched": True,
+            "poster_cached": bool(poster_local_url)
         }
         
         if details.get("release_date"):
