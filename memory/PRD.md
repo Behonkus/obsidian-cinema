@@ -103,4 +103,5 @@ Build an app that will scan directories of movie files and display associated mo
 ## Notes
 - MPC-HC must be installed on the user's Windows machine for play links to work
 - TMDB API key is required for poster/metadata fetching (currently not configured)
-- Movies are imported by pasting file paths (web app cannot scan local filesystem)
+- Network shares must be accessible from the server where the backend runs
+- For network paths: use UNC format like \\\\server\\share\\movies or //server/share/movies
