@@ -184,6 +184,97 @@ async def get_config():
         "video_extensions": list(VIDEO_EXTENSIONS)
     }
 
+class SettingsUpdate(BaseModel):
+    tmdb_api_key: Optional[str] = None
+
+@api_router.get("/settings")
+async def get_settings():
+    """Get current settings."""
+    # Check if TMDB key is configured (don't expose the actual key)
+    return {
+        "tmdb_configured": bool(TMDB_API_KEY),
+        "tmdb_key_masked": f"{'*' * 8}...{TMDB_API_KEY[-4:]}" if TMDB_API_KEY and len(TMDB_API_KEY) > 4 else None
+    }
+
+@api_router.post("/settings")
+async def update_settings(settings: SettingsUpdate):
+    """Update settings including TMDB API key."""
+    global TMDB_API_KEY
+    
+    if settings.tmdb_api_key is not None:
+        # Validate the API key by making a test request
+        test_key = settings.tmdb_api_key.strip()
+        
+        if test_key:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(
+                        f"{TMDB_BASE_URL}/configuration",
+                        params={"api_key": test_key},
+                        timeout=10
+                    )
+                    if response.status_code != 200:
+                        raise HTTPException(status_code=400, detail="Invalid TMDB API key")
+            except httpx.RequestError:
+                raise HTTPException(status_code=400, detail="Could not validate TMDB API key")
+        
+        # Update the environment variable and in-memory value
+        TMDB_API_KEY = test_key
+        
+        # Save to .env file
+        env_path = ROOT_DIR / '.env'
+        env_content = ""
+        key_found = False
+        
+        if env_path.exists():
+            with open(env_path, 'r') as f:
+                lines = f.readlines()
+            
+            new_lines = []
+            for line in lines:
+                if line.startswith('TMDB_API_KEY='):
+                    new_lines.append(f'TMDB_API_KEY="{test_key}"\n')
+                    key_found = True
+                else:
+                    new_lines.append(line)
+            
+            if not key_found:
+                new_lines.append(f'TMDB_API_KEY="{test_key}"\n')
+            
+            env_content = ''.join(new_lines)
+        else:
+            env_content = f'TMDB_API_KEY="{test_key}"\n'
+        
+        with open(env_path, 'w') as f:
+            f.write(env_content)
+        
+        return {
+            "success": True,
+            "message": "TMDB API key updated successfully",
+            "tmdb_configured": bool(test_key)
+        }
+    
+    return {"success": True, "message": "No changes made"}
+
+@api_router.post("/settings/test-tmdb")
+async def test_tmdb_key(api_key: str):
+    """Test a TMDB API key without saving it."""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{TMDB_BASE_URL}/configuration",
+                params={"api_key": api_key.strip()},
+                timeout=10
+            )
+            if response.status_code == 200:
+                return {"valid": True, "message": "API key is valid"}
+            elif response.status_code == 401:
+                return {"valid": False, "message": "Invalid API key"}
+            else:
+                return {"valid": False, "message": f"Unexpected response: {response.status_code}"}
+    except httpx.RequestError as e:
+        return {"valid": False, "message": f"Connection error: {str(e)}"}
+
 # Directory endpoints
 @api_router.post("/directories", response_model=Directory)
 async def create_directory(input_data: DirectoryCreate):
