@@ -68,8 +68,12 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ Movie detail modal with play/copy options
 - ✅ Directory management page
 - ✅ Import Movies feature (paste file paths)
+- ✅ **Network directory scanning** (UNC paths: \\server\share)
+- ✅ **Recursive directory scanning**
+- ✅ **Scan All / Scan individual directories**
+- ✅ **Path validation API**
 - ✅ Search, directory filter, metadata filter
-- ✅ Grid size toggle (compact/normal)
+- ✅ Grid size toggle (compact/normal views)
 - ✅ Framer Motion animations
 - ✅ Responsive design
 
