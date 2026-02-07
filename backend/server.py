@@ -74,6 +74,9 @@ class Movie(BaseModel):
     runtime: Optional[int] = None
     release_date: Optional[str] = None
     metadata_fetched: bool = False
+    is_favorite: bool = False
+    is_watchlist: bool = False
+    watched: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ScanResult(BaseModel):
