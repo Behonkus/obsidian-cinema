@@ -330,6 +330,13 @@ def main():
         # Test stats after adding data
         tester.test_stats_endpoint()
         
+        # Test Settings endpoints (NEW FEATURE)
+        print("\n🔍 Testing Settings Endpoints...")
+        tester.test_get_settings()
+        tester.test_test_tmdb_key_invalid()
+        tester.test_save_settings_invalid_key()
+        tester.test_save_settings_empty_key()
+        
         # Test duplicate directory creation (should fail)
         tester.run_test(
             "Create Duplicate Directory",
