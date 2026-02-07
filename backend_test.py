@@ -278,7 +278,8 @@ def main():
             tester.test_get_single_movie(movie_id)
             tester.test_fetch_metadata_without_api_key(movie_id)
         
-        # Test scan functionality
+        # Test scan functionality (updated for recursive scanning)
+        print("\n🔍 Testing All Directory Scanning...")
         tester.test_scan_directories()
         
         # Test stats after adding data
