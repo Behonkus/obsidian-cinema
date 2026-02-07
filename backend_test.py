@@ -174,9 +174,27 @@ class ObsidianCinemaAPITester:
         """Test stats endpoint"""
         return self.run_test("Get Stats", "GET", "stats", 200)
 
+    def test_validate_directory(self, path):
+        """Test directory path validation"""
+        return self.run_test(
+            f"Validate Directory ({path})",
+            "POST",
+            f"directories/validate?path={path}",
+            200
+        )
+
+    def test_scan_single_directory(self, directory_id):
+        """Test scanning a single directory"""
+        return self.run_test(
+            f"Scan Single Directory ({directory_id})",
+            "POST",
+            f"directories/{directory_id}/scan?recursive=true",
+            200
+        )
+
     def test_scan_directories(self):
-        """Test directory scanning"""
-        return self.run_test("Scan Directories", "POST", "scan", 200)
+        """Test directory scanning (all directories)"""
+        return self.run_test("Scan All Directories", "POST", "scan?recursive=true", 200)
 
     def test_fetch_metadata_without_api_key(self, movie_id):
         """Test fetching metadata without TMDB API key (should fail gracefully)"""
