@@ -912,6 +912,7 @@ async def bulk_add_movies(movies: List[dict]):
 async def get_movies(
     search: Optional[str] = None,
     directory_id: Optional[str] = None,
+    collection_id: Optional[str] = None,
     has_metadata: Optional[bool] = None,
     is_favorite: Optional[bool] = None,
     is_watchlist: Optional[bool] = None,
