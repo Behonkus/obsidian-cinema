@@ -292,7 +292,7 @@ def main():
             "POST",
             "directories",
             400,  # Should fail with 400
-            data={"path": "C:\\TestMovies", "name": "Duplicate"}
+            data={"path": f"C:\\{test_dir_name}", "name": "Duplicate"}
         )
         
     except KeyboardInterrupt:
