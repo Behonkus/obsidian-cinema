@@ -240,10 +240,10 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
             
-            {movie.poster_path && (
+            {posterUrl && (
               <div className="absolute bottom-4 left-6 w-24 md:w-32 aspect-[2/3] rounded-lg overflow-hidden border-2 border-border shadow-xl">
                 <img
-                  src={movie.poster_path}
+                  src={posterUrl}
                   alt={displayTitle}
                   className="w-full h-full object-cover"
                 />
@@ -253,7 +253,7 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
           
           <ScrollArea className="flex-1 overflow-auto">
             <div className="p-6 pt-4">
-              <div className={movie.poster_path ? "md:pl-36" : ""}>
+              <div className={posterUrl ? "md:pl-36" : ""}>
                 <h2 className="text-2xl md:text-3xl font-bold font-[Outfit] text-foreground">
                   {displayTitle}
                 </h2>
