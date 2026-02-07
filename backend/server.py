@@ -1,4 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -8,6 +9,7 @@ import re
 import json
 import time
 import httpx
+import hashlib
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
@@ -26,6 +28,10 @@ db = client[os.environ['DB_NAME']]
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '')
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 IMAGE_BASE_URL = "https://image.tmdb.org/t/p/"
+
+# Poster Repository Configuration
+POSTER_REPO_DIR = Path(os.environ.get('POSTER_REPO_DIR', ROOT_DIR / 'poster_repository'))
+POSTER_REPO_DIR.mkdir(parents=True, exist_ok=True)
 
 # Video file extensions
 VIDEO_EXTENSIONS = {
