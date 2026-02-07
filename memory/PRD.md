@@ -43,6 +43,7 @@ Build an app that will scan directories of movie files and display associated mo
 ## User Personas
 - **Home Media Enthusiasts**: Users with large movie collections wanting a visual browser
 - **Power Users**: Those who prefer keyboard shortcuts and quick access to file paths
+- **NAS Users**: People with network-attached storage for their media library
 
 ## Core Requirements (Static)
 - [x] Directory management (add/remove)
