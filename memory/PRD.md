@@ -57,8 +57,8 @@ Build an app that will scan directories of movie files and display associated mo
 - [x] Dark theme UI
 - [x] Network share scanning (UNC paths)
 
-## What's Been Implemented (Jan 2026)
-- ✅ Full backend API with 14 endpoints
+## What's Been Implemented (Feb 2026)
+- ✅ Full backend API with 19 endpoints
 - ✅ MongoDB models for directories and movies
 - ✅ TMDB integration with caching
 - ✅ Movie title/year extraction from filenames
