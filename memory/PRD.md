@@ -26,7 +26,9 @@ Build an app that will scan directories of movie files and display associated mo
 | POST | /api/directories | Add a new directory |
 | GET | /api/directories | List all directories |
 | DELETE | /api/directories/{id} | Remove a directory |
-| POST | /api/scan | Scan directories for movies |
+| POST | /api/directories/validate | Validate directory path (local/network) |
+| POST | /api/directories/{id}/scan | Scan single directory for movies |
+| POST | /api/scan | Scan all directories for movies |
 | POST | /api/movies/add | Add a single movie |
 | POST | /api/movies/bulk-add | Bulk add movies |
 | GET | /api/movies | Get all movies (with filters) |
