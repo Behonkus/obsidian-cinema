@@ -472,6 +472,150 @@ async def delete_directory(directory_id: str):
     await db.movies.delete_many({"directory_id": directory_id})
     return {"message": "Directory deleted", "id": directory_id}
 
+# Collection endpoints
+@api_router.post("/collections", response_model=Collection)
+async def create_collection(input_data: CollectionCreate):
+    """Create a new collection."""
+    collection = Collection(
+        name=input_data.name,
+        description=input_data.description,
+        color=input_data.color or "#e11d48",
+        icon=input_data.icon or "folder"
+    )
+    
+    doc = collection.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.collections.insert_one(doc)
+    return collection
+
+@api_router.get("/collections", response_model=List[Collection])
+async def get_collections():
+    """Get all collections."""
+    collections = await db.collections.find({}, {"_id": 0}).to_list(100)
+    for c in collections:
+        if isinstance(c.get('created_at'), str):
+            c['created_at'] = datetime.fromisoformat(c['created_at'])
+    return collections
+
+@api_router.get("/collections/{collection_id}", response_model=Collection)
+async def get_collection(collection_id: str):
+    """Get a single collection by ID."""
+    collection = await db.collections.find_one({"id": collection_id}, {"_id": 0})
+    if not collection:
+        raise HTTPException(status_code=404, detail="Collection not found")
+    
+    if isinstance(collection.get('created_at'), str):
+        collection['created_at'] = datetime.fromisoformat(collection['created_at'])
+    return collection
+
+@api_router.put("/collections/{collection_id}", response_model=Collection)
+async def update_collection(collection_id: str, input_data: CollectionUpdate):
+    """Update a collection."""
+    collection = await db.collections.find_one({"id": collection_id}, {"_id": 0})
+    if not collection:
+        raise HTTPException(status_code=404, detail="Collection not found")
+    
+    update_data = {}
+    if input_data.name is not None:
+        update_data["name"] = input_data.name
+    if input_data.description is not None:
+        update_data["description"] = input_data.description
+    if input_data.color is not None:
+        update_data["color"] = input_data.color
+    if input_data.icon is not None:
+        update_data["icon"] = input_data.icon
+    
+    if update_data:
+        await db.collections.update_one(
+            {"id": collection_id},
+            {"$set": update_data}
+        )
+    
+    updated = await db.collections.find_one({"id": collection_id}, {"_id": 0})
+    if isinstance(updated.get('created_at'), str):
+        updated['created_at'] = datetime.fromisoformat(updated['created_at'])
+    return updated
+
+@api_router.delete("/collections/{collection_id}")
+async def delete_collection(collection_id: str):
+    """Delete a collection."""
+    result = await db.collections.delete_one({"id": collection_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Collection not found")
+    
+    # Remove collection from all movies
+    await db.movies.update_many(
+        {"collection_ids": collection_id},
+        {"$pull": {"collection_ids": collection_id}}
+    )
+    
+    return {"message": "Collection deleted", "id": collection_id}
+
+@api_router.post("/collections/{collection_id}/movies/{movie_id}")
+async def add_movie_to_collection(collection_id: str, movie_id: str):
+    """Add a movie to a collection."""
+    collection = await db.collections.find_one({"id": collection_id}, {"_id": 0})
+    if not collection:
+        raise HTTPException(status_code=404, detail="Collection not found")
+    
+    movie = await db.movies.find_one({"id": movie_id}, {"_id": 0})
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    
+    # Add movie to collection's movie_ids
+    await db.collections.update_one(
+        {"id": collection_id},
+        {"$addToSet": {"movie_ids": movie_id}}
+    )
+    
+    # Add collection to movie's collection_ids
+    await db.movies.update_one(
+        {"id": movie_id},
+        {"$addToSet": {"collection_ids": collection_id}}
+    )
+    
+    return {"message": "Movie added to collection", "collection_id": collection_id, "movie_id": movie_id}
+
+@api_router.delete("/collections/{collection_id}/movies/{movie_id}")
+async def remove_movie_from_collection(collection_id: str, movie_id: str):
+    """Remove a movie from a collection."""
+    # Remove movie from collection's movie_ids
+    await db.collections.update_one(
+        {"id": collection_id},
+        {"$pull": {"movie_ids": movie_id}}
+    )
+    
+    # Remove collection from movie's collection_ids
+    await db.movies.update_one(
+        {"id": movie_id},
+        {"$pull": {"collection_ids": collection_id}}
+    )
+    
+    return {"message": "Movie removed from collection", "collection_id": collection_id, "movie_id": movie_id}
+
+@api_router.get("/collections/{collection_id}/movies")
+async def get_collection_movies(collection_id: str):
+    """Get all movies in a collection."""
+    collection = await db.collections.find_one({"id": collection_id}, {"_id": 0})
+    if not collection:
+        raise HTTPException(status_code=404, detail="Collection not found")
+    
+    movies = await db.movies.find(
+        {"id": {"$in": collection.get("movie_ids", [])}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    for m in movies:
+        if isinstance(m.get('created_at'), str):
+            m['created_at'] = datetime.fromisoformat(m['created_at'])
+        m.setdefault('is_favorite', False)
+        m.setdefault('is_watchlist', False)
+        m.setdefault('watched', False)
+        m.setdefault('collection_ids', [])
+    
+    return movies
+
 # Helper function to scan directory for video files
 def scan_directory_for_videos(dir_path: str, recursive: bool = True) -> List[dict]:
     """
