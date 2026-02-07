@@ -58,7 +58,7 @@ Build an app that will scan directories of movie files and display associated mo
 - [x] Network share scanning (UNC paths)
 
 ## What's Been Implemented (Feb 2026)
-- ✅ Full backend API with 19 endpoints
+- ✅ Full backend API with 25+ endpoints
 - ✅ MongoDB models for directories and movies
 - ✅ TMDB integration with caching
 - ✅ Movie title/year extraction from filenames
@@ -72,6 +72,9 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ **Recursive directory scanning**
 - ✅ **Scan All / Scan individual directories**
 - ✅ **Path validation API**
+- ✅ **Settings page with TMDB API key configuration**
+- ✅ **Favorites/Watchlist/Watched feature** with filtering
+- ✅ **Local poster repository** - posters cached separately from movie dirs
 - ✅ Search, directory filter, metadata filter
 - ✅ Grid size toggle (compact/normal views)
 - ✅ Framer Motion animations
@@ -83,6 +86,8 @@ Build an app that will scan directories of movie files and display associated mo
 - [x] Play/copy functionality
 - [x] Network share scanning
 - [x] Settings page with TMDB API key configuration
+- [x] Favorites/Watchlist/Watched feature
+- [x] Local poster repository (separate from movie dirs)
 
 ## P1 Features (Important - Pending)
 - [ ] Batch metadata fetching improvements
