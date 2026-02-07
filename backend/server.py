@@ -618,7 +618,10 @@ async def bulk_add_movies(movies: List[dict]):
 async def get_movies(
     search: Optional[str] = None,
     directory_id: Optional[str] = None,
-    has_metadata: Optional[bool] = None
+    has_metadata: Optional[bool] = None,
+    is_favorite: Optional[bool] = None,
+    is_watchlist: Optional[bool] = None,
+    watched: Optional[bool] = None
 ):
     """Get all movies with optional filters."""
     query = {}
@@ -635,11 +638,24 @@ async def get_movies(
     if has_metadata is not None:
         query["metadata_fetched"] = has_metadata
     
+    if is_favorite is not None:
+        query["is_favorite"] = is_favorite
+    
+    if is_watchlist is not None:
+        query["is_watchlist"] = is_watchlist
+    
+    if watched is not None:
+        query["watched"] = watched
+    
     movies = await db.movies.find(query, {"_id": 0}).to_list(1000)
     
     for m in movies:
         if isinstance(m.get('created_at'), str):
             m['created_at'] = datetime.fromisoformat(m['created_at'])
+        # Ensure new fields have default values for existing documents
+        m.setdefault('is_favorite', False)
+        m.setdefault('is_watchlist', False)
+        m.setdefault('watched', False)
     
     return movies
 
