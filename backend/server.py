@@ -936,6 +936,9 @@ async def get_movies(
     if directory_id:
         query["directory_id"] = directory_id
     
+    if collection_id:
+        query["collection_ids"] = collection_id
+    
     if has_metadata is not None:
         query["metadata_fetched"] = has_metadata
     
@@ -977,6 +980,7 @@ async def get_movies(
         m.setdefault('is_favorite', False)
         m.setdefault('is_watchlist', False)
         m.setdefault('watched', False)
+        m.setdefault('collection_ids', [])
     
     return movies
 
