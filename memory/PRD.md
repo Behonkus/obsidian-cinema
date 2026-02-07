@@ -88,6 +88,7 @@ Build an app that will scan directories of movie files and display associated mo
 - [x] Settings page with TMDB API key configuration
 - [x] Favorites/Watchlist/Watched feature
 - [x] Local poster repository (separate from movie dirs)
+- [x] Movie sorting (title, year, rating, date added)
 
 ## P1 Features (Important - Pending)
 - [ ] Batch metadata fetching improvements
@@ -95,9 +96,8 @@ Build an app that will scan directories of movie files and display associated mo
 
 ## P2 Features (Nice to Have)
 - [ ] Custom poster upload
-- [ ] Collections/favorites
-- [ ] Watch history
-- [ ] Sorting options (by title, year, rating)
+- [ ] Collections/playlists
+- [ ] Import/export library data
 - [ ] Keyboard shortcuts
 
 ## Next Action Items
