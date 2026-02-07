@@ -85,8 +85,8 @@ Build an app that will scan directories of movie files and display associated mo
 
 ## P1 Features (Important - Pending)
 - [ ] TMDB API key configuration UI
-- [ ] Actual filesystem scanning (requires desktop app)
 - [ ] Batch metadata fetching improvements
+- [ ] Real-time scan progress indicator
 
 ## P2 Features (Nice to Have)
 - [ ] Custom poster upload
