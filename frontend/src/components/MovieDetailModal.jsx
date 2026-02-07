@@ -10,7 +10,10 @@ import {
   Check,
   Search,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  Heart,
+  Bookmark,
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +33,7 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
   const [searchResults, setSearchResults] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   if (!movie || !isOpen) return null;
 
