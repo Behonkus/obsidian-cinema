@@ -6,6 +6,7 @@ import Layout from "@/components/Layout";
 import HomePage from "@/pages/HomePage";
 import DirectoriesPage from "@/pages/DirectoriesPage";
 import SettingsPage from "@/pages/SettingsPage";
+import CollectionsPage from "@/pages/CollectionsPage";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<HomePage />} />
             <Route path="directories" element={<DirectoriesPage />} />
+            <Route path="collections" element={<CollectionsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>
