@@ -244,6 +244,13 @@ def main():
         tester.test_config_endpoint()
         tester.test_stats_endpoint()
         
+        # Test directory validation (new feature)
+        print("\n🔍 Testing Directory Validation...")
+        tester.test_validate_directory("C:\\TestMovies")  # Local path
+        tester.test_validate_directory("\\\\server\\share\\movies")  # Network UNC path
+        tester.test_validate_directory("//nas/media/films")  # Network forward slash path
+        tester.test_validate_directory("/nonexistent/path")  # Invalid path
+        
         # Test directory operations
         dir_id = tester.test_create_directory("C:\\TestMovies", "Test Movies Directory")
         if not dir_id:
@@ -251,6 +258,10 @@ def main():
             return 1
         
         tester.test_get_directories()
+        
+        # Test single directory scanning (new feature)
+        print("\n🔍 Testing Single Directory Scanning...")
+        tester.test_scan_single_directory(dir_id)
         
         # Test movie operations
         success, movies_response = tester.test_bulk_add_movies(dir_id)
