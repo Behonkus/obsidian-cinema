@@ -104,7 +104,7 @@ export default function MovieCard({ movie, onClick, onUpdate, index = 0 }) {
     }
   };
 
-  const posterUrl = movie.poster_path && !imageError ? movie.poster_path : placeholderPoster;
+  const posterUrl = movie.poster_path && !imageError ? resolvePosterUrl(movie.poster_path) : placeholderPoster;
   const displayTitle = movie.title || movie.file_name;
 
   return (
