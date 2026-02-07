@@ -275,7 +275,8 @@ async def get_config():
     """Get API configuration status."""
     return {
         "tmdb_configured": bool(TMDB_API_KEY),
-        "video_extensions": list(VIDEO_EXTENSIONS)
+        "video_extensions": list(VIDEO_EXTENSIONS),
+        "poster_repo_dir": str(POSTER_REPO_DIR)
     }
 
 class SettingsUpdate(BaseModel):
@@ -284,11 +285,46 @@ class SettingsUpdate(BaseModel):
 @api_router.get("/settings")
 async def get_settings():
     """Get current settings."""
-    # Check if TMDB key is configured (don't expose the actual key)
+    # Count cached posters
+    poster_count = 0
+    if POSTER_REPO_DIR.exists():
+        for subdir in POSTER_REPO_DIR.iterdir():
+            if subdir.is_dir():
+                poster_count += len(list(subdir.glob('*.jpg')))
+    
     return {
         "tmdb_configured": bool(TMDB_API_KEY),
-        "tmdb_key_masked": f"{'*' * 8}...{TMDB_API_KEY[-4:]}" if TMDB_API_KEY and len(TMDB_API_KEY) > 4 else None
+        "tmdb_key_masked": f"{'*' * 8}...{TMDB_API_KEY[-4:]}" if TMDB_API_KEY and len(TMDB_API_KEY) > 4 else None,
+        "poster_repo_dir": str(POSTER_REPO_DIR),
+        "cached_posters": poster_count
     }
+
+# Poster serving endpoint
+@api_router.get("/posters/{size}/{filename}")
+async def get_poster(size: str, filename: str):
+    """Serve a cached poster file."""
+    poster_path = POSTER_REPO_DIR / size / filename
+    if not poster_path.exists():
+        raise HTTPException(status_code=404, detail="Poster not found")
+    
+    return FileResponse(
+        poster_path,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=31536000"}
+    )
+
+@api_router.get("/posters/backdrops/{size}/{filename}")
+async def get_backdrop(size: str, filename: str):
+    """Serve a cached backdrop file."""
+    backdrop_path = POSTER_REPO_DIR / "backdrops" / size / filename
+    if not backdrop_path.exists():
+        raise HTTPException(status_code=404, detail="Backdrop not found")
+    
+    return FileResponse(
+        backdrop_path,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=31536000"}
+    )
 
 @api_router.post("/settings")
 async def update_settings(settings: SettingsUpdate):
