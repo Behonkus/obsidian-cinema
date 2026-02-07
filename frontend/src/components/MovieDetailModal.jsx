@@ -110,6 +110,48 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
     }
   };
 
+  const handleToggleFavorite = async () => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    try {
+      const response = await axios.post(`${API}/movies/${movie.id}/favorite`);
+      if (onUpdate) onUpdate({ ...movie, is_favorite: response.data.is_favorite });
+      toast.success(response.data.is_favorite ? "Added to favorites" : "Removed from favorites");
+    } catch (err) {
+      toast.error("Failed to update");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleToggleWatchlist = async () => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    try {
+      const response = await axios.post(`${API}/movies/${movie.id}/watchlist`);
+      if (onUpdate) onUpdate({ ...movie, is_watchlist: response.data.is_watchlist });
+      toast.success(response.data.is_watchlist ? "Added to watchlist" : "Removed from watchlist");
+    } catch (err) {
+      toast.error("Failed to update");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleToggleWatched = async () => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    try {
+      const response = await axios.post(`${API}/movies/${movie.id}/watched`);
+      if (onUpdate) onUpdate({ ...movie, watched: response.data.watched });
+      toast.success(response.data.watched ? "Marked as watched" : "Marked as unwatched");
+    } catch (err) {
+      toast.error("Failed to update");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const backdropUrl = movie.backdrop_path || placeholderBackdrop;
   const displayTitle = movie.title || movie.file_name;
   const movieGenres = movie.genres || [];
@@ -135,6 +177,40 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
           onClick={(e) => e.stopPropagation()}
           data-testid="movie-modal"
         >
+          {/* Quick action buttons in top left */}
+          <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`bg-black/50 hover:bg-black/70 rounded-full ${movie.is_favorite ? 'text-red-400' : ''}`}
+              onClick={handleToggleFavorite}
+              disabled={isUpdating}
+              data-testid="modal-favorite-btn"
+            >
+              <Heart className={`w-5 h-5 ${movie.is_favorite ? 'fill-current' : ''}`} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`bg-black/50 hover:bg-black/70 rounded-full ${movie.is_watchlist ? 'text-blue-400' : ''}`}
+              onClick={handleToggleWatchlist}
+              disabled={isUpdating}
+              data-testid="modal-watchlist-btn"
+            >
+              <Bookmark className={`w-5 h-5 ${movie.is_watchlist ? 'fill-current' : ''}`} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`bg-black/50 hover:bg-black/70 rounded-full ${movie.watched ? 'text-green-400' : ''}`}
+              onClick={handleToggleWatched}
+              disabled={isUpdating}
+              data-testid="modal-watched-btn"
+            >
+              <Eye className="w-5 h-5" />
+            </Button>
+          </div>
+          
           <Button
             variant="ghost"
             size="icon"
