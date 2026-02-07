@@ -17,6 +17,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   const navItems = [
     { path: "/", icon: Film, label: "Library" },
     { path: "/directories", icon: FolderOpen, label: "Directories" },
+    { path: "/settings", icon: Settings, label: "Settings" },
   ];
 
   return (
