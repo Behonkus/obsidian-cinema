@@ -7,7 +7,10 @@ import {
   FolderOpen,
   SlidersHorizontal,
   Grid3X3,
-  LayoutGrid
+  LayoutGrid,
+  Heart,
+  Bookmark,
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailModal from "@/components/MovieDetailModal";
 import EmptyState from "@/components/EmptyState";
@@ -34,6 +38,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDirectory, setSelectedDirectory] = useState("all");
   const [metadataFilter, setMetadataFilter] = useState("all");
+  const [listFilter, setListFilter] = useState("all");
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [stats, setStats] = useState(null);
@@ -81,9 +86,17 @@ export default function HomePage() {
         (metadataFilter === "with" && movie.metadata_fetched) ||
         (metadataFilter === "without" && !movie.metadata_fetched);
       
-      return matchesSearch && matchesDirectory && matchesMetadata;
+      // List filter (favorites, watchlist, watched)
+      const matchesList = 
+        listFilter === "all" ||
+        (listFilter === "favorites" && movie.is_favorite) ||
+        (listFilter === "watchlist" && movie.is_watchlist) ||
+        (listFilter === "watched" && movie.watched) ||
+        (listFilter === "unwatched" && !movie.watched);
+      
+      return matchesSearch && matchesDirectory && matchesMetadata && matchesList;
     });
-  }, [movies, searchQuery, selectedDirectory, metadataFilter]);
+  }, [movies, searchQuery, selectedDirectory, metadataFilter, listFilter]);
 
   const handleMovieClick = (movie) => {
     setSelectedMovie(movie);
@@ -94,7 +107,11 @@ export default function HomePage() {
     setMovies((prev) =>
       prev.map((m) => (m.id === updatedMovie.id ? updatedMovie : m))
     );
-    setSelectedMovie(updatedMovie);
+    if (selectedMovie && selectedMovie.id === updatedMovie.id) {
+      setSelectedMovie(updatedMovie);
+    }
+    // Reload stats
+    axios.get(`${API}/stats`).then(res => setStats(res.data)).catch(() => {});
   };
 
   const handleFetchAllMetadata = async () => {
@@ -150,14 +167,37 @@ export default function HomePage() {
           </div>
           
           {/* Quick stats */}
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="px-4 py-2">
-              <Film className="w-4 h-4 mr-2" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary" className="px-3 py-1.5">
+              <Film className="w-4 h-4 mr-1.5" />
               {stats?.total_movies || 0}
             </Badge>
-            <Badge variant="secondary" className="px-4 py-2">
-              <FolderOpen className="w-4 h-4 mr-2" />
-              {stats?.total_directories || 0}
+            <Badge 
+              variant="secondary" 
+              className={`px-3 py-1.5 cursor-pointer transition-colors ${listFilter === 'favorites' ? 'bg-red-500/20 text-red-400' : ''}`}
+              onClick={() => setListFilter(listFilter === 'favorites' ? 'all' : 'favorites')}
+              data-testid="favorites-badge"
+            >
+              <Heart className={`w-4 h-4 mr-1.5 ${stats?.favorites > 0 ? 'fill-current' : ''}`} />
+              {stats?.favorites || 0}
+            </Badge>
+            <Badge 
+              variant="secondary" 
+              className={`px-3 py-1.5 cursor-pointer transition-colors ${listFilter === 'watchlist' ? 'bg-blue-500/20 text-blue-400' : ''}`}
+              onClick={() => setListFilter(listFilter === 'watchlist' ? 'all' : 'watchlist')}
+              data-testid="watchlist-badge"
+            >
+              <Bookmark className={`w-4 h-4 mr-1.5 ${stats?.watchlist > 0 ? 'fill-current' : ''}`} />
+              {stats?.watchlist || 0}
+            </Badge>
+            <Badge 
+              variant="secondary" 
+              className={`px-3 py-1.5 cursor-pointer transition-colors ${listFilter === 'watched' ? 'bg-green-500/20 text-green-400' : ''}`}
+              onClick={() => setListFilter(listFilter === 'watched' ? 'all' : 'watched')}
+              data-testid="watched-badge"
+            >
+              <Eye className="w-4 h-4 mr-1.5" />
+              {stats?.watched || 0}
             </Badge>
             {stats?.without_metadata > 0 && (
               <Button
@@ -175,12 +215,41 @@ export default function HomePage() {
           </div>
         </motion.div>
         
+        {/* Tabs for quick filtering */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mt-6"
+        >
+          <Tabs value={listFilter} onValueChange={setListFilter} className="w-full">
+            <TabsList className="bg-secondary/50">
+              <TabsTrigger value="all" data-testid="tab-all">All Movies</TabsTrigger>
+              <TabsTrigger value="favorites" data-testid="tab-favorites">
+                <Heart className="w-4 h-4 mr-1.5" />
+                Favorites
+              </TabsTrigger>
+              <TabsTrigger value="watchlist" data-testid="tab-watchlist">
+                <Bookmark className="w-4 h-4 mr-1.5" />
+                Watchlist
+              </TabsTrigger>
+              <TabsTrigger value="watched" data-testid="tab-watched">
+                <Eye className="w-4 h-4 mr-1.5" />
+                Watched
+              </TabsTrigger>
+              <TabsTrigger value="unwatched" data-testid="tab-unwatched">
+                Unwatched
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </motion.div>
+        
         {/* Filters */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col md:flex-row gap-3 mt-6"
+          className="flex flex-col md:flex-row gap-3 mt-4"
         >
           {/* Search */}
           <div className="relative flex-1 max-w-md">
@@ -267,6 +336,7 @@ export default function HomePage() {
               key={movie.id}
               movie={movie}
               onClick={() => handleMovieClick(movie)}
+              onUpdate={handleMovieUpdate}
               index={index}
             />
           ))}
