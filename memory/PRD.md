@@ -96,7 +96,7 @@ Build an app that will scan directories of movie files and display associated mo
 - [ ] Keyboard shortcuts
 
 ## Next Action Items
-1. **Add TMDB API key** - Get free key from https://www.themoviedb.org/settings/api and add to /app/backend/.env
+1. **Add TMDB API key** - Get free key from https://www.themoviedb.org/settings/api and add to /app/backend/.env as TMDB_API_KEY="your_key"
 2. **Click "Fetch All" button** - Once API key is added, fetch posters for all movies
 3. **Configure MPC-HC protocol handler** - On Windows, may need to register mpc-hc:// protocol
 
