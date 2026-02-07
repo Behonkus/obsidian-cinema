@@ -588,6 +588,10 @@ def main():
         tester.test_get_movies()
         tester.test_get_movies_with_filters()
         
+        # Test NEW FEATURE: Movie Sorting
+        print("\n🔍 Testing Movie Sorting Feature...")
+        tester.test_movies_sorting()
+        
         # Test single movie operations if we have movies
         if tester.created_resources["movies"]:
             movie_id = tester.created_resources["movies"][0]
