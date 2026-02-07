@@ -669,7 +669,57 @@ async def get_movie(movie_id: str):
     if isinstance(movie.get('created_at'), str):
         movie['created_at'] = datetime.fromisoformat(movie['created_at'])
     
+    # Ensure new fields have default values
+    movie.setdefault('is_favorite', False)
+    movie.setdefault('is_watchlist', False)
+    movie.setdefault('watched', False)
+    
     return movie
+
+@api_router.post("/movies/{movie_id}/favorite")
+async def toggle_favorite(movie_id: str):
+    """Toggle favorite status for a movie."""
+    movie = await db.movies.find_one({"id": movie_id}, {"_id": 0})
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    
+    new_status = not movie.get('is_favorite', False)
+    await db.movies.update_one(
+        {"id": movie_id},
+        {"$set": {"is_favorite": new_status}}
+    )
+    
+    return {"id": movie_id, "is_favorite": new_status}
+
+@api_router.post("/movies/{movie_id}/watchlist")
+async def toggle_watchlist(movie_id: str):
+    """Toggle watchlist status for a movie."""
+    movie = await db.movies.find_one({"id": movie_id}, {"_id": 0})
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    
+    new_status = not movie.get('is_watchlist', False)
+    await db.movies.update_one(
+        {"id": movie_id},
+        {"$set": {"is_watchlist": new_status}}
+    )
+    
+    return {"id": movie_id, "is_watchlist": new_status}
+
+@api_router.post("/movies/{movie_id}/watched")
+async def toggle_watched(movie_id: str):
+    """Toggle watched status for a movie."""
+    movie = await db.movies.find_one({"id": movie_id}, {"_id": 0})
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    
+    new_status = not movie.get('watched', False)
+    await db.movies.update_one(
+        {"id": movie_id},
+        {"$set": {"watched": new_status}}
+    )
+    
+    return {"id": movie_id, "watched": new_status}
 
 @api_router.post("/movies/{movie_id}/fetch-metadata")
 async def fetch_movie_metadata(movie_id: str):
