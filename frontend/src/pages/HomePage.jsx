@@ -10,7 +10,10 @@ import {
   LayoutGrid,
   Heart,
   Bookmark,
-  Eye
+  Eye,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +34,18 @@ import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Sort options
+const SORT_OPTIONS = [
+  { value: "created_at-desc", label: "Recently Added", icon: "↓" },
+  { value: "created_at-asc", label: "Oldest Added", icon: "↑" },
+  { value: "title-asc", label: "Title A-Z", icon: "↑" },
+  { value: "title-desc", label: "Title Z-A", icon: "↓" },
+  { value: "year-desc", label: "Year (Newest)", icon: "↓" },
+  { value: "year-asc", label: "Year (Oldest)", icon: "↑" },
+  { value: "rating-desc", label: "Rating (High)", icon: "↓" },
+  { value: "rating-asc", label: "Rating (Low)", icon: "↑" },
+];
+
 export default function HomePage() {
   const [movies, setMovies] = useState([]);
   const [directories, setDirectories] = useState([]);
@@ -39,6 +54,7 @@ export default function HomePage() {
   const [selectedDirectory, setSelectedDirectory] = useState("all");
   const [metadataFilter, setMetadataFilter] = useState("all");
   const [listFilter, setListFilter] = useState("all");
+  const [sortOption, setSortOption] = useState("created_at-desc");
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [stats, setStats] = useState(null);
@@ -47,7 +63,7 @@ export default function HomePage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [sortOption]);
 
   const loadData = async () => {
     setLoading(true);
