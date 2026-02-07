@@ -68,8 +68,13 @@ export default function HomePage() {
   const loadData = async () => {
     setLoading(true);
     try {
+      // Parse sort option
+      const [sortBy, sortOrder] = sortOption.split("-");
+      
       const [moviesRes, dirsRes, statsRes] = await Promise.all([
-        axios.get(`${API}/movies`),
+        axios.get(`${API}/movies`, {
+          params: { sort_by: sortBy, sort_order: sortOrder }
+        }),
         axios.get(`${API}/directories`),
         axios.get(`${API}/stats`),
       ]);
