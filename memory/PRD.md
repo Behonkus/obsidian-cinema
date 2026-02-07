@@ -81,6 +81,7 @@ Build an app that will scan directories of movie files and display associated mo
 - [x] Directory management
 - [x] Movie import/display
 - [x] Play/copy functionality
+- [x] Network share scanning
 
 ## P1 Features (Important - Pending)
 - [ ] TMDB API key configuration UI
