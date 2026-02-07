@@ -206,6 +206,50 @@ class ObsidianCinemaAPITester:
         )
         return success
 
+    def test_get_settings(self):
+        """Test getting current settings"""
+        return self.run_test("Get Settings", "GET", "settings", 200)
+
+    def test_test_tmdb_key_invalid(self):
+        """Test TMDB key validation with invalid key"""
+        success, response = self.run_test(
+            "Test Invalid TMDB Key",
+            "POST",
+            "settings/test-tmdb?api_key=invalid_key_12345",
+            200  # Endpoint returns 200 with valid/invalid flag
+        )
+        
+        if success and isinstance(response, dict):
+            if response.get('valid') == False:
+                print(f"   ✅ Correctly identified invalid key: {response.get('message', 'No message')}")
+                return True
+            else:
+                print(f"   ❌ Expected invalid key to be rejected, got: {response}")
+                return False
+        return success
+
+    def test_save_settings_invalid_key(self):
+        """Test saving invalid TMDB API key (should fail)"""
+        success, response = self.run_test(
+            "Save Invalid TMDB Key",
+            "POST",
+            "settings",
+            400,  # Should return 400 for invalid key
+            data={"tmdb_api_key": "invalid_key_12345"}
+        )
+        return success
+
+    def test_save_settings_empty_key(self):
+        """Test saving empty TMDB API key"""
+        success, response = self.run_test(
+            "Save Empty TMDB Key",
+            "POST",
+            "settings",
+            200,  # Should succeed with empty key
+            data={"tmdb_api_key": ""}
+        )
+        return success
+
     def cleanup_resources(self):
         """Clean up created test resources"""
         print("\n🧹 Cleaning up test resources...")
