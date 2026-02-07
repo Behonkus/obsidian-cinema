@@ -748,9 +748,15 @@ async def get_movies(
     has_metadata: Optional[bool] = None,
     is_favorite: Optional[bool] = None,
     is_watchlist: Optional[bool] = None,
-    watched: Optional[bool] = None
+    watched: Optional[bool] = None,
+    sort_by: Optional[str] = None,
+    sort_order: Optional[str] = "desc"
 ):
-    """Get all movies with optional filters."""
+    """Get all movies with optional filters and sorting.
+    
+    sort_by: title, year, rating, created_at
+    sort_order: asc, desc
+    """
     query = {}
     
     if search:
@@ -774,7 +780,27 @@ async def get_movies(
     if watched is not None:
         query["watched"] = watched
     
-    movies = await db.movies.find(query, {"_id": 0}).to_list(1000)
+    # Build sort criteria
+    sort_direction = -1 if sort_order == "desc" else 1
+    sort_criteria = []
+    
+    if sort_by == "title":
+        sort_criteria = [("title", sort_direction)]
+    elif sort_by == "year":
+        sort_criteria = [("year", sort_direction)]
+    elif sort_by == "rating":
+        sort_criteria = [("rating", sort_direction)]
+    elif sort_by == "created_at":
+        sort_criteria = [("created_at", sort_direction)]
+    else:
+        # Default sort by created_at desc (newest first)
+        sort_criteria = [("created_at", -1)]
+    
+    cursor = db.movies.find(query, {"_id": 0})
+    if sort_criteria:
+        cursor = cursor.sort(sort_criteria)
+    
+    movies = await cursor.to_list(1000)
     
     for m in movies:
         if isinstance(m.get('created_at'), str):
