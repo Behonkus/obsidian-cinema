@@ -252,7 +252,8 @@ def main():
         tester.test_validate_directory("/nonexistent/path")  # Invalid path
         
         # Test directory operations
-        dir_id = tester.test_create_directory("C:\\TestMovies", "Test Movies Directory")
+        test_dir_name = f"TestMovies_{datetime.now().strftime('%H%M%S')}"
+        dir_id = tester.test_create_directory(f"C:\\{test_dir_name}", "Test Movies Directory")
         if not dir_id:
             print("❌ Failed to create directory, stopping tests")
             return 1
