@@ -282,6 +282,14 @@ export default function SettingsPage() {
                   Get a free TMDB API key
                 </a>
               </div>
+              
+              {/* Cached posters info */}
+              {settings?.cached_posters > 0 && (
+                <div className="pt-2 text-sm text-muted-foreground">
+                  <HardDrive className="w-3 h-3 inline mr-1" />
+                  {settings.cached_posters} posters cached locally
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -325,6 +333,21 @@ export default function SettingsPage() {
                   <p className="text-sm text-muted-foreground">Without Metadata</p>
                 </div>
               </div>
+              
+              {/* Poster cache stats */}
+              {settings?.cached_posters > 0 && (
+                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <div className="flex items-center gap-2">
+                    <HardDrive className="w-4 h-4 text-blue-400" />
+                    <span className="text-sm text-blue-300">
+                      {settings.cached_posters} movie posters cached in local repository
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 ml-6">
+                    Posters are stored separately from movie files
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
