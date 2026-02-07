@@ -162,7 +162,8 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
     }
   };
 
-  const backdropUrl = movie.backdrop_path || placeholderBackdrop;
+  const backdropUrl = resolveImageUrl(movie.backdrop_path) || placeholderBackdrop;
+  const posterUrl = resolveImageUrl(movie.poster_path);
   const displayTitle = movie.title || movie.file_name;
   const movieGenres = movie.genres || [];
 
