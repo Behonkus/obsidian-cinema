@@ -250,6 +250,172 @@ class ObsidianCinemaAPITester:
         )
         return success
 
+    def test_movie_favorite_toggle(self, movie_id):
+        """Test toggling favorite status for a movie"""
+        # First toggle to favorite
+        success1, response1 = self.run_test(
+            f"Toggle Movie Favorite ON ({movie_id})",
+            "POST",
+            f"movies/{movie_id}/favorite",
+            200
+        )
+        
+        if success1 and isinstance(response1, dict):
+            print(f"   Favorite status: {response1.get('is_favorite', 'unknown')}")
+        
+        # Toggle back to not favorite
+        success2, response2 = self.run_test(
+            f"Toggle Movie Favorite OFF ({movie_id})",
+            "POST",
+            f"movies/{movie_id}/favorite",
+            200
+        )
+        
+        if success2 and isinstance(response2, dict):
+            print(f"   Favorite status: {response2.get('is_favorite', 'unknown')}")
+        
+        return success1 and success2
+
+    def test_movie_watchlist_toggle(self, movie_id):
+        """Test toggling watchlist status for a movie"""
+        # First toggle to watchlist
+        success1, response1 = self.run_test(
+            f"Toggle Movie Watchlist ON ({movie_id})",
+            "POST",
+            f"movies/{movie_id}/watchlist",
+            200
+        )
+        
+        if success1 and isinstance(response1, dict):
+            print(f"   Watchlist status: {response1.get('is_watchlist', 'unknown')}")
+        
+        # Toggle back to not in watchlist
+        success2, response2 = self.run_test(
+            f"Toggle Movie Watchlist OFF ({movie_id})",
+            "POST",
+            f"movies/{movie_id}/watchlist",
+            200
+        )
+        
+        if success2 and isinstance(response2, dict):
+            print(f"   Watchlist status: {response2.get('is_watchlist', 'unknown')}")
+        
+        return success1 and success2
+
+    def test_movie_watched_toggle(self, movie_id):
+        """Test toggling watched status for a movie"""
+        # First toggle to watched
+        success1, response1 = self.run_test(
+            f"Toggle Movie Watched ON ({movie_id})",
+            "POST",
+            f"movies/{movie_id}/watched",
+            200
+        )
+        
+        if success1 and isinstance(response1, dict):
+            print(f"   Watched status: {response1.get('watched', 'unknown')}")
+        
+        # Toggle back to not watched
+        success2, response2 = self.run_test(
+            f"Toggle Movie Watched OFF ({movie_id})",
+            "POST",
+            f"movies/{movie_id}/watched",
+            200
+        )
+        
+        if success2 and isinstance(response2, dict):
+            print(f"   Watched status: {response2.get('watched', 'unknown')}")
+        
+        return success1 and success2
+
+    def test_movies_with_list_filters(self):
+        """Test getting movies with list filters (favorites, watchlist, watched)"""
+        # Test favorites filter
+        success1, response1 = self.run_test(
+            "Get Movies (Favorites Filter)",
+            "GET", 
+            "movies",
+            200,
+            params={"is_favorite": True}
+        )
+        
+        # Test watchlist filter
+        success2, response2 = self.run_test(
+            "Get Movies (Watchlist Filter)",
+            "GET",
+            "movies", 
+            200,
+            params={"is_watchlist": True}
+        )
+        
+        # Test watched filter
+        success3, response3 = self.run_test(
+            "Get Movies (Watched Filter)",
+            "GET",
+            "movies", 
+            200,
+            params={"watched": True}
+        )
+        
+        return success1 and success2 and success3
+
+    def test_poster_repository_endpoint(self):
+        """Test poster repository serving endpoint (should return 404 for non-existent poster)"""
+        success, response = self.run_test(
+            "Get Non-existent Poster",
+            "GET",
+            "posters/w500/nonexistent.jpg",
+            404  # Should return 404 for non-existent poster
+        )
+        return success
+
+    def test_settings_poster_info(self):
+        """Test that settings endpoint returns poster repository information"""
+        success, response = self.run_test(
+            "Get Settings (Poster Info)",
+            "GET",
+            "settings",
+            200
+        )
+        
+        if success and isinstance(response, dict):
+            has_poster_repo_dir = 'poster_repo_dir' in response
+            has_cached_posters = 'cached_posters' in response
+            
+            print(f"   Has poster_repo_dir: {has_poster_repo_dir}")
+            print(f"   Has cached_posters: {has_cached_posters}")
+            print(f"   Poster repo dir: {response.get('poster_repo_dir', 'Not found')}")
+            print(f"   Cached posters count: {response.get('cached_posters', 'Not found')}")
+            
+            return has_poster_repo_dir and has_cached_posters
+        
+        return success
+
+    def test_stats_with_lists(self):
+        """Test that stats endpoint returns favorites, watchlist, and watched counts"""
+        success, response = self.run_test(
+            "Get Stats (With Lists)",
+            "GET",
+            "stats",
+            200
+        )
+        
+        if success and isinstance(response, dict):
+            has_favorites = 'favorites' in response
+            has_watchlist = 'watchlist' in response
+            has_watched = 'watched' in response
+            
+            print(f"   Has favorites count: {has_favorites}")
+            print(f"   Has watchlist count: {has_watchlist}")
+            print(f"   Has watched count: {has_watched}")
+            print(f"   Favorites: {response.get('favorites', 'Not found')}")
+            print(f"   Watchlist: {response.get('watchlist', 'Not found')}")
+            print(f"   Watched: {response.get('watched', 'Not found')}")
+            
+            return has_favorites and has_watchlist and has_watched
+        
+        return success
+
     def cleanup_resources(self):
         """Clean up created test resources"""
         print("\n🧹 Cleaning up test resources...")
