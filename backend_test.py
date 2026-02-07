@@ -488,20 +488,35 @@ def main():
             movie_id = tester.created_resources["movies"][0]
             tester.test_get_single_movie(movie_id)
             tester.test_fetch_metadata_without_api_key(movie_id)
+            
+            # Test NEW FEATURES: Favorites, Watchlist, Watched toggles
+            print("\n🔍 Testing Movie List Features...")
+            tester.test_movie_favorite_toggle(movie_id)
+            tester.test_movie_watchlist_toggle(movie_id)
+            tester.test_movie_watched_toggle(movie_id)
+            
+            # Test movie filtering with list filters
+            tester.test_movies_with_list_filters()
         
         # Test scan functionality (updated for recursive scanning)
         print("\n🔍 Testing All Directory Scanning...")
         tester.test_scan_directories()
         
-        # Test stats after adding data
-        tester.test_stats_endpoint()
+        # Test stats after adding data (should include new list counts)
+        print("\n🔍 Testing Stats with List Counts...")
+        tester.test_stats_with_lists()
         
-        # Test Settings endpoints (NEW FEATURE)
+        # Test Settings endpoints (UPDATED FEATURE)
         print("\n🔍 Testing Settings Endpoints...")
         tester.test_get_settings()
+        tester.test_settings_poster_info()  # NEW: Test poster repository info
         tester.test_test_tmdb_key_invalid()
         tester.test_save_settings_invalid_key()
         tester.test_save_settings_empty_key()
+        
+        # Test NEW FEATURE: Poster Repository
+        print("\n🔍 Testing Poster Repository...")
+        tester.test_poster_repository_endpoint()
         
         # Test duplicate directory creation (should fail)
         tester.run_test(
