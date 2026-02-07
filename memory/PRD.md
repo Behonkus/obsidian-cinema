@@ -55,6 +55,7 @@ Build an app that will scan directories of movie files and display associated mo
 - [x] TMDB integration for metadata/posters
 - [x] Search and filter functionality
 - [x] Dark theme UI
+- [x] Network share scanning (UNC paths)
 
 ## What's Been Implemented (Jan 2026)
 - ✅ Full backend API with 14 endpoints
