@@ -6,8 +6,18 @@ import { toast } from "sonner";
 import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const placeholderPoster = "https://images.unsplash.com/photo-1761502479994-3a5e07ec243e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwyfHxjaW5lbWElMjB0aGVhdGVyJTIwZGFyayUyMGludGVyaW9yfGVufDB8fHx8MTc3MDIyMjgyNXww&ixlib=rb-4.1.0&q=85&w=300";
+
+// Helper to resolve poster URLs (handles both local cached and TMDB URLs)
+const resolvePosterUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('/api/')) {
+    return `${BACKEND_URL}${path}`;
+  }
+  return path;
+};
 
 export default function MovieCard({ movie, onClick, onUpdate, index = 0 }) {
   const [copied, setCopied] = useState(false);
