@@ -128,6 +128,91 @@ async def tmdb_request(endpoint: str, params: dict = None) -> Optional[dict]:
         logging.error(f"TMDB request error: {e}")
         return None
 
+def get_poster_filename(tmdb_path: str) -> str:
+    """Generate a unique filename for a poster based on TMDB path."""
+    # Use the TMDB path as basis (e.g., /abc123.jpg -> abc123.jpg)
+    if tmdb_path:
+        return tmdb_path.lstrip('/')
+    return None
+
+async def download_and_cache_poster(tmdb_path: str, size: str = "w500") -> Optional[str]:
+    """
+    Download a poster from TMDB and cache it locally.
+    Returns the local path to the cached poster.
+    """
+    if not tmdb_path:
+        return None
+    
+    filename = get_poster_filename(tmdb_path)
+    if not filename:
+        return None
+    
+    # Create subdirectory based on size
+    size_dir = POSTER_REPO_DIR / size
+    size_dir.mkdir(parents=True, exist_ok=True)
+    
+    local_path = size_dir / filename
+    
+    # Check if already cached
+    if local_path.exists():
+        return str(local_path)
+    
+    # Download from TMDB
+    url = f"{IMAGE_BASE_URL}{size}{tmdb_path}"
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=30)
+            if response.status_code == 200:
+                with open(local_path, 'wb') as f:
+                    f.write(response.content)
+                logging.info(f"Cached poster: {filename}")
+                return str(local_path)
+            else:
+                logging.error(f"Failed to download poster {tmdb_path}: {response.status_code}")
+    except Exception as e:
+        logging.error(f"Error downloading poster {tmdb_path}: {e}")
+    
+    return None
+
+async def download_and_cache_backdrop(tmdb_path: str, size: str = "w1280") -> Optional[str]:
+    """
+    Download a backdrop from TMDB and cache it locally.
+    Returns the local path to the cached backdrop.
+    """
+    if not tmdb_path:
+        return None
+    
+    filename = get_poster_filename(tmdb_path)
+    if not filename:
+        return None
+    
+    # Create subdirectory for backdrops
+    backdrop_dir = POSTER_REPO_DIR / "backdrops" / size
+    backdrop_dir.mkdir(parents=True, exist_ok=True)
+    
+    local_path = backdrop_dir / filename
+    
+    # Check if already cached
+    if local_path.exists():
+        return str(local_path)
+    
+    # Download from TMDB
+    url = f"{IMAGE_BASE_URL}{size}{tmdb_path}"
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=30)
+            if response.status_code == 200:
+                with open(local_path, 'wb') as f:
+                    f.write(response.content)
+                logging.info(f"Cached backdrop: {filename}")
+                return str(local_path)
+            else:
+                logging.error(f"Failed to download backdrop {tmdb_path}: {response.status_code}")
+    except Exception as e:
+        logging.error(f"Error downloading backdrop {tmdb_path}: {e}")
+    
+    return None
+
 def get_poster_url(path: str, size: str = "w500") -> Optional[str]:
     """Get full poster URL from TMDB path."""
     return f"{IMAGE_BASE_URL}{size}{path}" if path else None
