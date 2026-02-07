@@ -359,6 +359,111 @@ class ObsidianCinemaAPITester:
         
         return success1 and success2 and success3
 
+    def test_movies_sorting(self):
+        """Test movie sorting functionality - NEW FEATURE"""
+        print("\n🔍 Testing Movie Sorting Feature...")
+        
+        # Test default sorting (should be created_at desc - Recently Added)
+        success1, response1 = self.run_test(
+            "Get Movies (Default Sort - Recently Added)",
+            "GET",
+            "movies",
+            200
+        )
+        
+        # Test sort by title ascending (A-Z)
+        success2, response2 = self.run_test(
+            "Get Movies (Sort Title A-Z)",
+            "GET",
+            "movies",
+            200,
+            params={"sort_by": "title", "sort_order": "asc"}
+        )
+        
+        # Test sort by title descending (Z-A)
+        success3, response3 = self.run_test(
+            "Get Movies (Sort Title Z-A)",
+            "GET",
+            "movies",
+            200,
+            params={"sort_by": "title", "sort_order": "desc"}
+        )
+        
+        # Test sort by year ascending (oldest first)
+        success4, response4 = self.run_test(
+            "Get Movies (Sort Year Oldest)",
+            "GET",
+            "movies",
+            200,
+            params={"sort_by": "year", "sort_order": "asc"}
+        )
+        
+        # Test sort by year descending (newest first)
+        success5, response5 = self.run_test(
+            "Get Movies (Sort Year Newest)",
+            "GET",
+            "movies",
+            200,
+            params={"sort_by": "year", "sort_order": "desc"}
+        )
+        
+        # Test sort by rating ascending (low to high)
+        success6, response6 = self.run_test(
+            "Get Movies (Sort Rating Low to High)",
+            "GET",
+            "movies",
+            200,
+            params={"sort_by": "rating", "sort_order": "asc"}
+        )
+        
+        # Test sort by rating descending (high to low)
+        success7, response7 = self.run_test(
+            "Get Movies (Sort Rating High to Low)",
+            "GET",
+            "movies",
+            200,
+            params={"sort_by": "rating", "sort_order": "desc"}
+        )
+        
+        # Test sort by created_at ascending (oldest added)
+        success8, response8 = self.run_test(
+            "Get Movies (Sort Oldest Added)",
+            "GET",
+            "movies",
+            200,
+            params={"sort_by": "created_at", "sort_order": "asc"}
+        )
+        
+        # Test sort by created_at descending (recently added)
+        success9, response9 = self.run_test(
+            "Get Movies (Sort Recently Added)",
+            "GET",
+            "movies",
+            200,
+            params={"sort_by": "created_at", "sort_order": "desc"}
+        )
+        
+        # Validate that responses contain movies and are properly sorted
+        all_success = all([success1, success2, success3, success4, success5, success6, success7, success8, success9])
+        
+        if all_success:
+            # Check if we have movies to validate sorting
+            if isinstance(response2, list) and len(response2) >= 2:
+                # Validate title sorting A-Z
+                titles_asc = [movie.get('title', movie.get('file_name', '')) for movie in response2]
+                is_title_asc_sorted = all(titles_asc[i] <= titles_asc[i+1] for i in range(len(titles_asc)-1))
+                print(f"   Title A-Z sorting validation: {'✅' if is_title_asc_sorted else '❌'}")
+                
+                # Validate title sorting Z-A
+                if isinstance(response3, list) and len(response3) >= 2:
+                    titles_desc = [movie.get('title', movie.get('file_name', '')) for movie in response3]
+                    is_title_desc_sorted = all(titles_desc[i] >= titles_desc[i+1] for i in range(len(titles_desc)-1))
+                    print(f"   Title Z-A sorting validation: {'✅' if is_title_desc_sorted else '❌'}")
+            else:
+                print("   ⚠️ Not enough movies to validate sorting order")
+        
+        return all_success
+
     def test_poster_repository_endpoint(self):
         """Test poster repository serving endpoint (should return 404 for non-existent poster)"""
         success, response = self.run_test(
