@@ -6,7 +6,7 @@ Build an app that will scan directories of movie files and display associated mo
 ## User Choices
 1. **Poster Source**: TMDB API (The Movie Database)
 2. **Video Formats**: All formats supported (.mp4, .mkv, .avi, .mov, .wmv, etc.)
-3. **Directory Scanning**: Multiple directories with recursive scanning
+3. **Directory Scanning**: Multiple directories with recursive scanning, including network shares
 4. **Play Options**: Both MPC-HC protocol link + clipboard copy
 5. **Theme**: Dark theme
 
