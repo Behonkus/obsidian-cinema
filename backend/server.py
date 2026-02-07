@@ -881,12 +881,18 @@ async def get_stats():
     total_movies = await db.movies.count_documents({})
     with_metadata = await db.movies.count_documents({"metadata_fetched": True})
     total_directories = await db.directories.count_documents({})
+    favorites_count = await db.movies.count_documents({"is_favorite": True})
+    watchlist_count = await db.movies.count_documents({"is_watchlist": True})
+    watched_count = await db.movies.count_documents({"watched": True})
     
     return {
         "total_movies": total_movies,
         "with_metadata": with_metadata,
         "without_metadata": total_movies - with_metadata,
-        "total_directories": total_directories
+        "total_directories": total_directories,
+        "favorites": favorites_count,
+        "watchlist": watchlist_count,
+        "watched": watched_count
     }
 
 # Include the router
