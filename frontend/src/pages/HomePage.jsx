@@ -284,6 +284,24 @@ export default function HomePage() {
             />
           </div>
           
+          {/* Sort dropdown */}
+          <Select value={sortOption} onValueChange={setSortOption}>
+            <SelectTrigger className="w-44 bg-secondary/50" data-testid="sort-filter">
+              <ArrowUpDown className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  <span className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{option.icon}</span>
+                    {option.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
           {/* Directory filter */}
           <Select value={selectedDirectory} onValueChange={setSelectedDirectory}>
             <SelectTrigger className="w-48 bg-secondary/50" data-testid="directory-filter">
