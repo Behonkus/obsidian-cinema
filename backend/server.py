@@ -63,6 +63,28 @@ class DirectoryCreate(BaseModel):
     path: str
     name: Optional[str] = None
 
+class Collection(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    color: str = "#e11d48"  # Default to primary red
+    icon: str = "folder"  # Default icon
+    movie_ids: List[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CollectionCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    color: Optional[str] = "#e11d48"
+    icon: Optional[str] = "folder"
+
+class CollectionUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
+
 class Movie(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -83,6 +105,7 @@ class Movie(BaseModel):
     is_favorite: bool = False
     is_watchlist: bool = False
     watched: bool = False
+    collection_ids: List[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ScanResult(BaseModel):
