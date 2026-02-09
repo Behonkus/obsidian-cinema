@@ -8,7 +8,8 @@ import {
   Menu, 
   X,
   ChevronLeft,
-  Search
+  Search,
+  FolderHeart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import { Input } from "@/components/ui/input";
 const Sidebar = ({ collapsed, setCollapsed }) => {
   const navItems = [
     { path: "/", icon: Film, label: "Library" },
+    { path: "/collections", icon: FolderHeart, label: "Collections" },
     { path: "/directories", icon: FolderOpen, label: "Directories" },
     { path: "/settings", icon: Settings, label: "Settings" },
   ];
