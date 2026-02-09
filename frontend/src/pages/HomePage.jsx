@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { 
   Search, 
   RefreshCw, 
@@ -12,8 +13,8 @@ import {
   Bookmark,
   Eye,
   ArrowUpDown,
-  ArrowUp,
-  ArrowDown
+  FolderHeart,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,8 +48,14 @@ const SORT_OPTIONS = [
 ];
 
 export default function HomePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const collectionIdFromUrl = searchParams.get("collection");
+  
   const [movies, setMovies] = useState([]);
   const [directories, setDirectories] = useState([]);
+  const [collections, setCollections] = useState([]);
+  const [activeCollection, setActiveCollection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDirectory, setSelectedDirectory] = useState("all");
@@ -63,11 +70,50 @@ export default function HomePage() {
 
   useEffect(() => {
     loadData();
-  }, [sortOption]);
+  }, [sortOption, collectionIdFromUrl]);
 
   const loadData = async () => {
     setLoading(true);
     try {
+      // Parse sort option
+      const [sortBy, sortOrder] = sortOption.split("-");
+      
+      // Build query params
+      const params = { sort_by: sortBy, sort_order: sortOrder };
+      if (collectionIdFromUrl) {
+        params.collection_id = collectionIdFromUrl;
+      }
+      
+      const [moviesRes, dirsRes, statsRes, collectionsRes] = await Promise.all([
+        axios.get(`${API}/movies`, { params }),
+        axios.get(`${API}/directories`),
+        axios.get(`${API}/stats`),
+        axios.get(`${API}/collections`),
+      ]);
+      setMovies(moviesRes.data);
+      setDirectories(dirsRes.data);
+      setStats(statsRes.data);
+      setCollections(collectionsRes.data);
+      
+      // Set active collection if filtering by one
+      if (collectionIdFromUrl) {
+        const collection = collectionsRes.data.find(c => c.id === collectionIdFromUrl);
+        setActiveCollection(collection || null);
+      } else {
+        setActiveCollection(null);
+      }
+    } catch (err) {
+      console.error("Failed to load data:", err);
+      toast.error("Failed to load library");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearCollectionFilter = () => {
+    setSearchParams({});
+    setActiveCollection(null);
+  };
       // Parse sort option
       const [sortBy, sortOrder] = sortOption.split("-");
       
