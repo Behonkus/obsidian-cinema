@@ -114,26 +114,6 @@ export default function HomePage() {
     setSearchParams({});
     setActiveCollection(null);
   };
-      // Parse sort option
-      const [sortBy, sortOrder] = sortOption.split("-");
-      
-      const [moviesRes, dirsRes, statsRes] = await Promise.all([
-        axios.get(`${API}/movies`, {
-          params: { sort_by: sortBy, sort_order: sortOrder }
-        }),
-        axios.get(`${API}/directories`),
-        axios.get(`${API}/stats`),
-      ]);
-      setMovies(moviesRes.data);
-      setDirectories(dirsRes.data);
-      setStats(statsRes.data);
-    } catch (err) {
-      console.error("Failed to load data:", err);
-      toast.error("Failed to load library");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredMovies = useMemo(() => {
     return movies.filter((movie) => {
