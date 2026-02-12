@@ -136,7 +136,109 @@ class TMDBSearchResult(BaseModel):
     poster_path: Optional[str]
     overview: Optional[str]
 
-# TMDB Helper Functions
+# User and Auth Models
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    user_id: str = Field(default_factory=lambda: f"user_{uuid.uuid4().hex[:12]}")
+    email: str
+    name: str
+    picture: Optional[str] = None
+    subscription_tier: str = "free"  # 'free' or 'pro'
+    movies_count: int = 0
+    collections_count: int = 0
+    stripe_customer_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserSession(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    user_id: str
+    session_token: str
+    expires_at: datetime
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PaymentTransaction(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    transaction_id: str = Field(default_factory=lambda: f"txn_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    session_id: str
+    amount: float
+    currency: str
+    payment_status: str = "pending"  # pending, paid, failed, expired
+    metadata: Optional[Dict[str, str]] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserResponse(BaseModel):
+    user_id: str
+    email: str
+    name: str
+    picture: Optional[str] = None
+    subscription_tier: str
+    movies_count: int
+    collections_count: int
+    created_at: datetime
+
+class CheckoutRequest(BaseModel):
+    origin_url: str
+
+# Auth Helper Functions
+async def get_current_user(
+    request: Request,
+    session_token: Optional[str] = Cookie(default=None)
+) -> Optional[User]:
+    """Get current user from session token (cookie or header)."""
+    token = session_token
+    
+    # Fallback to Authorization header
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    
+    if not token:
+        return None
+    
+    # Find session
+    session_doc = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+    if not session_doc:
+        return None
+    
+    # Check expiry
+    expires_at = session_doc.get("expires_at")
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
+        return None
+    
+    # Find user
+    user_doc = await db.users.find_one({"user_id": session_doc["user_id"]}, {"_id": 0})
+    if not user_doc:
+        return None
+    
+    if isinstance(user_doc.get('created_at'), str):
+        user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
+    
+    return User(**user_doc)
+
+async def require_user(request: Request, session_token: Optional[str] = Cookie(default=None)) -> User:
+    """Require authenticated user or raise 401."""
+    user = await get_current_user(request, session_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return user
+
+def check_free_tier_limit(user: User, resource_type: str) -> bool:
+    """Check if user is within free tier limits."""
+    if user.subscription_tier == "pro":
+        return True  # Pro users have unlimited access
+    
+    if resource_type == "movies":
+        return user.movies_count < FREE_TIER_MOVIE_LIMIT
+    elif resource_type == "collections":
+        return user.collections_count < FREE_TIER_COLLECTION_LIMIT
+    
+    return True
 async def tmdb_request(endpoint: str, params: dict = None) -> Optional[dict]:
     """Make a request to TMDB API with caching."""
     if not TMDB_API_KEY:
