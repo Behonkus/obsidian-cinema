@@ -1659,13 +1659,32 @@ async def get_checkout_status(session_id: str, request: Request, session_token: 
                 {"$set": {"payment_status": "paid", "status": status.status}}
             )
             
-            # Upgrade user to Pro
+            # Generate referral code for new Pro user
+            new_referral_code = generate_referral_code()
+            
+            # Upgrade user to Pro with referral code
+            update_data = {
+                "subscription_tier": "pro",
+                "referral_code": new_referral_code
+            }
+            
+            # Track referrer if present
+            referrer_id = transaction.get("metadata", {}).get("referrer_id")
+            if referrer_id:
+                update_data["referred_by"] = referrer_id
+                # Increment referrer's referral count
+                await db.users.update_one(
+                    {"user_id": referrer_id},
+                    {"$inc": {"referral_count": 1}}
+                )
+                logging.info(f"Referral credited to {referrer_id}")
+            
             await db.users.update_one(
                 {"user_id": user.user_id},
-                {"$set": {"subscription_tier": "pro"}}
+                {"$set": update_data}
             )
             
-            logging.info(f"User {user.user_id} upgraded to Pro")
+            logging.info(f"User {user.user_id} upgraded to Pro with referral code {new_referral_code}")
         elif status.status == "expired":
             await db.payment_transactions.update_one(
                 {"session_id": session_id},
