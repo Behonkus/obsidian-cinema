@@ -197,6 +197,40 @@ export default function HomePage() {
       {/* Hero glow effect */}
       <div className="hero-glow-bg" />
       
+      {/* Collection filter banner */}
+      {activeCollection && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 rounded-lg border flex items-center justify-between"
+          style={{ 
+            backgroundColor: `${activeCollection.color}15`,
+            borderColor: `${activeCollection.color}30`
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <FolderHeart className="w-5 h-5" style={{ color: activeCollection.color }} />
+            <div>
+              <p className="font-medium" style={{ color: activeCollection.color }}>
+                Viewing Collection: {activeCollection.name}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {filteredMovies.length} movies in this collection
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearCollectionFilter}
+            className="rounded-full"
+          >
+            <X className="w-4 h-4 mr-1" />
+            Clear Filter
+          </Button>
+        </motion.div>
+      )}
+      
       {/* Header */}
       <div className="relative z-10 mb-8">
         <motion.div
@@ -206,10 +240,13 @@ export default function HomePage() {
         >
           <div>
             <h1 className="text-4xl md:text-5xl font-bold font-[Outfit] tracking-tight text-foreground">
-              Your Library
+              {activeCollection ? activeCollection.name : "Your Library"}
             </h1>
             <p className="text-muted-foreground mt-1">
-              {stats?.total_movies || 0} movies • {stats?.with_metadata || 0} with metadata
+              {activeCollection 
+                ? `${filteredMovies.length} movies in collection`
+                : `${stats?.total_movies || 0} movies • ${stats?.with_metadata || 0} with metadata`
+              }
             </p>
           </div>
           
