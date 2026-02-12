@@ -30,6 +30,8 @@ class ObsidianCinemaAPITester:
                 response = requests.get(url, headers=headers, params=params, timeout=10)
             elif method == 'POST':
                 response = requests.post(url, json=data, headers=headers, timeout=10)
+            elif method == 'PUT':
+                response = requests.put(url, json=data, headers=headers, timeout=10)
             elif method == 'DELETE':
                 response = requests.delete(url, headers=headers, timeout=10)
 
