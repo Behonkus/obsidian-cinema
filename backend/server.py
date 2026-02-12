@@ -1516,6 +1516,8 @@ async def get_current_user_info(request: Request, session_token: Optional[str] =
         subscription_tier=user.subscription_tier,
         movies_count=user.movies_count,
         collections_count=user.collections_count,
+        referral_code=user.referral_code,
+        referral_count=user.referral_count,
         created_at=user.created_at
     )
 
