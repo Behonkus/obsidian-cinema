@@ -1383,6 +1383,362 @@ async def get_stats():
         "watched": watched_count
     }
 
+# ============ AUTH ENDPOINTS ============
+
+@api_router.post("/auth/session")
+async def process_auth_session(request: Request, response: Response):
+    """
+    Process session_id from Emergent Auth and create local session.
+    REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+    """
+    body = await request.json()
+    session_id = body.get("session_id")
+    
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id required")
+    
+    # Get session data from Emergent Auth
+    try:
+        async with httpx.AsyncClient() as http_client:
+            auth_response = await http_client.get(
+                EMERGENT_AUTH_SESSION_URL,
+                headers={"X-Session-ID": session_id},
+                timeout=10
+            )
+            if auth_response.status_code != 200:
+                raise HTTPException(status_code=401, detail="Invalid session")
+            
+            auth_data = auth_response.json()
+    except httpx.RequestError as e:
+        logging.error(f"Auth request error: {e}")
+        raise HTTPException(status_code=500, detail="Auth service unavailable")
+    
+    email = auth_data.get("email")
+    name = auth_data.get("name", "")
+    picture = auth_data.get("picture")
+    session_token = auth_data.get("session_token")
+    
+    if not email or not session_token:
+        raise HTTPException(status_code=400, detail="Invalid auth data")
+    
+    # Find or create user
+    existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+    
+    if existing_user:
+        user_id = existing_user["user_id"]
+        # Update user info if changed
+        await db.users.update_one(
+            {"user_id": user_id},
+            {"$set": {"name": name, "picture": picture}}
+        )
+    else:
+        # Create new user
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        new_user = {
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "subscription_tier": "free",
+            "movies_count": 0,
+            "collections_count": 0,
+            "stripe_customer_id": None,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(new_user)
+    
+    # Create session
+    expires_at = datetime.now(timezone.utc) + timedelta(days=SESSION_EXPIRY_DAYS)
+    session_doc = {
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Remove old sessions for this user
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one(session_doc)
+    
+    # Set httpOnly cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=SESSION_EXPIRY_DAYS * 24 * 60 * 60
+    )
+    
+    # Get user data
+    user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    if isinstance(user_doc.get('created_at'), str):
+        user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
+    
+    return {
+        "user_id": user_doc["user_id"],
+        "email": user_doc["email"],
+        "name": user_doc["name"],
+        "picture": user_doc.get("picture"),
+        "subscription_tier": user_doc["subscription_tier"],
+        "movies_count": user_doc.get("movies_count", 0),
+        "collections_count": user_doc.get("collections_count", 0)
+    }
+
+@api_router.get("/auth/me")
+async def get_current_user_info(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    """Get current authenticated user info."""
+    user = await get_current_user(request, session_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    return UserResponse(
+        user_id=user.user_id,
+        email=user.email,
+        name=user.name,
+        picture=user.picture,
+        subscription_tier=user.subscription_tier,
+        movies_count=user.movies_count,
+        collections_count=user.collections_count,
+        created_at=user.created_at
+    )
+
+@api_router.post("/auth/logout")
+async def logout(request: Request, response: Response, session_token: Optional[str] = Cookie(default=None)):
+    """Logout and clear session."""
+    token = session_token
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    
+    if token:
+        await db.user_sessions.delete_many({"session_token": token})
+    
+    response.delete_cookie(
+        key="session_token",
+        path="/",
+        secure=True,
+        samesite="none"
+    )
+    
+    return {"message": "Logged out successfully"}
+
+# ============ STRIPE PAYMENT ENDPOINTS ============
+
+@api_router.post("/stripe/create-checkout-session")
+async def create_checkout_session(checkout_request: CheckoutRequest, request: Request, session_token: Optional[str] = Cookie(default=None)):
+    """Create Stripe checkout session for Pro tier upgrade."""
+    user = await get_current_user(request, session_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    if user.subscription_tier == "pro":
+        raise HTTPException(status_code=400, detail="Already a Pro user")
+    
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    
+    origin_url = checkout_request.origin_url
+    success_url = f"{origin_url}/upgrade/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin_url}/upgrade"
+    
+    # Initialize Stripe
+    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    
+    # Create checkout session
+    checkout_req = CheckoutSessionRequest(
+        amount=PRO_TIER_PRICE,
+        currency=PRO_TIER_CURRENCY,
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "user_id": user.user_id,
+            "product": "obsidian_cinema_pro",
+            "type": "one_time"
+        }
+    )
+    
+    try:
+        session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_req)
+        
+        # Create payment transaction record
+        transaction = {
+            "transaction_id": f"txn_{uuid.uuid4().hex[:12]}",
+            "user_id": user.user_id,
+            "session_id": session.session_id,
+            "amount": PRO_TIER_PRICE,
+            "currency": PRO_TIER_CURRENCY,
+            "payment_status": "pending",
+            "metadata": {"product": "obsidian_cinema_pro"},
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.payment_transactions.insert_one(transaction)
+        
+        return {
+            "url": session.url,
+            "session_id": session.session_id
+        }
+    except Exception as e:
+        logging.error(f"Stripe checkout error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create checkout session")
+
+@api_router.get("/stripe/checkout-status/{session_id}")
+async def get_checkout_status(session_id: str, request: Request, session_token: Optional[str] = Cookie(default=None)):
+    """Get checkout session status and update user if paid."""
+    user = await get_current_user(request, session_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    
+    # Initialize Stripe
+    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    
+    try:
+        status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
+        
+        # Find transaction
+        transaction = await db.payment_transactions.find_one(
+            {"session_id": session_id, "user_id": user.user_id},
+            {"_id": 0}
+        )
+        
+        if not transaction:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+        
+        # Update transaction and user if paid
+        if status.payment_status == "paid" and transaction["payment_status"] != "paid":
+            # Update transaction
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {"payment_status": "paid", "status": status.status}}
+            )
+            
+            # Upgrade user to Pro
+            await db.users.update_one(
+                {"user_id": user.user_id},
+                {"$set": {"subscription_tier": "pro"}}
+            )
+            
+            logging.info(f"User {user.user_id} upgraded to Pro")
+        elif status.status == "expired":
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {"payment_status": "expired", "status": "expired"}}
+            )
+        
+        return {
+            "status": status.status,
+            "payment_status": status.payment_status,
+            "amount_total": status.amount_total,
+            "currency": status.currency
+        }
+    except Exception as e:
+        logging.error(f"Stripe status check error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to check payment status")
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events."""
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    
+    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    
+    try:
+        body = await request.body()
+        signature = request.headers.get("Stripe-Signature")
+        
+        webhook_response = await stripe_checkout.handle_webhook(body, signature)
+        
+        # Process successful payment
+        if webhook_response.payment_status == "paid":
+            user_id = webhook_response.metadata.get("user_id")
+            if user_id:
+                # Update transaction
+                await db.payment_transactions.update_one(
+                    {"session_id": webhook_response.session_id},
+                    {"$set": {"payment_status": "paid"}}
+                )
+                
+                # Upgrade user to Pro
+                await db.users.update_one(
+                    {"user_id": user_id},
+                    {"$set": {"subscription_tier": "pro"}}
+                )
+                
+                logging.info(f"Webhook: User {user_id} upgraded to Pro")
+        
+        return {"received": True}
+    except Exception as e:
+        logging.error(f"Webhook error: {e}")
+        return {"received": True}  # Always return 200 to Stripe
+
+# ============ USER TIER ENDPOINTS ============
+
+@api_router.get("/user/limits")
+async def get_user_limits(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    """Get user's current usage and limits."""
+    user = await get_current_user(request, session_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Get actual counts from database
+    movies_count = await db.movies.count_documents({"user_id": user.user_id})
+    collections_count = await db.collections.count_documents({"user_id": user.user_id})
+    
+    # Update user counts
+    await db.users.update_one(
+        {"user_id": user.user_id},
+        {"$set": {"movies_count": movies_count, "collections_count": collections_count}}
+    )
+    
+    return {
+        "subscription_tier": user.subscription_tier,
+        "movies": {
+            "current": movies_count,
+            "limit": None if user.subscription_tier == "pro" else FREE_TIER_MOVIE_LIMIT,
+            "can_add": user.subscription_tier == "pro" or movies_count < FREE_TIER_MOVIE_LIMIT
+        },
+        "collections": {
+            "current": collections_count,
+            "limit": None if user.subscription_tier == "pro" else FREE_TIER_COLLECTION_LIMIT,
+            "can_add": user.subscription_tier == "pro" or collections_count < FREE_TIER_COLLECTION_LIMIT
+        },
+        "pro_price": PRO_TIER_PRICE
+    }
+
+@api_router.get("/pricing")
+async def get_pricing():
+    """Get Pro tier pricing info (public endpoint)."""
+    return {
+        "pro_tier": {
+            "price": PRO_TIER_PRICE,
+            "currency": PRO_TIER_CURRENCY,
+            "type": "one_time",
+            "features": [
+                "Unlimited movies",
+                "Unlimited collections",
+                "Priority support",
+                "Early access to new features"
+            ]
+        },
+        "free_tier": {
+            "price": 0,
+            "features": [
+                f"Up to {FREE_TIER_MOVIE_LIMIT} movies",
+                f"Up to {FREE_TIER_COLLECTION_LIMIT} collections",
+                "Basic features"
+            ]
+        }
+    }
+
 # Include the router
 app.include_router(api_router)
 
