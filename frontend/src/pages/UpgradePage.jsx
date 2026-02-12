@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -26,39 +26,38 @@ import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Free tier feature list
+const FREE_FEATURES = [
+  "Up to 30 movies",
+  "Up to 3 collections",
+  "Basic features"
+];
+
+// Pro tier feature list
+const PRO_FEATURES = [
+  "Unlimited movies",
+  "Unlimited collections",
+  "Priority support",
+  "Early access to new features"
+];
+
 export default function UpgradePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState(location.state?.user || null);
-  const [pricing, setPricing] = useState(null);
   const [limits, setLimits] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Check for payment success
-  useEffect(() => {
-    const sessionId = searchParams.get("session_id");
-    if (sessionId) {
-      pollPaymentStatus(sessionId);
-    }
-  }, [searchParams]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [pricingRes, userRes, limitsRes] = await Promise.all([
-        axios.get(`${API}/pricing`),
-        axios.get(`${API}/auth/me`, { withCredentials: true }),
-        axios.get(`${API}/user/limits`, { withCredentials: true })
-      ]);
-      setPricing(pricingRes.data);
+      const userRes = await axios.get(`${API}/auth/me`, { withCredentials: true });
       setUser(userRes.data);
+      
+      const limitsRes = await axios.get(`${API}/user/limits`, { withCredentials: true });
       setLimits(limitsRes.data);
     } catch (err) {
       console.error("Failed to load data:", err);
@@ -68,9 +67,9 @@ export default function UpgradePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
 
-  const pollPaymentStatus = async (sessionId, attempts = 0) => {
+  const pollPaymentStatus = useCallback(async (sessionId, attempts = 0) => {
     const maxAttempts = 10;
     const pollInterval = 2000;
 
@@ -87,9 +86,7 @@ export default function UpgradePage() {
       if (response.data.payment_status === "paid") {
         setPaymentSuccess(true);
         toast.success("Welcome to Pro! Your upgrade is complete.");
-        // Refresh user data
         loadData();
-        // Clear URL params
         window.history.replaceState({}, document.title, "/upgrade/success");
         return;
       } else if (response.data.status === "expired") {
@@ -97,13 +94,23 @@ export default function UpgradePage() {
         return;
       }
 
-      // Continue polling
       setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), pollInterval);
     } catch (err) {
       console.error("Error checking payment status:", err);
       setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), pollInterval);
     }
-  };
+  }, [loadData]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const sessionId = searchParams.get("session_id");
+    if (sessionId) {
+      pollPaymentStatus(sessionId);
+    }
+  }, [searchParams, pollPaymentStatus]);
 
   const handleUpgrade = async () => {
     setIsProcessing(true);
@@ -113,15 +120,11 @@ export default function UpgradePage() {
         origin_url: originUrl
       }, { withCredentials: true });
 
-      // Redirect to Stripe checkout
       window.location.href = response.data.url;
     } catch (err) {
       console.error("Checkout error:", err);
-      if (err.response?.data?.detail) {
-        toast.error(err.response.data.detail);
-      } else {
-        toast.error("Failed to start checkout. Please try again.");
-      }
+      const errorMsg = err.response?.data?.detail || "Failed to start checkout. Please try again.";
+      toast.error(errorMsg);
       setIsProcessing(false);
     }
   };
@@ -195,7 +198,6 @@ export default function UpgradePage() {
       <div className="hero-glow-bg" />
       
       <div className="relative z-10 max-w-4xl mx-auto">
-        {/* Back button */}
         <Button
           variant="ghost"
           onClick={() => navigate("/")}
@@ -206,7 +208,6 @@ export default function UpgradePage() {
           Back to Library
         </Button>
 
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -224,7 +225,6 @@ export default function UpgradePage() {
           </p>
         </motion.div>
 
-        {/* Current usage */}
         {limits && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -240,8 +240,8 @@ export default function UpgradePage() {
                   <span className="text-sm">Movies</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold">{limits.movies.current}</span>
-                  <span className="text-muted-foreground text-sm">/ {limits.movies.limit || "∞"}</span>
+                  <span className="text-2xl font-bold">{limits.movies?.current || 0}</span>
+                  <span className="text-muted-foreground text-sm">/ {limits.movies?.limit || "∞"}</span>
                 </div>
               </div>
               <div>
@@ -250,15 +250,14 @@ export default function UpgradePage() {
                   <span className="text-sm">Collections</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold">{limits.collections.current}</span>
-                  <span className="text-muted-foreground text-sm">/ {limits.collections.limit || "∞"}</span>
+                  <span className="text-2xl font-bold">{limits.collections?.current || 0}</span>
+                  <span className="text-muted-foreground text-sm">/ {limits.collections?.limit || "∞"}</span>
                 </div>
               </div>
             </div>
           </motion.div>
         )}
 
-        {/* Pricing cards */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* Free Tier */}
           <motion.div
@@ -280,7 +279,7 @@ export default function UpgradePage() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
-                  {pricing?.free_tier?.features.map((feature, i) => (
+                  {FREE_FEATURES.map((feature, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Check className="w-4 h-4 text-muted-foreground" />
                       {feature}
@@ -301,7 +300,6 @@ export default function UpgradePage() {
             transition={{ delay: 0.3 }}
           >
             <Card className="h-full bg-gradient-to-b from-amber-500/10 to-transparent border-amber-500/30 relative overflow-hidden">
-              {/* Popular badge */}
               <div className="absolute top-4 right-4">
                 <Badge className="bg-amber-500 text-white">
                   <Star className="w-3 h-3 mr-1" />
@@ -316,15 +314,13 @@ export default function UpgradePage() {
                 </CardTitle>
                 <CardDescription>Unlimited everything, forever</CardDescription>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold text-amber-400">
-                    ${pricing?.pro_tier?.price || "29.99"}
-                  </span>
+                  <span className="text-4xl font-bold text-amber-400">$29.99</span>
                   <span className="text-muted-foreground ml-2">one-time</span>
                 </div>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
-                  {pricing?.pro_tier?.features.map((feature, i) => (
+                  {PRO_FEATURES.map((feature, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm">
                       <Check className="w-4 h-4 text-amber-400" />
                       {feature}
@@ -354,7 +350,6 @@ export default function UpgradePage() {
           </motion.div>
         </div>
 
-        {/* FAQ / Trust signals */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
