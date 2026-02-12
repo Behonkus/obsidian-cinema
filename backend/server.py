@@ -187,10 +187,13 @@ class UserResponse(BaseModel):
     subscription_tier: str
     movies_count: int
     collections_count: int
+    referral_code: Optional[str] = None
+    referral_count: int = 0
     created_at: datetime
 
 class CheckoutRequest(BaseModel):
     origin_url: str
+    referral_code: Optional[str] = None  # Optional referral code for discount
 
 # Auth Helper Functions
 async def get_current_user(
