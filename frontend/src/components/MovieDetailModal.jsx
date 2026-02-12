@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, 
@@ -13,12 +13,23 @@ import {
   ExternalLink,
   Heart,
   Bookmark,
-  Eye
+  Eye,
+  FolderHeart,
+  Plus,
+  Minus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import axios from "axios";
 
@@ -44,6 +55,22 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
   const [isFetching, setIsFetching] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [collections, setCollections] = useState([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadCollections();
+    }
+  }, [isOpen]);
+
+  const loadCollections = async () => {
+    try {
+      const response = await axios.get(`${API}/collections`);
+      setCollections(response.data);
+    } catch (err) {
+      console.error("Failed to load collections:", err);
+    }
+  };
 
   if (!movie || !isOpen) return null;
 
