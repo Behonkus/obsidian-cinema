@@ -12,7 +12,10 @@ import {
   FolderHeart,
   Crown,
   LogOut,
-  User
+  User,
+  Gift,
+  Copy,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
   const navigate = useNavigate();
