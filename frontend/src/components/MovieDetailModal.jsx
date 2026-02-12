@@ -189,6 +189,34 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
     }
   };
 
+  const handleAddToCollection = async (collectionId) => {
+    try {
+      await axios.post(`${API}/collections/${collectionId}/movies/${movie.id}`);
+      const updatedCollectionIds = [...(movie.collection_ids || []), collectionId];
+      if (onUpdate) onUpdate({ ...movie, collection_ids: updatedCollectionIds });
+      toast.success("Added to collection");
+    } catch (err) {
+      toast.error("Failed to add to collection");
+    }
+  };
+
+  const handleRemoveFromCollection = async (collectionId) => {
+    try {
+      await axios.delete(`${API}/collections/${collectionId}/movies/${movie.id}`);
+      const updatedCollectionIds = (movie.collection_ids || []).filter(id => id !== collectionId);
+      if (onUpdate) onUpdate({ ...movie, collection_ids: updatedCollectionIds });
+      toast.success("Removed from collection");
+    } catch (err) {
+      toast.error("Failed to remove from collection");
+    }
+  };
+
+  const isInCollection = (collectionId) => {
+    return (movie.collection_ids || []).includes(collectionId);
+  };
+
+  const movieCollections = collections.filter(c => isInCollection(c.id));
+
   const backdropUrl = resolveImageUrl(movie.backdrop_path) || placeholderBackdrop;
   const posterUrl = resolveImageUrl(movie.poster_path);
   const displayTitle = movie.title || movie.file_name;
