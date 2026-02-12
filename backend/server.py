@@ -1561,21 +1561,42 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
     success_url = f"{origin_url}/upgrade/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin_url}/upgrade"
     
+    # Check for valid referral code and apply discount
+    final_price = PRO_TIER_PRICE
+    referrer_id = None
+    
+    if checkout_request.referral_code:
+        referral_code = checkout_request.referral_code.strip().upper()
+        # Find referrer by code
+        referrer = await db.users.find_one(
+            {"referral_code": referral_code, "subscription_tier": "pro"},
+            {"_id": 0}
+        )
+        if referrer and referrer["user_id"] != user.user_id:
+            final_price = PRO_TIER_DISCOUNTED_PRICE
+            referrer_id = referrer["user_id"]
+            logging.info(f"Applying referral discount. Code: {referral_code}, Referrer: {referrer_id}")
+    
     # Initialize Stripe
     webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
     stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
     
     # Create checkout session
+    metadata = {
+        "user_id": user.user_id,
+        "product": "obsidian_cinema_pro",
+        "type": "one_time"
+    }
+    if referrer_id:
+        metadata["referrer_id"] = referrer_id
+        metadata["referral_code"] = checkout_request.referral_code.strip().upper()
+    
     checkout_req = CheckoutSessionRequest(
-        amount=PRO_TIER_PRICE,
+        amount=final_price,
         currency=PRO_TIER_CURRENCY,
         success_url=success_url,
         cancel_url=cancel_url,
-        metadata={
-            "user_id": user.user_id,
-            "product": "obsidian_cinema_pro",
-            "type": "one_time"
-        }
+        metadata=metadata
     )
     
     try:
@@ -1586,17 +1607,19 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
             "transaction_id": f"txn_{uuid.uuid4().hex[:12]}",
             "user_id": user.user_id,
             "session_id": session.session_id,
-            "amount": PRO_TIER_PRICE,
+            "amount": final_price,
             "currency": PRO_TIER_CURRENCY,
             "payment_status": "pending",
-            "metadata": {"product": "obsidian_cinema_pro"},
+            "metadata": metadata,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.payment_transactions.insert_one(transaction)
         
         return {
             "url": session.url,
-            "session_id": session.session_id
+            "session_id": session.session_id,
+            "amount": final_price,
+            "discount_applied": referrer_id is not None
         }
     except Exception as e:
         logging.error(f"Stripe checkout error: {e}")
