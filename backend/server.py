@@ -1770,7 +1770,9 @@ async def get_user_limits(request: Request, session_token: Optional[str] = Cooki
             "limit": None if user.subscription_tier == "pro" else FREE_TIER_COLLECTION_LIMIT,
             "can_add": user.subscription_tier == "pro" or collections_count < FREE_TIER_COLLECTION_LIMIT
         },
-        "pro_price": PRO_TIER_PRICE
+        "pro_price": PRO_TIER_PRICE,
+        "referral_code": user.referral_code,
+        "referral_count": user.referral_count
     }
 
 @api_router.get("/pricing")
@@ -1779,13 +1781,16 @@ async def get_pricing():
     return {
         "pro_tier": {
             "price": PRO_TIER_PRICE,
+            "discounted_price": PRO_TIER_DISCOUNTED_PRICE,
+            "discount_amount": REFERRAL_DISCOUNT,
             "currency": PRO_TIER_CURRENCY,
             "type": "one_time",
             "features": [
                 "Unlimited movies",
                 "Unlimited collections",
                 "Priority support",
-                "Early access to new features"
+                "Early access to new features",
+                "Personal referral code"
             ]
         },
         "free_tier": {
@@ -1795,7 +1800,37 @@ async def get_pricing():
                 f"Up to {FREE_TIER_COLLECTION_LIMIT} collections",
                 "Basic features"
             ]
+        },
+        "referral": {
+            "discount": REFERRAL_DISCOUNT,
+            "description": f"Share your code and friends get ${REFERRAL_DISCOUNT} off!"
         }
+    }
+
+@api_router.get("/referral/validate/{code}")
+async def validate_referral_code(code: str):
+    """Validate a referral code and return discount info."""
+    referral_code = code.strip().upper()
+    
+    # Find referrer by code
+    referrer = await db.users.find_one(
+        {"referral_code": referral_code, "subscription_tier": "pro"},
+        {"_id": 0, "name": 1, "referral_code": 1}
+    )
+    
+    if not referrer:
+        return {
+            "valid": False,
+            "message": "Invalid referral code"
+        }
+    
+    return {
+        "valid": True,
+        "code": referral_code,
+        "referrer_name": referrer.get("name", "A Pro user"),
+        "discount": REFERRAL_DISCOUNT,
+        "final_price": PRO_TIER_DISCOUNTED_PRICE,
+        "message": f"${REFERRAL_DISCOUNT} discount applied!"
     }
 
 # Include the router
