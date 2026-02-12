@@ -523,6 +523,127 @@ class ObsidianCinemaAPITester:
         
         return success
 
+    # Collections API Tests
+    def test_create_collection(self, name, description=None, color=None):
+        """Test creating a collection"""
+        data = {"name": name}
+        if description:
+            data["description"] = description
+        if color:
+            data["color"] = color
+        
+        success, response = self.run_test(
+            f"Create Collection ({name})",
+            "POST",
+            "collections",
+            200,
+            data=data
+        )
+        
+        if success and 'id' in response:
+            self.created_resources["collections"].append(response['id'])
+            return response['id']
+        return None
+
+    def test_get_collections(self):
+        """Test getting all collections"""
+        return self.run_test("Get Collections", "GET", "collections", 200)
+
+    def test_get_single_collection(self, collection_id):
+        """Test getting a single collection by ID"""
+        return self.run_test(
+            f"Get Collection ({collection_id})",
+            "GET",
+            f"collections/{collection_id}",
+            200
+        )
+
+    def test_update_collection(self, collection_id, name=None, description=None, color=None):
+        """Test updating a collection"""
+        data = {}
+        if name:
+            data["name"] = name
+        if description is not None:
+            data["description"] = description
+        if color:
+            data["color"] = color
+        
+        return self.run_test(
+            f"Update Collection ({collection_id})",
+            "PUT",
+            f"collections/{collection_id}",
+            200,
+            data=data
+        )
+
+    def test_add_movie_to_collection(self, collection_id, movie_id):
+        """Test adding a movie to a collection"""
+        return self.run_test(
+            f"Add Movie to Collection ({collection_id}, {movie_id})",
+            "POST",
+            f"collections/{collection_id}/movies/{movie_id}",
+            200
+        )
+
+    def test_remove_movie_from_collection(self, collection_id, movie_id):
+        """Test removing a movie from a collection"""
+        return self.run_test(
+            f"Remove Movie from Collection ({collection_id}, {movie_id})",
+            "DELETE",
+            f"collections/{collection_id}/movies/{movie_id}",
+            200
+        )
+
+    def test_get_collection_movies(self, collection_id):
+        """Test getting all movies in a collection"""
+        return self.run_test(
+            f"Get Collection Movies ({collection_id})",
+            "GET",
+            f"collections/{collection_id}/movies",
+            200
+        )
+
+    def test_get_movies_by_collection_filter(self, collection_id):
+        """Test filtering movies by collection ID"""
+        return self.run_test(
+            f"Get Movies (Collection Filter: {collection_id})",
+            "GET",
+            "movies",
+            200,
+            params={"collection_id": collection_id}
+        )
+
+    def test_delete_collection(self, collection_id):
+        """Test deleting a collection"""
+        success, _ = self.run_test(
+            f"Delete Collection ({collection_id})",
+            "DELETE",
+            f"collections/{collection_id}",
+            200
+        )
+        if success and collection_id in self.created_resources["collections"]:
+            self.created_resources["collections"].remove(collection_id)
+        return success
+
+    def test_stats_with_collections(self):
+        """Test that stats endpoint returns collections count"""
+        success, response = self.run_test(
+            "Get Stats (With Collections)",
+            "GET",
+            "stats",
+            200
+        )
+        
+        if success and isinstance(response, dict):
+            has_collections = 'total_collections' in response
+            
+            print(f"   Has total_collections count: {has_collections}")
+            print(f"   Total collections: {response.get('total_collections', 'Not found')}")
+            
+            return has_collections
+        
+        return success
+
     def cleanup_resources(self):
         """Clean up created test resources"""
         print("\n🧹 Cleaning up test resources...")
