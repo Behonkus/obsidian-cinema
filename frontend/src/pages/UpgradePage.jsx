@@ -10,9 +10,14 @@ import {
   Star,
   Sparkles,
   ArrowLeft,
-  CheckCircle
+  CheckCircle,
+  Gift,
+  Tag,
+  Copy,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
   Card,
   CardContent,
@@ -38,7 +43,8 @@ const PRO_FEATURES = [
   "Unlimited movies",
   "Unlimited collections",
   "Priority support",
-  "Early access to new features"
+  "Early access to new features",
+  "Personal referral code"
 ];
 
 export default function UpgradePage() {
@@ -47,18 +53,28 @@ export default function UpgradePage() {
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState(location.state?.user || null);
   const [limits, setLimits] = useState(null);
+  const [pricing, setPricing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  
+  // Referral state
+  const [referralCode, setReferralCode] = useState("");
+  const [referralValid, setReferralValid] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [appliedDiscount, setAppliedDiscount] = useState(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const userRes = await axios.get(`${API}/auth/me`, { withCredentials: true });
+      const [userRes, limitsRes, pricingRes] = await Promise.all([
+        axios.get(`${API}/auth/me`, { withCredentials: true }),
+        axios.get(`${API}/user/limits`, { withCredentials: true }),
+        axios.get(`${API}/pricing`)
+      ]);
       setUser(userRes.data);
-      
-      const limitsRes = await axios.get(`${API}/user/limits`, { withCredentials: true });
       setLimits(limitsRes.data);
+      setPricing(pricingRes.data);
     } catch (err) {
       console.error("Failed to load data:", err);
       if (err.response?.status === 401) {
@@ -112,13 +128,48 @@ export default function UpgradePage() {
     }
   }, [searchParams, pollPaymentStatus]);
 
+  const validateReferralCode = async () => {
+    if (!referralCode.trim()) {
+      toast.error("Please enter a referral code");
+      return;
+    }
+
+    setIsValidating(true);
+    try {
+      const response = await axios.get(`${API}/referral/validate/${referralCode.trim()}`);
+      setReferralValid(response.data);
+      
+      if (response.data.valid) {
+        setAppliedDiscount(response.data);
+        toast.success(`$${response.data.discount} discount applied!`);
+      } else {
+        toast.error(response.data.message || "Invalid referral code");
+        setAppliedDiscount(null);
+      }
+    } catch (err) {
+      console.error("Referral validation error:", err);
+      toast.error("Failed to validate referral code");
+      setReferralValid({ valid: false });
+      setAppliedDiscount(null);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
   const handleUpgrade = async () => {
     setIsProcessing(true);
     try {
       const originUrl = window.location.origin;
-      const response = await axios.post(`${API}/stripe/create-checkout-session`, {
-        origin_url: originUrl
-      }, { withCredentials: true });
+      const payload = { origin_url: originUrl };
+      
+      // Include referral code if valid
+      if (appliedDiscount?.valid) {
+        payload.referral_code = referralCode.trim();
+      }
+      
+      const response = await axios.post(`${API}/stripe/create-checkout-session`, payload, { 
+        withCredentials: true 
+      });
 
       window.location.href = response.data.url;
     } catch (err) {
@@ -126,6 +177,13 @@ export default function UpgradePage() {
       const errorMsg = err.response?.data?.detail || "Failed to start checkout. Please try again.";
       toast.error(errorMsg);
       setIsProcessing(false);
+    }
+  };
+
+  const copyReferralCode = () => {
+    if (user?.referral_code) {
+      navigator.clipboard.writeText(user.referral_code);
+      toast.success("Referral code copied!");
     }
   };
 
@@ -137,30 +195,84 @@ export default function UpgradePage() {
     );
   }
 
-  // Already Pro user
+  // Already Pro user - show referral section
   if (user?.subscription_tier === "pro") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4" data-testid="upgrade-page">
+      <div className="min-h-screen bg-background p-4 md:p-8" data-testid="upgrade-page">
         <div className="hero-glow-bg" />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 text-center max-w-md"
-        >
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-amber-500/25">
-            <Crown className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold font-[Outfit] text-foreground mb-2">
-            You're Already Pro!
-          </h1>
-          <p className="text-muted-foreground mb-6">
-            Enjoy unlimited movies, collections, and all premium features.
-          </p>
-          <Button onClick={() => navigate("/")} className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
+        <div className="relative z-10 max-w-2xl mx-auto">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="mb-6"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Library
           </Button>
-        </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-8"
+          >
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-amber-500/25">
+              <Crown className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold font-[Outfit] text-foreground mb-2">
+              You're a Pro Member!
+            </h1>
+            <p className="text-muted-foreground">
+              Enjoy unlimited movies, collections, and all premium features.
+            </p>
+          </motion.div>
+
+          {/* Referral Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="bg-gradient-to-b from-amber-500/10 to-transparent border-amber-500/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-amber-400" />
+                  Share & Earn
+                </CardTitle>
+                <CardDescription>
+                  Share your referral code with friends. They get $5 off their Pro upgrade!
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Referral Code Display */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 p-3 bg-secondary/50 rounded-lg border border-border font-mono text-lg text-center">
+                    {user?.referral_code || "Generating..."}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={copyReferralCode}
+                    className="h-12 w-12"
+                    data-testid="copy-referral-btn"
+                  >
+                    <Copy className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                {/* Referral Stats */}
+                <div className="flex items-center justify-center gap-6 pt-4">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 text-amber-400">
+                      <Users className="w-5 h-5" />
+                      <span className="text-2xl font-bold">{user?.referral_count || 0}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Friends referred</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
     );
   }
@@ -192,6 +304,10 @@ export default function UpgradePage() {
       </div>
     );
   }
+
+  const displayPrice = appliedDiscount?.valid 
+    ? appliedDiscount.final_price 
+    : (pricing?.pro_tier?.price || 29.99);
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8" data-testid="upgrade-page">
@@ -258,6 +374,50 @@ export default function UpgradePage() {
           </motion.div>
         )}
 
+        {/* Referral Code Input */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-8 p-4 rounded-xl bg-secondary/30 border border-border"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Tag className="w-4 h-4 text-amber-400" />
+            <h3 className="text-sm font-medium">Have a referral code?</h3>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Enter code (e.g., CINEMA-ABC123)"
+              value={referralCode}
+              onChange={(e) => {
+                setReferralCode(e.target.value.toUpperCase());
+                setReferralValid(null);
+                setAppliedDiscount(null);
+              }}
+              className="flex-1 font-mono uppercase"
+              data-testid="referral-code-input"
+            />
+            <Button
+              variant="outline"
+              onClick={validateReferralCode}
+              disabled={isValidating || !referralCode.trim()}
+              data-testid="apply-referral-btn"
+            >
+              {isValidating ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                "Apply"
+              )}
+            </Button>
+          </div>
+          {appliedDiscount?.valid && (
+            <div className="mt-3 p-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              ${appliedDiscount.discount} discount from {appliedDiscount.referrer_name}!
+            </div>
+          )}
+        </motion.div>
+
         <div className="grid md:grid-cols-2 gap-6">
           {/* Free Tier */}
           <motion.div
@@ -314,8 +474,18 @@ export default function UpgradePage() {
                 </CardTitle>
                 <CardDescription>Unlimited everything, forever</CardDescription>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold text-amber-400">$29.99</span>
-                  <span className="text-muted-foreground ml-2">one-time</span>
+                  {appliedDiscount?.valid ? (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-bold text-amber-400">${displayPrice}</span>
+                      <span className="text-xl text-muted-foreground line-through">${pricing?.pro_tier?.price}</span>
+                      <span className="text-muted-foreground">one-time</span>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-4xl font-bold text-amber-400">${displayPrice}</span>
+                      <span className="text-muted-foreground ml-2">one-time</span>
+                    </>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -341,7 +511,7 @@ export default function UpgradePage() {
                   ) : (
                     <>
                       <Crown className="w-4 h-4 mr-2" />
-                      Upgrade to Pro
+                      Upgrade to Pro {appliedDiscount?.valid && `- Save $${appliedDiscount.discount}!`}
                     </>
                   )}
                 </Button>
