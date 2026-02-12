@@ -193,13 +193,54 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 </AnimatePresence>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-64">
               <div className="px-2 py-1.5">
                 <p className="text-sm font-medium">{user.name}</p>
                 <p className="text-xs text-muted-foreground">{user.email}</p>
               </div>
               <DropdownMenuSeparator />
-              {!isPro && (
+              {isPro ? (
+                <>
+                  {/* Referral section for Pro users */}
+                  <div className="px-2 py-2">
+                    <div className="flex items-center gap-2 text-xs text-amber-400 mb-2">
+                      <Gift className="w-3 h-3" />
+                      Your Referral Code
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 px-2 py-1 bg-secondary rounded text-xs font-mono">
+                        {user.referral_code || "—"}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (user.referral_code) {
+                            navigator.clipboard.writeText(user.referral_code);
+                            toast.success("Referral code copied!");
+                          }
+                        }}
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    {user.referral_count > 0 && (
+                      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                        <Users className="w-3 h-3" />
+                        {user.referral_count} friend{user.referral_count !== 1 ? 's' : ''} referred
+                      </div>
+                    )}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/upgrade")}>
+                    <Crown className="w-4 h-4 mr-2 text-amber-400" />
+                    Referral Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              ) : (
                 <>
                   <DropdownMenuItem onClick={() => navigate("/upgrade")} className="text-amber-400">
                     <Crown className="w-4 h-4 mr-2" />
