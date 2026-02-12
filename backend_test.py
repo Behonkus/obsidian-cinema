@@ -648,7 +648,18 @@ class ObsidianCinemaAPITester:
         """Clean up created test resources"""
         print("\n🧹 Cleaning up test resources...")
         
-        # Delete movies first (they depend on directories)
+        # Delete collections first (they reference movies)
+        for collection_id in self.created_resources["collections"]:
+            try:
+                response = requests.delete(f"{self.base_url}/collections/{collection_id}", timeout=5)
+                if response.status_code == 200:
+                    print(f"   ✅ Deleted collection {collection_id}")
+                else:
+                    print(f"   ⚠️ Failed to delete collection {collection_id}")
+            except Exception as e:
+                print(f"   ⚠️ Error deleting collection {collection_id}: {e}")
+        
+        # Delete movies (they depend on directories)
         for movie_id in self.created_resources["movies"]:
             try:
                 response = requests.delete(f"{self.base_url}/movies/{movie_id}", timeout=5)
