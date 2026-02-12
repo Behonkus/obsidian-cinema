@@ -136,6 +136,15 @@ class TMDBSearchResult(BaseModel):
     poster_path: Optional[str]
     overview: Optional[str]
 
+# Referral Configuration
+REFERRAL_DISCOUNT = 5.00  # $5 off for referred users
+PRO_TIER_DISCOUNTED_PRICE = PRO_TIER_PRICE - REFERRAL_DISCOUNT  # $24.99
+
+def generate_referral_code() -> str:
+    """Generate a unique referral code like CINEMA-ABC123."""
+    chars = uuid.uuid4().hex[:6].upper()
+    return f"CINEMA-{chars}"
+
 # User and Auth Models
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -147,6 +156,9 @@ class User(BaseModel):
     movies_count: int = 0
     collections_count: int = 0
     stripe_customer_id: Optional[str] = None
+    referral_code: Optional[str] = None  # Generated when user becomes Pro
+    referral_count: int = 0  # Number of successful referrals
+    referred_by: Optional[str] = None  # user_id of referrer
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserSession(BaseModel):
