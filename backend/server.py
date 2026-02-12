@@ -1,5 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, Cookie
+from fastapi.responses import FileResponse, JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -12,9 +12,10 @@ import httpx
 import hashlib
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, Dict
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -23,6 +24,21 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+
+# Stripe Configuration
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
+
+# Pro tier pricing (one-time payment)
+PRO_TIER_PRICE = 29.99
+PRO_TIER_CURRENCY = "usd"
+
+# Free tier limits
+FREE_TIER_MOVIE_LIMIT = 30
+FREE_TIER_COLLECTION_LIMIT = 3
+
+# Emergent Auth Configuration
+EMERGENT_AUTH_SESSION_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+SESSION_EXPIRY_DAYS = 7
 
 # TMDB Configuration
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '')
