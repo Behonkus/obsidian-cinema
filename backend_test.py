@@ -741,6 +741,56 @@ def main():
             # Test movie filtering with list filters
             tester.test_movies_with_list_filters()
         
+        # Test NEW FEATURE: Collections API
+        print("\n🔍 Testing Collections API...")
+        
+        # Create test collections
+        collection1_id = tester.test_create_collection(
+            "Action Movies", 
+            "High-octane action films", 
+            "#e11d48"
+        )
+        collection2_id = tester.test_create_collection(
+            "Sci-Fi Collection",
+            "Science fiction movies",
+            "#2563eb"
+        )
+        
+        if collection1_id and collection2_id:
+            # Test getting collections
+            tester.test_get_collections()
+            tester.test_get_single_collection(collection1_id)
+            
+            # Test updating collection
+            tester.test_update_collection(
+                collection1_id, 
+                name="Updated Action Movies",
+                description="Updated description",
+                color="#16a34a"
+            )
+            
+            # Test adding movies to collections (if we have movies)
+            if tester.created_resources["movies"]:
+                movie_id = tester.created_resources["movies"][0]
+                
+                # Add movie to collection
+                tester.test_add_movie_to_collection(collection1_id, movie_id)
+                
+                # Test getting collection movies
+                tester.test_get_collection_movies(collection1_id)
+                
+                # Test filtering movies by collection
+                tester.test_get_movies_by_collection_filter(collection1_id)
+                
+                # Test removing movie from collection
+                tester.test_remove_movie_from_collection(collection1_id, movie_id)
+                
+                # Verify movie was removed
+                tester.test_get_collection_movies(collection1_id)
+            
+            # Test stats with collections
+            tester.test_stats_with_collections()
+        
         # Test scan functionality (updated for recursive scanning)
         print("\n🔍 Testing All Directory Scanning...")
         tester.test_scan_directories()
