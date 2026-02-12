@@ -359,6 +359,25 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
                 </p>
               </div>
               
+              {/* Collections */}
+              {movieCollections.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {movieCollections.map((collection) => (
+                    <Badge 
+                      key={collection.id} 
+                      variant="outline"
+                      className="flex items-center gap-1 cursor-pointer hover:bg-secondary/50"
+                      style={{ borderColor: collection.color, color: collection.color }}
+                      onClick={() => handleRemoveFromCollection(collection.id)}
+                    >
+                      <FolderHeart className="w-3 h-3" />
+                      {collection.name}
+                      <X className="w-3 h-3 ml-1" />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
               <div className="flex flex-wrap gap-3 mt-6">
                 <Button
                   className="bg-primary hover:bg-primary/90 rounded-full px-6 glow-primary"
@@ -381,6 +400,56 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
                   )}
                   Copy Path
                 </Button>
+                
+                {/* Add to Collection dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="rounded-full px-6"
+                      data-testid="add-to-collection-btn"
+                    >
+                      <FolderHeart className="w-4 h-4 mr-2" />
+                      Collection
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuLabel>Add to Collection</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {collections.length === 0 ? (
+                      <DropdownMenuItem disabled>
+                        No collections yet
+                      </DropdownMenuItem>
+                    ) : (
+                      collections.map((collection) => (
+                        <DropdownMenuItem
+                          key={collection.id}
+                          onClick={() => 
+                            isInCollection(collection.id) 
+                              ? handleRemoveFromCollection(collection.id)
+                              : handleAddToCollection(collection.id)
+                          }
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <FolderHeart 
+                                className="w-4 h-4" 
+                                style={{ color: collection.color }}
+                              />
+                              {collection.name}
+                            </div>
+                            {isInCollection(collection.id) ? (
+                              <Check className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Plus className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
                 {!movie.metadata_fetched && (
                   <Button
                     variant="outline"
