@@ -58,14 +58,14 @@ Build an app that will scan directories of movie files and display associated mo
 - [x] Network share scanning (UNC paths)
 
 ## What's Been Implemented (Feb 2026)
-- ✅ Full backend API with 25+ endpoints
-- ✅ MongoDB models for directories and movies
+- ✅ Full backend API with 30+ endpoints
+- ✅ MongoDB models for directories, movies, and collections
 - ✅ TMDB integration with caching
 - ✅ Movie title/year extraction from filenames
 - ✅ React frontend with Obsidian Cinema dark theme
-- ✅ Sidebar navigation
+- ✅ Sidebar navigation (Library, Collections, Directories, Settings)
 - ✅ Movie poster grid with hover effects
-- ✅ Movie detail modal with play/copy options
+- ✅ Movie detail modal with play/copy/collection options
 - ✅ Directory management page
 - ✅ Import Movies feature (paste file paths)
 - ✅ **Network directory scanning** (UNC paths: \\server\share)
@@ -75,6 +75,8 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ **Settings page with TMDB API key configuration**
 - ✅ **Favorites/Watchlist/Watched feature** with filtering
 - ✅ **Local poster repository** - posters cached separately from movie dirs
+- ✅ **Movie sorting** (title, year, rating, date added)
+- ✅ **Custom Collections/Playlists** - group movies together
 - ✅ Search, directory filter, metadata filter
 - ✅ Grid size toggle (compact/normal views)
 - ✅ Framer Motion animations
@@ -89,6 +91,7 @@ Build an app that will scan directories of movie files and display associated mo
 - [x] Favorites/Watchlist/Watched feature
 - [x] Local poster repository (separate from movie dirs)
 - [x] Movie sorting (title, year, rating, date added)
+- [x] Custom Collections/Playlists
 
 ## P1 Features (Important - Pending)
 - [ ] Batch metadata fetching improvements
@@ -96,9 +99,9 @@ Build an app that will scan directories of movie files and display associated mo
 
 ## P2 Features (Nice to Have)
 - [ ] Custom poster upload
-- [ ] Collections/playlists
 - [ ] Import/export library data
 - [ ] Keyboard shortcuts
+- [ ] Smart collections (auto-populated by rules)
 
 ## Next Action Items
 1. **Add TMDB API key** - Get free key from https://www.themoviedb.org/settings/api and add to /app/backend/.env as TMDB_API_KEY="your_key"
