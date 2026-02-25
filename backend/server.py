@@ -1207,6 +1207,13 @@ async def bulk_add_movies(movies: List[dict], request: Request, session_token: O
             added.append(existing)
             continue
         
+        # Check free tier limit
+        if user and user.subscription_tier != "pro":
+            new_count = current_movie_count + len([a for a in added if "id" in a and a.get("id", "").startswith("mov_")])
+            if new_count >= FREE_TIER_MOVIE_LIMIT:
+                skipped_due_to_limit += 1
+                continue
+        
         # Extract title and year from filename
         title, year = clean_movie_name(file_name)
         
@@ -1224,7 +1231,21 @@ async def bulk_add_movies(movies: List[dict], request: Request, session_token: O
         await db.movies.insert_one(doc)
         added.append(movie.model_dump())
     
-    return {"added": len(added), "movies": added}
+    # Update user's movie count
+    new_movies_added = len([a for a in added if "id" in a and str(a.get("id", "")).startswith("mov_")])
+    if user and new_movies_added > 0:
+        await db.users.update_one(
+            {"user_id": user.user_id},
+            {"$set": {"movies_count": current_movie_count + new_movies_added}}
+        )
+    
+    result = {"added": len(added), "movies": added}
+    
+    if skipped_due_to_limit > 0:
+        result["skipped_due_to_limit"] = skipped_due_to_limit
+        result["limit_message"] = f"Skipped {skipped_due_to_limit} movies due to free tier limit. Upgrade to Pro for unlimited movies."
+    
+    return result
 
 @api_router.get("/movies", response_model=List[Movie])
 async def get_movies(
