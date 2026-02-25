@@ -1705,7 +1705,7 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
         raise HTTPException(status_code=500, detail="Failed to create checkout session")
 
 @api_router.get("/stripe/checkout-status/{session_id}")
-async def get_checkout_status(session_id: str, request: Request, session_token: Optional[str] = Cookie(default=None)):
+async def get_checkout_status(session_id: str, request: Request, background_tasks: BackgroundTasks, session_token: Optional[str] = Cookie(default=None)):
     """Get checkout session status and update user if paid."""
     user = await get_current_user(request, session_token)
     if not user:
@@ -1747,15 +1747,30 @@ async def get_checkout_status(session_id: str, request: Request, session_token: 
                 "referral_code": new_referral_code
             }
             
-            # Track referrer if present
+            # Track referrer if present and send notification email
             referrer_id = transaction.get("metadata", {}).get("referrer_id")
             if referrer_id:
                 update_data["referred_by"] = referrer_id
                 # Increment referrer's referral count
-                await db.users.update_one(
+                result = await db.users.find_one_and_update(
                     {"user_id": referrer_id},
-                    {"$inc": {"referral_count": 1}}
+                    {"$inc": {"referral_count": 1}},
+                    return_document=True,
+                    projection={"_id": 0, "email": 1, "name": 1, "referral_count": 1}
                 )
+                
+                if result:
+                    # Send email notification to referrer in background
+                    referred_first_name = user.name.split()[0] if user.name else "A friend"
+                    background_tasks.add_task(
+                        send_referral_success_email,
+                        referrer_email=result["email"],
+                        referrer_name=result.get("name", "Pro User"),
+                        referred_name=referred_first_name,
+                        new_referral_count=result.get("referral_count", 1)
+                    )
+                    logging.info(f"Referral email queued for {result['email']}")
+                
                 logging.info(f"Referral credited to {referrer_id}")
             
             await db.users.update_one(
