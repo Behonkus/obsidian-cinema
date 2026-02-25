@@ -1001,7 +1001,7 @@ async def scan_directories(request: Request, recursive: bool = True, session_tok
     return result
 
 @api_router.post("/directories/{directory_id}/scan")
-async def scan_single_directory(directory_id: str, recursive: bool = True):
+async def scan_single_directory(directory_id: str, request: Request, recursive: bool = True, session_token: Optional[str] = Cookie(default=None)):
     """
     Scan a single directory for movie files.
     Supports network shares and local paths.
@@ -1010,11 +1010,16 @@ async def scan_single_directory(directory_id: str, recursive: bool = True):
     if not directory:
         raise HTTPException(status_code=404, detail="Directory not found")
     
+    # Check user authentication and tier limits
+    user = await get_current_user(request, session_token)
+    current_movie_count = await db.movies.count_documents({})
+    
     dir_path = directory["path"]
     
     # Scan directory for video files
     video_files = scan_directory_for_videos(dir_path, recursive)
     new_movies = 0
+    skipped_due_to_limit = 0
     
     # Add new movies to database
     for video in video_files:
@@ -1022,6 +1027,13 @@ async def scan_single_directory(directory_id: str, recursive: bool = True):
         existing = await db.movies.find_one({"file_path": video["file_path"]}, {"_id": 0})
         if existing:
             continue
+        
+        # Check free tier limit
+        if user and user.subscription_tier != "pro":
+            current_count = current_movie_count + new_movies
+            if current_count >= FREE_TIER_MOVIE_LIMIT:
+                skipped_due_to_limit += 1
+                continue
         
         # Extract title and year from filename
         title, year = clean_movie_name(video["file_name"])
@@ -1046,12 +1058,25 @@ async def scan_single_directory(directory_id: str, recursive: bool = True):
         {"$set": {"last_scanned": datetime.now(timezone.utc).isoformat()}}
     )
     
-    return {
+    # Update user's movie count
+    if user and new_movies > 0:
+        await db.users.update_one(
+            {"user_id": user.user_id},
+            {"$set": {"movies_count": current_movie_count + new_movies}}
+        )
+    
+    result = {
         "directory_id": directory_id,
         "total_files": len(video_files),
         "new_movies": new_movies,
         "path": dir_path
     }
+    
+    if skipped_due_to_limit > 0:
+        result["skipped_due_to_limit"] = skipped_due_to_limit
+        result["limit_message"] = f"Skipped {skipped_due_to_limit} movies due to free tier limit. Upgrade to Pro for unlimited movies."
+    
+    return result
 
 @api_router.post("/directories/validate")
 async def validate_directory(path: str):
