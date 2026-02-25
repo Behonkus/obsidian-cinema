@@ -71,6 +71,8 @@ export default function HomePage() {
   const [stats, setStats] = useState(null);
   const [isFetchingAll, setIsFetchingAll] = useState(false);
   const [gridSize, setGridSize] = useState("normal");
+  const [showBulkFetch, setShowBulkFetch] = useState(false);
+  const [showScanProgress, setShowScanProgress] = useState(false);
 
   useEffect(() => {
     loadData();
