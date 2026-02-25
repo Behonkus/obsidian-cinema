@@ -293,15 +293,24 @@ export default function HomePage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleFetchAllMetadata}
-                disabled={isFetchingAll}
+                onClick={() => setShowBulkFetch(true)}
                 className="rounded-full"
                 data-testid="fetch-all-metadata-btn"
               >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isFetchingAll ? "animate-spin" : ""}`} />
-                Fetch All ({stats.without_metadata})
+                <ImageIcon className="w-4 h-4 mr-2" />
+                Fetch Posters ({stats.without_metadata})
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowScanProgress(true)}
+              className="rounded-full"
+              data-testid="scan-btn"
+            >
+              <FolderSearch className="w-4 h-4 mr-2" />
+              Scan
+            </Button>
           </div>
         </motion.div>
         
