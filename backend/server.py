@@ -909,16 +909,28 @@ def scan_directory_for_videos(dir_path: str, recursive: bool = True) -> List[dic
 
 # Scan endpoints
 @api_router.post("/scan", response_model=ScanResult)
-async def scan_directories(recursive: bool = True):
+async def scan_directories(request: Request, recursive: bool = True, session_token: Optional[str] = Cookie(default=None)):
     """
     Scan all directories for movie files.
     Supports local paths, network shares (UNC paths like \\\\server\\share), 
     and mounted network drives.
     """
+    # Check user authentication and tier limits
+    user = await get_current_user(request, session_token)
+    current_movie_count = await db.movies.count_documents({})
+    movies_limit_reached = False
+    limit_message = ""
+    
+    if user and user.subscription_tier != "pro":
+        if current_movie_count >= FREE_TIER_MOVIE_LIMIT:
+            movies_limit_reached = True
+            limit_message = f"Free tier limit reached ({FREE_TIER_MOVIE_LIMIT} movies). Upgrade to Pro for unlimited movies."
+    
     directories = await db.directories.find({}, {"_id": 0}).to_list(100)
     
     total_files = 0
     new_movies = 0
+    skipped_due_to_limit = 0
     
     for directory in directories:
         dir_path = directory["path"]
@@ -934,6 +946,13 @@ async def scan_directories(recursive: bool = True):
             existing = await db.movies.find_one({"file_path": video["file_path"]}, {"_id": 0})
             if existing:
                 continue
+            
+            # Check free tier limit
+            if user and user.subscription_tier != "pro":
+                current_count = current_movie_count + new_movies
+                if current_count >= FREE_TIER_MOVIE_LIMIT:
+                    skipped_due_to_limit += 1
+                    continue
             
             # Extract title and year from filename
             title, year = clean_movie_name(video["file_name"])
@@ -958,11 +977,28 @@ async def scan_directories(recursive: bool = True):
             {"$set": {"last_scanned": datetime.now(timezone.utc).isoformat()}}
         )
     
-    return ScanResult(
+    # Update user's movie count
+    if user and new_movies > 0:
+        await db.users.update_one(
+            {"user_id": user.user_id},
+            {"$set": {"movies_count": current_movie_count + new_movies}}
+        )
+    
+    result = ScanResult(
         total_files=total_files,
         new_movies=new_movies,
         directories_scanned=len(directories)
     )
+    
+    # Add limit info to response if applicable
+    if skipped_due_to_limit > 0:
+        return {
+            **result.model_dump(),
+            "skipped_due_to_limit": skipped_due_to_limit,
+            "limit_message": f"Skipped {skipped_due_to_limit} movies due to free tier limit. Upgrade to Pro for unlimited movies."
+        }
+    
+    return result
 
 @api_router.post("/directories/{directory_id}/scan")
 async def scan_single_directory(directory_id: str, recursive: bool = True):
