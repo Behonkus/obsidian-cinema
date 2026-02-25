@@ -106,7 +106,7 @@ class TestScanStartEndpoint:
             f"{BASE_URL}/api/scan/start?recursive=true",
             cookies={"session_token": TEST_SESSION_TOKEN},
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=DEFAULT_TIMEOUT
         )
         
         # Status code assertion
@@ -124,7 +124,7 @@ class TestScanStartEndpoint:
         response = requests.post(
             f"{BASE_URL}/api/scan/start?recursive=true",
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=DEFAULT_TIMEOUT
         )
         
         # Should return 401 for unauthenticated request
