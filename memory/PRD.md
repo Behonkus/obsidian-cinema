@@ -11,6 +11,7 @@ Build an app that will scan directories of movie files and display associated mo
 5. **Theme**: Dark theme
 6. **Monetization**: Pro tier with one-time payment ($29.99)
 7. **Authentication**: Emergent-managed Google OAuth + JWT sessions
+8. **Referral Program**: Pro users get referral codes, referred users get $5 off
 
 ## Architecture
 
@@ -49,37 +50,20 @@ Build an app that will scan directories of movie files and display associated mo
 | GET | /api/auth/me | Get current user info |
 | POST | /api/auth/logout | Logout user |
 | **Stripe Endpoints** | | |
-| POST | /api/stripe/create-checkout-session | Create Stripe checkout |
+| POST | /api/stripe/create-checkout-session | Create Stripe checkout (with referral support) |
 | GET | /api/stripe/checkout-status/{session_id} | Get payment status |
 | POST | /api/webhook/stripe | Stripe webhook handler |
 | **User Endpoints** | | |
 | GET | /api/user/limits | Get user limits |
-| GET | /api/pricing | Get pricing info |
+| GET | /api/pricing | Get pricing info (with referral discount) |
+| **Referral Endpoints** | | |
+| GET | /api/referral/validate/{code} | Validate referral code |
 
-## User Personas
-- **Home Media Enthusiasts**: Users with large movie collections wanting a visual browser
-- **Power Users**: Those who prefer keyboard shortcuts and quick access to file paths
-- **NAS Users**: People with network-attached storage for their media library
+## What's Been Implemented
 
-## Core Requirements (Static)
-- [x] Directory management (add/remove)
-- [x] Movie file detection (all video formats)
-- [x] Movie poster grid display
-- [x] Movie detail modal with info
-- [x] MPC-HC protocol link generation
-- [x] Copy file path to clipboard
-- [x] TMDB integration for metadata/posters
-- [x] Search and filter functionality
-- [x] Dark theme UI
-- [x] Network share scanning (UNC paths)
-- [x] User authentication (Google OAuth)
-- [x] Pro tier with Stripe payments
-
-## What's Been Implemented (Feb 2026)
-
-### Core Features
-- ✅ Full backend API with 30+ endpoints
-- ✅ MongoDB models for directories, movies, collections, users
+### Core Features (Feb 2026)
+- ✅ Full backend API with 35+ endpoints
+- ✅ MongoDB models for directories, movies, collections, users, payments
 - ✅ TMDB integration with caching
 - ✅ Movie title/year extraction from filenames
 - ✅ React frontend with Obsidian Cinema dark theme
@@ -87,22 +71,13 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ Movie poster grid with hover effects
 - ✅ Movie detail modal with play/copy/collection options
 - ✅ Directory management page
-- ✅ Import Movies feature (paste file paths)
-- ✅ Network directory scanning (UNC paths: \\server\share)
-- ✅ Recursive directory scanning
-- ✅ Scan All / Scan individual directories
-- ✅ Path validation API
-- ✅ Settings page with TMDB API key configuration
+- ✅ Network directory scanning (UNC paths)
 - ✅ Favorites/Watchlist/Watched feature with filtering
-- ✅ Local poster repository - posters cached separately from movie dirs
+- ✅ Local poster repository
 - ✅ Movie sorting (title, year, rating, date added)
-- ✅ Custom Collections/Playlists - group movies together
-- ✅ Search, directory filter, metadata filter
-- ✅ Grid size toggle (compact/normal views)
-- ✅ Framer Motion animations
-- ✅ Responsive design
+- ✅ Custom Collections/Playlists
 
-### Pro Tier (Feb 12, 2026)
+### Pro Tier & Auth (Feb 12, 2026)
 - ✅ User authentication with Emergent Google OAuth
 - ✅ Login page with Google OAuth button
 - ✅ Protected routes with auth guards
@@ -111,15 +86,25 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ Free tier: 30 movies, 3 collections
 - ✅ Pro tier: $29.99 one-time, unlimited access
 - ✅ User menu in sidebar with Pro badge
-- ✅ Checkout session creation and status polling
 - ✅ Session-based authentication with httpOnly cookies
+
+### Referral Program (Feb 12, 2026)
+- ✅ Auto-generated referral codes for Pro users (CINEMA-XXXXXX format)
+- ✅ $5 discount for referred users ($24.99 instead of $29.99)
+- ✅ Referral code validation endpoint
+- ✅ Referral code input on upgrade page
+- ✅ Discount display with strikethrough pricing
+- ✅ Referral count tracking for Pro users
+- ✅ Referral code display in user dropdown menu
+- ✅ Copy referral code functionality
+- ✅ "Share & Earn" section on Pro user upgrade page
 
 ## Database Schema
 
 ### Users Collection
 ```javascript
 {
-  user_id: "user_xxx",  // Custom UUID
+  user_id: "user_xxx",
   email: "user@example.com",
   name: "User Name",
   picture: "https://...",
@@ -127,51 +112,36 @@ Build an app that will scan directories of movie files and display associated mo
   movies_count: 0,
   collections_count: 0,
   stripe_customer_id: null,
+  referral_code: "CINEMA-ABC123",  // Generated for Pro users
+  referral_count: 0,               // Successful referrals
+  referred_by: "user_xxx",         // Who referred this user
   created_at: ISODate()
 }
 ```
 
-### User Sessions Collection
-```javascript
-{
-  user_id: "user_xxx",
-  session_token: "xxx",
-  expires_at: ISODate(),
-  created_at: ISODate()
-}
-```
-
-### Payment Transactions Collection
-```javascript
-{
-  transaction_id: "txn_xxx",
-  user_id: "user_xxx",
-  session_id: "cs_xxx",
-  amount: 29.99,
-  currency: "usd",
-  payment_status: "pending" | "paid" | "failed" | "expired",
-  metadata: {},
-  created_at: ISODate()
-}
-```
+## Pricing Structure
+| Tier | Price | Features |
+|------|-------|----------|
+| Free | $0 | 30 movies, 3 collections, basic features |
+| Pro | $29.99 | Unlimited movies & collections, priority support, referral code |
+| Pro (with referral) | $24.99 | Same as Pro, $5 discount applied |
 
 ## P0 Features (Critical - Done)
 - [x] Directory management
 - [x] Movie import/display
 - [x] Play/copy functionality
 - [x] Network share scanning
-- [x] Settings page with TMDB API key configuration
-- [x] Favorites/Watchlist/Watched feature
-- [x] Local poster repository
-- [x] Movie sorting
-- [x] Custom Collections/Playlists
+- [x] TMDB API key configuration
+- [x] Favorites/Watchlist/Watched
+- [x] Custom Collections
 - [x] User authentication (Google OAuth)
-- [x] Pro tier with Stripe integration
+- [x] Pro tier with Stripe
+- [x] Referral program
 
 ## P1 Features (Important - Pending)
-- [ ] Batch metadata fetching improvements
-- [ ] Real-time scan progress indicator
 - [ ] Enforce usage limits on movie/collection creation for free users
+- [ ] Real-time scan progress indicator
+- [ ] Batch metadata fetching improvements
 
 ## P2 Features (Nice to Have)
 - [ ] Custom poster upload
@@ -181,14 +151,8 @@ Build an app that will scan directories of movie files and display associated mo
 
 ## Next Action Items
 1. **Sign in** - Use Google OAuth to create your account
-2. **Add TMDB API key** - Get free key from https://www.themoviedb.org/settings/api
+2. **Add TMDB API key** - Get free key from themoviedb.org
 3. **Add directories** - Point to your movie collection folders
 4. **Scan & fetch metadata** - Let the app discover your movies
-5. **Upgrade to Pro** - $29.99 for unlimited movies and collections
-
-## Notes
-- MPC-HC must be installed on the user's Windows machine for play links to work
-- TMDB API key is required for poster/metadata fetching
-- Network shares must be accessible from the server where the backend runs
-- For network paths: use UNC format like \\\\server\\share\\movies or //server/share/movies
-- Stripe test key is pre-configured for development
+5. **Upgrade to Pro** - $29.99 (or $24.99 with referral code) for unlimited access
+6. **Share your code** - Pro users can share their referral code for friends to save $5
