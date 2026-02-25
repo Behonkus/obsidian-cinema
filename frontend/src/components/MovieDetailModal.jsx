@@ -501,57 +501,83 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
-                  className="mt-6 p-4 rounded-lg bg-secondary/30 border border-border"
+                  className="mt-6 p-4 rounded-xl bg-gradient-to-b from-primary/5 to-secondary/30 border border-primary/20"
                 >
-                  <h4 className="font-medium mb-3">Search TMDB</h4>
+                  <div className="flex items-center gap-2 mb-3">
+                    <ImageIcon className="w-5 h-5 text-primary" />
+                    <h4 className="font-semibold text-foreground">Find the Right Poster</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Search TMDB to find the correct movie and update the poster
+                  </p>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Enter movie title..."
+                      placeholder="Enter movie title (e.g., Avatar 2009)..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                      className="flex-1"
+                      className="flex-1 bg-background"
                       data-testid="tmdb-search-input"
                     />
                     <Button
                       onClick={handleSearch}
                       disabled={isSearching}
+                      className="bg-primary hover:bg-primary/90"
                       data-testid="tmdb-search-btn"
                     >
                       {isSearching ? (
                         <RefreshCw className="w-4 h-4 animate-spin" />
                       ) : (
-                        <Search className="w-4 h-4" />
+                        <>
+                          <Search className="w-4 h-4 mr-2" />
+                          Search
+                        </>
                       )}
                     </Button>
                   </div>
                   
                   {searchResults.length > 0 && (
-                    <div className="mt-4 space-y-2">
+                    <div className="mt-4 space-y-2 max-h-64 overflow-y-auto">
+                      <p className="text-xs text-muted-foreground mb-2">Click on a result to apply:</p>
                       {searchResults.map((result) => (
                         <div
                           key={result.tmdb_id}
-                          className="flex items-center gap-3 p-2 rounded-lg bg-card hover:bg-card/80 cursor-pointer transition-colors"
+                          className="flex items-center gap-3 p-3 rounded-lg bg-card hover:bg-primary/10 hover:border-primary/30 border border-transparent cursor-pointer transition-all"
                           onClick={() => handleSelectResult(result.tmdb_id)}
                           data-testid={`search-result-${result.tmdb_id}`}
                         >
-                          {result.poster_path && (
+                          {result.poster_path ? (
                             <img
                               src={result.poster_path}
                               alt={result.title}
-                              className="w-12 h-18 object-cover rounded"
+                              className="w-12 h-18 object-cover rounded shadow-md"
                             />
+                          ) : (
+                            <div className="w-12 h-18 bg-secondary rounded flex items-center justify-center">
+                              <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                            </div>
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{result.title}</p>
                             <p className="text-sm text-muted-foreground">
                               {result.year || "Unknown year"}
                             </p>
+                            {result.overview && (
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                {result.overview}
+                              </p>
+                            )}
                           </div>
-                          <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                          <Check className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100" />
                         </div>
                       ))}
                     </div>
+                  )}
+                  
+                  {searchResults.length === 0 && searchQuery && !isSearching && (
+                    <p className="text-sm text-muted-foreground mt-4 text-center">
+                      No results found. Try a different search term.
+                    </p>
                   )}
                 </motion.div>
               )}
