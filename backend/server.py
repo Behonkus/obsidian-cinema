@@ -691,7 +691,7 @@ async def create_collection(input_data: CollectionCreate, request: Request, sess
     # Check user authentication and tier limits
     user = await get_current_user(request, session_token)
     if user:
-        # Get current collection count
+        # Get current collection count (global for now, could be per-user in future)
         collection_count = await db.collections.count_documents({})
         
         # Check free tier limit
@@ -715,9 +715,10 @@ async def create_collection(input_data: CollectionCreate, request: Request, sess
     
     # Update user's collection count
     if user:
+        new_count = await db.collections.count_documents({})
         await db.users.update_one(
             {"user_id": user.user_id},
-            {"$inc": {"collections_count": 1}}
+            {"$set": {"collections_count": new_count}}
         )
     
     return collection
