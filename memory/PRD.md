@@ -151,8 +151,8 @@ To enable referral success email notifications:
 - [x] **Free tier limits enforcement** (30 movies, 3 collections max)
 
 ## P1 Features (Important - Pending)
-- [ ] Bulk metadata fetch (auto-find posters for all movies)
-- [ ] Real-time scan progress indicator
+- [x] **Bulk metadata fetch** - Auto-find posters for all movies without them (SSE progress)
+- [x] **Real-time scan progress indicator** - Shows directories, files found, movies added
 - [ ] Welcome email for new users
 
 ## P2 Features (Nice to Have)
