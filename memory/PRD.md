@@ -98,6 +98,17 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ Referral code display in user dropdown menu
 - ✅ Copy referral code functionality
 - ✅ "Share & Earn" section on Pro user upgrade page
+- ✅ Email notifications when referral converts (SendGrid integration ready, **requires API key**)
+
+## Email Notifications (Ready but NOT ENABLED)
+To enable referral success email notifications:
+1. Get a SendGrid API key from https://app.sendgrid.com/settings/api_keys
+2. Add to `/app/backend/.env`:
+   ```
+   SENDGRID_API_KEY=SG.your_api_key_here
+   SENDER_EMAIL=noreply@yourdomain.com
+   ```
+3. Restart backend: `sudo supervisorctl restart backend`
 
 ## Database Schema
 
