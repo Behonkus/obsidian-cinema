@@ -107,7 +107,7 @@ export default function CollectionsPage() {
         name: newName.trim(),
         description: newDescription.trim() || null,
         color: newColor,
-      });
+      }, { withCredentials: true });
       toast.success("Collection created!");
       setNewName("");
       setNewDescription("");
@@ -115,7 +115,17 @@ export default function CollectionsPage() {
       setIsAddDialogOpen(false);
       loadCollections();
     } catch (err) {
-      toast.error("Failed to create collection");
+      if (err.response?.status === 403) {
+        toast.error(err.response.data.detail, {
+          duration: 8000,
+          action: {
+            label: "Upgrade",
+            onClick: () => window.location.href = "/upgrade"
+          }
+        });
+      } else {
+        toast.error("Failed to create collection");
+      }
     } finally {
       setIsSaving(false);
     }
