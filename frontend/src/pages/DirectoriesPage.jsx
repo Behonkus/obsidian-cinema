@@ -266,13 +266,37 @@ export default function DirectoriesPage() {
 
     setIsImporting(true);
     try {
-      const response = await axios.post(`${API}/movies/bulk-add`, moviesToAdd);
-      toast.success(`Added ${response.data.added} movies`);
+      const response = await axios.post(`${API}/movies/bulk-add`, moviesToAdd, { withCredentials: true });
+      
+      let message = `Added ${response.data.added} movies`;
+      
+      // Check for limit warning
+      if (response.data.skipped_due_to_limit) {
+        toast.warning(response.data.limit_message, {
+          duration: 8000,
+          action: {
+            label: "Upgrade",
+            onClick: () => window.location.href = "/upgrade"
+          }
+        });
+        message += ` (${response.data.skipped_due_to_limit} skipped due to free tier limit)`;
+      }
+      
+      toast.success(message);
       setImportText("");
       setIsImportDialogOpen(false);
       loadData();
     } catch (err) {
-      toast.error("Failed to import movies");
+      if (err.response?.status === 403) {
+        toast.error(err.response.data.detail, {
+          action: {
+            label: "Upgrade",
+            onClick: () => window.location.href = "/upgrade"
+          }
+        });
+      } else {
+        toast.error("Failed to import movies");
+      }
     } finally {
       setIsImporting(false);
     }
