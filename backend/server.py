@@ -1463,11 +1463,14 @@ async def fetch_movie_metadata(movie_id: str):
 
 @api_router.post("/movies/fetch-all-metadata")
 async def fetch_all_metadata():
-    """Fetch metadata for all movies without metadata."""
+    """Fetch metadata for all movies without metadata (quick version)."""
     if not TMDB_API_KEY:
         raise HTTPException(status_code=400, detail="TMDB API key not configured")
     
-    movies = await db.movies.find({"metadata_fetched": False}, {"_id": 0}).to_list(100)
+    movies = await db.movies.find(
+        {"$or": [{"metadata_fetched": False}, {"metadata_fetched": {"$exists": False}}]}, 
+        {"_id": 0}
+    ).to_list(500)
     
     updated_count = 0
     for movie in movies:
@@ -1481,6 +1484,193 @@ async def fetch_all_metadata():
             logging.error(f"Error fetching metadata for {movie['id']}: {e}")
     
     return {"updated": updated_count, "total": len(movies)}
+
+@api_router.get("/movies/fetch-all-metadata/stream")
+async def fetch_all_metadata_stream():
+    """Fetch metadata for all movies with SSE progress updates."""
+    if not TMDB_API_KEY:
+        raise HTTPException(status_code=400, detail="TMDB API key not configured")
+    
+    async def generate_progress() -> AsyncGenerator[str, None]:
+        movies = await db.movies.find(
+            {"$or": [{"metadata_fetched": False}, {"metadata_fetched": {"$exists": False}}, {"poster_path": None}]}, 
+            {"_id": 0, "id": 1, "title": 1, "year": 1, "file_name": 1}
+        ).to_list(500)
+        
+        total = len(movies)
+        
+        # Send initial status
+        yield f"data: {json.dumps({'type': 'start', 'total': total, 'message': f'Found {total} movies without metadata'})}\n\n"
+        
+        if total == 0:
+            yield f"data: {json.dumps({'type': 'complete', 'updated': 0, 'total': 0, 'message': 'All movies already have metadata!'})}\n\n"
+            return
+        
+        updated_count = 0
+        failed_count = 0
+        
+        for i, movie in enumerate(movies):
+            try:
+                # Send progress update
+                yield f"data: {json.dumps({'type': 'progress', 'current': i + 1, 'total': total, 'movie': movie.get('title') or movie.get('file_name'), 'updated': updated_count})}\n\n"
+                
+                result = await fetch_movie_metadata(movie["id"])
+                if isinstance(result, dict) and result.get("metadata_fetched"):
+                    updated_count += 1
+                    yield f"data: {json.dumps({'type': 'found', 'movie': movie.get('title') or movie.get('file_name'), 'current': i + 1, 'updated': updated_count})}\n\n"
+                else:
+                    failed_count += 1
+                
+                # Rate limiting
+                await asyncio.sleep(0.4)
+                
+            except Exception as e:
+                failed_count += 1
+                logging.error(f"Error fetching metadata for {movie['id']}: {e}")
+                yield f"data: {json.dumps({'type': 'error', 'movie': movie.get('title') or movie.get('file_name'), 'error': str(e)})}\n\n"
+        
+        # Send completion status
+        yield f"data: {json.dumps({'type': 'complete', 'updated': updated_count, 'failed': failed_count, 'total': total, 'message': f'Completed! Updated {updated_count} of {total} movies'})}\n\n"
+    
+    return StreamingResponse(
+        generate_progress(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+# Scan progress tracking
+scan_progress = {}
+
+@api_router.get("/scan/progress/{scan_id}")
+async def get_scan_progress(scan_id: str):
+    """Get current scan progress."""
+    progress = scan_progress.get(scan_id)
+    if not progress:
+        return {"status": "not_found"}
+    return progress
+
+@api_router.post("/scan/start")
+async def start_scan_with_progress(request: Request, background_tasks: BackgroundTasks, recursive: bool = True, session_token: Optional[str] = Cookie(default=None)):
+    """Start scan with progress tracking."""
+    # Check user authentication and tier limits
+    user = await get_current_user(request, session_token)
+    current_movie_count = await db.movies.count_documents({})
+    
+    scan_id = f"scan_{uuid.uuid4().hex[:8]}"
+    
+    # Initialize progress
+    scan_progress[scan_id] = {
+        "status": "starting",
+        "scan_id": scan_id,
+        "directories_total": 0,
+        "directories_scanned": 0,
+        "current_directory": None,
+        "files_found": 0,
+        "movies_added": 0,
+        "skipped_due_to_limit": 0,
+        "started_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Start background scan
+    background_tasks.add_task(
+        run_scan_with_progress, 
+        scan_id, 
+        recursive, 
+        user,
+        current_movie_count
+    )
+    
+    return {"scan_id": scan_id, "status": "started"}
+
+async def run_scan_with_progress(scan_id: str, recursive: bool, user, current_movie_count: int):
+    """Run scan in background with progress updates."""
+    try:
+        directories = await db.directories.find({}, {"_id": 0}).to_list(100)
+        
+        scan_progress[scan_id]["directories_total"] = len(directories)
+        scan_progress[scan_id]["status"] = "scanning"
+        
+        total_files = 0
+        new_movies = 0
+        skipped_due_to_limit = 0
+        
+        for dir_idx, directory in enumerate(directories):
+            dir_path = directory["path"]
+            directory_id = directory["id"]
+            
+            scan_progress[scan_id]["current_directory"] = dir_path
+            scan_progress[scan_id]["directories_scanned"] = dir_idx
+            
+            # Scan directory for video files
+            video_files = scan_directory_for_videos(dir_path, recursive)
+            total_files += len(video_files)
+            scan_progress[scan_id]["files_found"] = total_files
+            
+            # Add new movies to database
+            for video in video_files:
+                # Check if movie already exists
+                existing = await db.movies.find_one({"file_path": video["file_path"]}, {"_id": 0})
+                if existing:
+                    continue
+                
+                # Check free tier limit
+                if user and user.subscription_tier != "pro":
+                    current_count = current_movie_count + new_movies
+                    if current_count >= FREE_TIER_MOVIE_LIMIT:
+                        skipped_due_to_limit += 1
+                        scan_progress[scan_id]["skipped_due_to_limit"] = skipped_due_to_limit
+                        continue
+                
+                # Extract title and year from filename
+                title, year = clean_movie_name(video["file_name"])
+                
+                movie = Movie(
+                    file_path=video["file_path"],
+                    file_name=video["file_name"],
+                    directory_id=directory_id,
+                    title=title,
+                    year=year
+                )
+                
+                doc = movie.model_dump()
+                doc['created_at'] = doc['created_at'].isoformat()
+                
+                await db.movies.insert_one(doc)
+                new_movies += 1
+                scan_progress[scan_id]["movies_added"] = new_movies
+            
+            # Update last_scanned
+            await db.directories.update_one(
+                {"id": directory["id"]},
+                {"$set": {"last_scanned": datetime.now(timezone.utc).isoformat()}}
+            )
+            
+            scan_progress[scan_id]["directories_scanned"] = dir_idx + 1
+        
+        # Update user's movie count
+        if user and new_movies > 0:
+            await db.users.update_one(
+                {"user_id": user.user_id},
+                {"$set": {"movies_count": current_movie_count + new_movies}}
+            )
+        
+        # Mark as complete
+        scan_progress[scan_id]["status"] = "complete"
+        scan_progress[scan_id]["completed_at"] = datetime.now(timezone.utc).isoformat()
+        
+        # Clean up progress after 5 minutes
+        await asyncio.sleep(300)
+        if scan_id in scan_progress:
+            del scan_progress[scan_id]
+            
+    except Exception as e:
+        logging.error(f"Scan error: {e}")
+        scan_progress[scan_id]["status"] = "error"
+        scan_progress[scan_id]["error"] = str(e)
 
 @api_router.delete("/movies/{movie_id}")
 async def delete_movie(movie_id: str):
