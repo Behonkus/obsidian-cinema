@@ -641,6 +641,151 @@ async def test_tmdb_key(api_key: str):
     except httpx.RequestError as e:
         return {"valid": False, "message": f"Connection error: {str(e)}"}
 
+# File System Browser endpoints
+@api_router.get("/filesystem/drives")
+async def list_drives():
+    """List available drives (Windows) or mount points (Linux/Mac)."""
+    import platform
+    drives = []
+    
+    if platform.system() == "Windows":
+        # Windows: List all drive letters
+        import string
+        for letter in string.ascii_uppercase:
+            drive_path = f"{letter}:\\"
+            if os.path.exists(drive_path):
+                try:
+                    # Get drive info
+                    total, used, free = 0, 0, 0
+                    try:
+                        import shutil
+                        total, used, free = shutil.disk_usage(drive_path)
+                    except:
+                        pass
+                    
+                    drives.append({
+                        "path": drive_path,
+                        "name": f"Drive {letter}:",
+                        "type": "drive",
+                        "total_gb": round(total / (1024**3), 1) if total else None,
+                        "free_gb": round(free / (1024**3), 1) if free else None
+                    })
+                except PermissionError:
+                    drives.append({
+                        "path": drive_path,
+                        "name": f"Drive {letter}:",
+                        "type": "drive",
+                        "accessible": False
+                    })
+    else:
+        # Linux/Mac: List common mount points
+        common_paths = ["/", "/home", "/mnt", "/media", "/Volumes"]
+        for path in common_paths:
+            if os.path.exists(path) and os.path.isdir(path):
+                try:
+                    import shutil
+                    total, used, free = shutil.disk_usage(path)
+                    drives.append({
+                        "path": path,
+                        "name": path,
+                        "type": "mount",
+                        "total_gb": round(total / (1024**3), 1),
+                        "free_gb": round(free / (1024**3), 1)
+                    })
+                except:
+                    drives.append({
+                        "path": path,
+                        "name": path,
+                        "type": "mount"
+                    })
+        
+        # Also list items in /mnt and /media
+        for mount_root in ["/mnt", "/media"]:
+            if os.path.exists(mount_root):
+                try:
+                    for item in os.listdir(mount_root):
+                        item_path = os.path.join(mount_root, item)
+                        if os.path.isdir(item_path):
+                            drives.append({
+                                "path": item_path,
+                                "name": item,
+                                "type": "mount"
+                            })
+                except PermissionError:
+                    pass
+    
+    return {"drives": drives, "platform": platform.system()}
+
+@api_router.get("/filesystem/browse")
+async def browse_directory(path: str = "/"):
+    """Browse a directory and list its subdirectories."""
+    import platform
+    
+    # Normalize path
+    if platform.system() == "Windows":
+        # Handle drive letters
+        if len(path) == 2 and path[1] == ":":
+            path = path + "\\"
+    
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="Path not found")
+    
+    if not os.path.isdir(path):
+        raise HTTPException(status_code=400, detail="Path is not a directory")
+    
+    items = []
+    try:
+        for item in sorted(os.listdir(path)):
+            item_path = os.path.join(path, item)
+            try:
+                is_dir = os.path.isdir(item_path)
+                # Skip hidden files/folders
+                if item.startswith('.'):
+                    continue
+                # Skip system folders on Windows
+                if platform.system() == "Windows" and item.lower() in ['$recycle.bin', 'system volume information', 'windows', 'program files', 'program files (x86)', 'programdata']:
+                    continue
+                    
+                if is_dir:
+                    # Count subdirectories and video files
+                    subdir_count = 0
+                    video_count = 0
+                    try:
+                        for sub_item in os.listdir(item_path):
+                            sub_path = os.path.join(item_path, sub_item)
+                            if os.path.isdir(sub_path):
+                                subdir_count += 1
+                            elif any(sub_item.lower().endswith(ext) for ext in ['.mp4', '.mkv', '.avi', '.mov', '.wmv']):
+                                video_count += 1
+                    except PermissionError:
+                        pass
+                    
+                    items.append({
+                        "name": item,
+                        "path": item_path,
+                        "type": "directory",
+                        "subdir_count": subdir_count,
+                        "video_count": video_count
+                    })
+            except PermissionError:
+                continue
+            except Exception as e:
+                continue
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    # Get parent path
+    parent_path = os.path.dirname(path.rstrip("/\\"))
+    if platform.system() == "Windows" and len(parent_path) == 2:
+        parent_path = parent_path + "\\"
+    
+    return {
+        "current_path": path,
+        "parent_path": parent_path if parent_path != path else None,
+        "items": items,
+        "platform": platform.system()
+    }
+
 # Directory endpoints
 @api_router.post("/directories", response_model=Directory)
 async def create_directory(input_data: DirectoryCreate):
