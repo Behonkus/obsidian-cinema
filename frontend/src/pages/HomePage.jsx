@@ -467,6 +467,20 @@ export default function HomePage() {
         onClose={() => setIsModalOpen(false)}
         onUpdate={handleMovieUpdate}
       />
+      
+      {/* Bulk Metadata Fetch Modal */}
+      <BulkMetadataFetch
+        isOpen={showBulkFetch}
+        onClose={() => setShowBulkFetch(false)}
+        onComplete={loadData}
+      />
+      
+      {/* Scan Progress Modal */}
+      <ScanProgressModal
+        isOpen={showScanProgress}
+        onClose={() => setShowScanProgress(false)}
+        onComplete={loadData}
+      />
     </div>
   );
 }
