@@ -45,6 +45,7 @@ export default function ScanProgressModal({ isOpen, onClose, onComplete }) {
   }, []);
 
   const startScan = async () => {
+    // Update status immediately
     setStatus("scanning");
     setProgress({
       directories_total: 0,
@@ -60,12 +61,46 @@ export default function ScanProgressModal({ isOpen, onClose, onComplete }) {
         withCredentials: true 
       });
       
-      setScanId(response.data.scan_id);
+      const newScanId = response.data.scan_id;
+      setScanId(newScanId);
       
-      // Start polling for progress
-      pollIntervalRef.current = setInterval(() => {
-        pollProgress(response.data.scan_id);
-      }, 500);
+      // Start polling for progress immediately
+      const poll = async () => {
+        try {
+          const progressResponse = await axios.get(`${API}/scan/progress/${newScanId}`);
+          const data = progressResponse.data;
+          
+          if (data.status === "not_found") {
+            return;
+          }
+          
+          setProgress({
+            directories_total: data.directories_total || 0,
+            directories_scanned: data.directories_scanned || 0,
+            current_directory: data.current_directory,
+            files_found: data.files_found || 0,
+            movies_added: data.movies_added || 0,
+            skipped_due_to_limit: data.skipped_due_to_limit || 0
+          });
+          
+          if (data.status === "complete") {
+            setStatus("complete");
+            if (onComplete) onComplete();
+          } else if (data.status === "error") {
+            setStatus("error");
+          } else {
+            // Continue polling
+            pollIntervalRef.current = setTimeout(poll, 500);
+          }
+        } catch (err) {
+          console.error("Error polling progress:", err);
+          // Continue polling even on error
+          pollIntervalRef.current = setTimeout(poll, 500);
+        }
+      };
+      
+      // Start first poll immediately
+      poll();
       
     } catch (err) {
       console.error("Failed to start scan:", err);
@@ -74,9 +109,8 @@ export default function ScanProgressModal({ isOpen, onClose, onComplete }) {
   };
 
   const pollProgress = async (id) => {
-    try {
-      const response = await axios.get(`${API}/scan/progress/${id}`);
-      const data = response.data;
+    // This function is now handled inline in startScan
+  };
       
       if (data.status === "not_found") {
         return;
