@@ -487,13 +487,13 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
                   </Button>
                 )}
                 <Button
-                  variant="ghost"
-                  className="rounded-full px-6"
+                  variant={showSearch ? "default" : "outline"}
+                  className={`rounded-full px-6 ${showSearch ? 'bg-primary' : 'border-primary/50 text-primary hover:bg-primary/10'}`}
                   onClick={() => setShowSearch(!showSearch)}
                   data-testid="search-tmdb-btn"
                 >
                   <Search className="w-4 h-4 mr-2" />
-                  Search TMDB
+                  {showSearch ? "Hide Search" : "Change Poster"}
                 </Button>
               </div>
               
