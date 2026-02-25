@@ -151,6 +151,79 @@ def generate_referral_code() -> str:
     chars = uuid.uuid4().hex[:6].upper()
     return f"CINEMA-{chars}"
 
+# Email Service
+def send_referral_success_email(referrer_email: str, referrer_name: str, referred_name: str, new_referral_count: int):
+    """Send email notification when a referred user upgrades to Pro."""
+    if not SENDGRID_API_KEY:
+        logging.warning("SendGrid API key not configured, skipping email notification")
+        return False
+    
+    subject = f"🎉 Your referral just upgraded to Pro!"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0a0a0a; color: #e5e5e5; margin: 0; padding: 20px; }}
+            .container {{ max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 12px; padding: 32px; border: 1px solid #262626; }}
+            .header {{ text-align: center; margin-bottom: 24px; }}
+            .logo {{ font-size: 24px; font-weight: bold; color: #f59e0b; }}
+            .crown {{ color: #f59e0b; font-size: 48px; }}
+            h1 {{ color: #ffffff; margin: 16px 0 8px 0; font-size: 24px; }}
+            .highlight {{ color: #f59e0b; font-weight: bold; }}
+            .stats-box {{ background-color: #262626; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0; }}
+            .stats-number {{ font-size: 36px; font-weight: bold; color: #f59e0b; }}
+            .stats-label {{ color: #a3a3a3; font-size: 14px; margin-top: 4px; }}
+            .footer {{ text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #262626; color: #737373; font-size: 12px; }}
+            p {{ line-height: 1.6; color: #d4d4d4; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="crown">👑</div>
+                <div class="logo">Obsidian Cinema</div>
+            </div>
+            
+            <h1>Great news, {referrer_name}!</h1>
+            
+            <p>Your friend <span class="highlight">{referred_name}</span> just upgraded to Pro using your referral code!</p>
+            
+            <p>Thanks to you, they got $5 off their upgrade. Keep sharing your code to help more friends discover Obsidian Cinema!</p>
+            
+            <div class="stats-box">
+                <div class="stats-number">{new_referral_count}</div>
+                <div class="stats-label">Total Friends Referred</div>
+            </div>
+            
+            <p>Your referral code is making a difference. Every friend you refer gets $5 off their Pro upgrade!</p>
+            
+            <div class="footer">
+                <p>Obsidian Cinema - Your Personal Movie Library</p>
+                <p>You're receiving this because someone used your referral code.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    message = Mail(
+        from_email=SENDER_EMAIL,
+        to_emails=referrer_email,
+        subject=subject,
+        html_content=html_content
+    )
+    
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message)
+        logging.info(f"Referral success email sent to {referrer_email}, status: {response.status_code}")
+        return response.status_code == 202
+    except Exception as e:
+        logging.error(f"Failed to send referral email: {e}")
+        return False
+
 # User and Auth Models
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
