@@ -289,20 +289,17 @@ class TestAddMovieEndpoint:
     def test_free_user_blocked_at_movie_limit(self):
         """Free user should get 403 when at movie limit"""
         # First check current movie count
-        limits_response = requests.get(
-            f"{BASE_URL}/api/user/limits",
-            headers={"Authorization": f"Bearer {FREE_USER_SESSION}"}
-        )
-        current_count = limits_response.json()["movies"]["current"]
+        movies_response = requests.get(f"{BASE_URL}/api/movies")
+        current_count = len(movies_response.json())
         
         if current_count < 30:
-            pytest.skip(f"Free user not at limit yet ({current_count}/30 movies)")
+            pytest.skip(f"Not at limit yet ({current_count}/30 movies)")
         
-        # Try to add a movie - should fail with 403
+        # Try to add a movie via /api/movies/add - should fail with 403
         response = requests.post(
-            f"{BASE_URL}/api/movies",
+            f"{BASE_URL}/api/movies/add",
             headers={"Authorization": f"Bearer {FREE_USER_SESSION}"},
-            json={
+            params={
                 "file_path": "/test/path/TEST_over_limit_movie.mp4",
                 "file_name": "TEST_over_limit_movie.mp4",
                 "directory_id": "test_dir_id"
