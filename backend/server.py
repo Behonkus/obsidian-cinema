@@ -1897,7 +1897,8 @@ async def get_pricing():
         },
         "referral": {
             "discount": REFERRAL_DISCOUNT,
-            "description": f"Share your code and friends get ${REFERRAL_DISCOUNT} off!"
+            "description": f"Share your code and friends get ${REFERRAL_DISCOUNT} off!",
+            "email_notifications": bool(SENDGRID_API_KEY)
         }
     }
 
