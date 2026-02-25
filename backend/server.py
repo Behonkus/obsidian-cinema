@@ -686,8 +686,21 @@ async def delete_directory(directory_id: str):
 
 # Collection endpoints
 @api_router.post("/collections", response_model=Collection)
-async def create_collection(input_data: CollectionCreate):
+async def create_collection(input_data: CollectionCreate, request: Request, session_token: Optional[str] = Cookie(default=None)):
     """Create a new collection."""
+    # Check user authentication and tier limits
+    user = await get_current_user(request, session_token)
+    if user:
+        # Get current collection count
+        collection_count = await db.collections.count_documents({})
+        
+        # Check free tier limit
+        if user.subscription_tier != "pro" and collection_count >= FREE_TIER_COLLECTION_LIMIT:
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Free tier limit reached. Upgrade to Pro for unlimited collections. (Current: {collection_count}/{FREE_TIER_COLLECTION_LIMIT})"
+            )
+    
     collection = Collection(
         name=input_data.name,
         description=input_data.description,
@@ -699,6 +712,14 @@ async def create_collection(input_data: CollectionCreate):
     doc['created_at'] = doc['created_at'].isoformat()
     
     await db.collections.insert_one(doc)
+    
+    # Update user's collection count
+    if user:
+        await db.users.update_one(
+            {"user_id": user.user_id},
+            {"$inc": {"collections_count": 1}}
+        )
+    
     return collection
 
 @api_router.get("/collections", response_model=List[Collection])
