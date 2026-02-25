@@ -1798,6 +1798,88 @@ async def get_stats():
 
 # ============ AUTH ENDPOINTS ============
 
+# DEV MODE: Set to True to enable dev-login endpoint
+# ⚠️ SET TO FALSE BEFORE PRODUCTION DEPLOYMENT
+DEV_MODE_ENABLED = True
+
+@api_router.post("/auth/dev-login")
+async def dev_login(response: Response):
+    """
+    DEV MODE: Auto-login as a test user for development/preview testing.
+    ⚠️ DISABLE IN PRODUCTION
+    """
+    if not DEV_MODE_ENABLED:
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Find or create dev user
+    dev_email = "dev@obsidiancinema.local"
+    existing_user = await db.users.find_one({"email": dev_email}, {"_id": 0})
+    
+    if existing_user:
+        user_id = existing_user["user_id"]
+    else:
+        # Create dev user with Pro status for full testing
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        referral_code = generate_referral_code()
+        new_user = {
+            "user_id": user_id,
+            "email": dev_email,
+            "name": "Dev User (Testing)",
+            "picture": None,
+            "subscription_tier": "pro",  # Pro for full access during testing
+            "movies_count": 0,
+            "collections_count": 0,
+            "stripe_customer_id": None,
+            "referral_code": referral_code,
+            "referral_count": 0,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(new_user)
+        logging.info(f"Created dev user: {user_id}")
+    
+    # Create session
+    session_token = f"dev_session_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    session_doc = {
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Remove old dev sessions
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one(session_doc)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=False,  # Allow non-HTTPS for preview
+        samesite="lax",
+        path="/",
+        max_age=30 * 24 * 60 * 60
+    )
+    
+    # Get user data
+    user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    
+    logging.info(f"Dev login successful for {user_id}")
+    
+    return {
+        "user_id": user_doc["user_id"],
+        "email": user_doc["email"],
+        "name": user_doc["name"],
+        "picture": user_doc.get("picture"),
+        "subscription_tier": user_doc["subscription_tier"],
+        "movies_count": user_doc.get("movies_count", 0),
+        "collections_count": user_doc.get("collections_count", 0),
+        "referral_code": user_doc.get("referral_code"),
+        "referral_count": user_doc.get("referral_count", 0),
+        "dev_mode": True
+    }
+
 @api_router.post("/auth/session")
 async def process_auth_session(request: Request, response: Response):
     """
