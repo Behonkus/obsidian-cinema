@@ -148,11 +148,12 @@ To enable referral success email notifications:
 - [x] User authentication (Google OAuth)
 - [x] Pro tier with Stripe
 - [x] Referral program
+- [x] **Free tier limits enforcement** (30 movies, 3 collections max)
 
 ## P1 Features (Important - Pending)
-- [ ] Enforce usage limits on movie/collection creation for free users
+- [ ] Bulk metadata fetch (auto-find posters for all movies)
 - [ ] Real-time scan progress indicator
-- [ ] Batch metadata fetching improvements
+- [ ] Welcome email for new users
 
 ## P2 Features (Nice to Have)
 - [ ] Custom poster upload
