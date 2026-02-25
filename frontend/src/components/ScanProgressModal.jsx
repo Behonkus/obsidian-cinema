@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
 import { 
   RefreshCw, 
   Check, 
   FolderSearch,
-  Film,
   AlertCircle,
   Crown
 } from "lucide-react";
@@ -33,19 +31,35 @@ export default function ScanProgressModal({ isOpen, onClose, onComplete }) {
     movies_added: 0,
     skipped_due_to_limit: 0
   });
-  const pollIntervalRef = useRef(null);
+  const pollTimeoutRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
       }
     };
   }, []);
 
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setStatus("idle");
+      setScanId(null);
+      setProgress({
+        directories_total: 0,
+        directories_scanned: 0,
+        current_directory: null,
+        files_found: 0,
+        movies_added: 0,
+        skipped_due_to_limit: 0
+      });
+    }
+  }, [isOpen]);
+
   const startScan = async () => {
-    // Update status immediately
+    console.log("Starting scan...");
     setStatus("scanning");
     setProgress({
       directories_total: 0,
@@ -61,46 +75,12 @@ export default function ScanProgressModal({ isOpen, onClose, onComplete }) {
         withCredentials: true 
       });
       
+      console.log("Scan started:", response.data);
       const newScanId = response.data.scan_id;
       setScanId(newScanId);
       
-      // Start polling for progress immediately
-      const poll = async () => {
-        try {
-          const progressResponse = await axios.get(`${API}/scan/progress/${newScanId}`);
-          const data = progressResponse.data;
-          
-          if (data.status === "not_found") {
-            return;
-          }
-          
-          setProgress({
-            directories_total: data.directories_total || 0,
-            directories_scanned: data.directories_scanned || 0,
-            current_directory: data.current_directory,
-            files_found: data.files_found || 0,
-            movies_added: data.movies_added || 0,
-            skipped_due_to_limit: data.skipped_due_to_limit || 0
-          });
-          
-          if (data.status === "complete") {
-            setStatus("complete");
-            if (onComplete) onComplete();
-          } else if (data.status === "error") {
-            setStatus("error");
-          } else {
-            // Continue polling
-            pollIntervalRef.current = setTimeout(poll, 500);
-          }
-        } catch (err) {
-          console.error("Error polling progress:", err);
-          // Continue polling even on error
-          pollIntervalRef.current = setTimeout(poll, 500);
-        }
-      };
-      
-      // Start first poll immediately
-      poll();
+      // Start polling
+      pollProgress(newScanId);
       
     } catch (err) {
       console.error("Failed to start scan:", err);
@@ -109,10 +89,15 @@ export default function ScanProgressModal({ isOpen, onClose, onComplete }) {
   };
 
   const pollProgress = async (id) => {
-    // This function is now handled inline in startScan
-  };
+    try {
+      const response = await axios.get(`${API}/scan/progress/${id}`);
+      const data = response.data;
+      
+      console.log("Poll response:", data);
       
       if (data.status === "not_found") {
+        // Keep polling if not found yet
+        pollTimeoutRef.current = setTimeout(() => pollProgress(id), 500);
         return;
       }
       
@@ -126,21 +111,25 @@ export default function ScanProgressModal({ isOpen, onClose, onComplete }) {
       });
       
       if (data.status === "complete") {
+        console.log("Scan complete!");
         setStatus("complete");
-        clearInterval(pollIntervalRef.current);
         if (onComplete) onComplete();
       } else if (data.status === "error") {
         setStatus("error");
-        clearInterval(pollIntervalRef.current);
+      } else {
+        // Continue polling
+        pollTimeoutRef.current = setTimeout(() => pollProgress(id), 500);
       }
     } catch (err) {
       console.error("Error polling progress:", err);
+      // Continue polling even on error
+      pollTimeoutRef.current = setTimeout(() => pollProgress(id), 1000);
     }
   };
 
   const handleClose = () => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
     }
     setStatus("idle");
     setScanId(null);
@@ -186,7 +175,7 @@ export default function ScanProgressModal({ isOpen, onClose, onComplete }) {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Directories</span>
                   <span className="font-medium">
-                    {progress.directories_scanned} / {progress.directories_total}
+                    {progress.directories_scanned} / {progress.directories_total || "..."}
                   </span>
                 </div>
                 <Progress value={progressPercent} className="h-2" />
