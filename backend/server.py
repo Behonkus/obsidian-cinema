@@ -1141,8 +1141,18 @@ async def validate_directory(path: str):
         }
 
 @api_router.post("/movies/add")
-async def add_movie(file_path: str, file_name: str, directory_id: str):
+async def add_movie(file_path: str, file_name: str, directory_id: str, request: Request, session_token: Optional[str] = Cookie(default=None)):
     """Add a movie file to the database."""
+    # Check user authentication and tier limits
+    user = await get_current_user(request, session_token)
+    if user and user.subscription_tier != "pro":
+        current_movie_count = await db.movies.count_documents({})
+        if current_movie_count >= FREE_TIER_MOVIE_LIMIT:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Free tier limit reached ({FREE_TIER_MOVIE_LIMIT} movies). Upgrade to Pro for unlimited movies."
+            )
+    
     # Check if movie already exists
     existing = await db.movies.find_one({"file_path": file_path}, {"_id": 0})
     if existing:
@@ -1163,12 +1173,26 @@ async def add_movie(file_path: str, file_name: str, directory_id: str):
     doc['created_at'] = doc['created_at'].isoformat()
     
     await db.movies.insert_one(doc)
+    
+    # Update user's movie count
+    if user:
+        await db.users.update_one(
+            {"user_id": user.user_id},
+            {"$inc": {"movies_count": 1}}
+        )
+    
     return movie
 
 @api_router.post("/movies/bulk-add")
-async def bulk_add_movies(movies: List[dict]):
+async def bulk_add_movies(movies: List[dict], request: Request, session_token: Optional[str] = Cookie(default=None)):
     """Add multiple movies at once."""
+    # Check user authentication and tier limits
+    user = await get_current_user(request, session_token)
+    current_movie_count = await db.movies.count_documents({})
+    
     added = []
+    skipped_due_to_limit = 0
+    
     for m in movies:
         file_path = m.get("file_path")
         file_name = m.get("file_name")
