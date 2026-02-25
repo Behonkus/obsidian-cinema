@@ -10,11 +10,15 @@ import requests
 import os
 import time
 import json
+import subprocess
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL').rstrip('/')
 
 # Test session token from previous iteration
 TEST_SESSION_TOKEN = "test_scan_session_1772018023207"
+
+# Use shorter timeouts for tests
+DEFAULT_TIMEOUT = 5
 
 
 class TestSSEBulkMetadataFetch:
