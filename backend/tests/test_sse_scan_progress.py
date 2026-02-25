@@ -233,7 +233,7 @@ class TestScanProgressFields:
             f"{BASE_URL}/api/scan/start?recursive=true",
             cookies={"session_token": TEST_SESSION_TOKEN},
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=DEFAULT_TIMEOUT
         )
         
         assert start_response.status_code == 200
@@ -245,7 +245,7 @@ class TestScanProgressFields:
         # Get progress
         progress_response = requests.get(
             f"{BASE_URL}/api/scan/progress/{scan_id}",
-            timeout=10
+            timeout=DEFAULT_TIMEOUT
         )
         
         assert progress_response.status_code == 200
@@ -280,7 +280,7 @@ class TestStatsEndpoint:
         """GET /api/stats returns without_metadata count"""
         response = requests.get(
             f"{BASE_URL}/api/stats",
-            timeout=10
+            timeout=DEFAULT_TIMEOUT
         )
         
         assert response.status_code == 200
