@@ -14,7 +14,9 @@ import {
   Eye,
   ArrowUpDown,
   FolderHeart,
-  X
+  X,
+  ImageIcon,
+  FolderSearch
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +32,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailModal from "@/components/MovieDetailModal";
 import EmptyState from "@/components/EmptyState";
+import BulkMetadataFetch from "@/components/BulkMetadataFetch";
+import ScanProgressModal from "@/components/ScanProgressModal";
 import { toast } from "sonner";
 import axios from "axios";
 
