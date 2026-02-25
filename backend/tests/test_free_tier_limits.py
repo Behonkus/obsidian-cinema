@@ -11,7 +11,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
 FREE_USER_SESSION = "test_free_session_1772017196823"
-PRO_USER_SESSION = "test_session_pro_1770922222961"
+PRO_USER_SESSION = "test_pro_session_1772017371286"
 
 
 class TestUserLimitsEndpoint:
