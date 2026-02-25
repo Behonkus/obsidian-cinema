@@ -16,7 +16,8 @@ import {
   Eye,
   FolderHeart,
   Plus,
-  Minus
+  Minus,
+  ImageIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
