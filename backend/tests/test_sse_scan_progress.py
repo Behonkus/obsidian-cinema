@@ -141,7 +141,7 @@ class TestScanProgressEndpoint:
             f"{BASE_URL}/api/scan/start?recursive=true",
             cookies={"session_token": TEST_SESSION_TOKEN},
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=DEFAULT_TIMEOUT
         )
         
         assert start_response.status_code == 200
@@ -153,7 +153,7 @@ class TestScanProgressEndpoint:
         # Get progress
         progress_response = requests.get(
             f"{BASE_URL}/api/scan/progress/{scan_id}",
-            timeout=10
+            timeout=DEFAULT_TIMEOUT
         )
         
         # Status code assertion
@@ -174,7 +174,7 @@ class TestScanProgressEndpoint:
             f"{BASE_URL}/api/scan/start?recursive=true",
             cookies={"session_token": TEST_SESSION_TOKEN},
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=DEFAULT_TIMEOUT
         )
         
         assert start_response.status_code == 200
@@ -188,7 +188,7 @@ class TestScanProgressEndpoint:
         for _ in range(max_attempts):
             progress_response = requests.get(
                 f"{BASE_URL}/api/scan/progress/{scan_id}",
-                timeout=10
+                timeout=DEFAULT_TIMEOUT
             )
             
             if progress_response.status_code == 200:
@@ -212,7 +212,7 @@ class TestScanProgressEndpoint:
         """GET /api/scan/progress/{invalid_id} returns not_found status"""
         response = requests.get(
             f"{BASE_URL}/api/scan/progress/invalid_scan_id_12345",
-            timeout=10
+            timeout=DEFAULT_TIMEOUT
         )
         
         # Status code assertion
