@@ -97,11 +97,35 @@ export default function DirectoriesPage() {
   const handleScanDirectory = async (dirId) => {
     setScanningDirId(dirId);
     try {
-      const response = await axios.post(`${API}/directories/${dirId}/scan?recursive=true`);
-      toast.success(`Scan complete! Found ${response.data.total_files} files, added ${response.data.new_movies} new movies`);
+      const response = await axios.post(`${API}/directories/${dirId}/scan?recursive=true`, {}, { withCredentials: true });
+      
+      let message = `Scan complete! Found ${response.data.total_files} files, added ${response.data.new_movies} new movies`;
+      
+      // Check for limit warning
+      if (response.data.skipped_due_to_limit) {
+        toast.warning(response.data.limit_message, {
+          duration: 8000,
+          action: {
+            label: "Upgrade",
+            onClick: () => window.location.href = "/upgrade"
+          }
+        });
+        message += ` (${response.data.skipped_due_to_limit} skipped due to free tier limit)`;
+      }
+      
+      toast.success(message);
       loadData();
     } catch (err) {
-      toast.error("Failed to scan directory. Make sure the path is accessible.");
+      if (err.response?.status === 403) {
+        toast.error(err.response.data.detail, {
+          action: {
+            label: "Upgrade",
+            onClick: () => window.location.href = "/upgrade"
+          }
+        });
+      } else {
+        toast.error("Failed to scan directory. Make sure the path is accessible.");
+      }
     } finally {
       setScanningDirId(null);
     }
@@ -110,11 +134,35 @@ export default function DirectoriesPage() {
   const handleScanAll = async () => {
     setIsScanningAll(true);
     try {
-      const response = await axios.post(`${API}/scan?recursive=true`);
-      toast.success(`Scan complete! Found ${response.data.total_files} files, added ${response.data.new_movies} new movies from ${response.data.directories_scanned} directories`);
+      const response = await axios.post(`${API}/scan?recursive=true`, {}, { withCredentials: true });
+      
+      let message = `Scan complete! Found ${response.data.total_files} files, added ${response.data.new_movies} new movies from ${response.data.directories_scanned} directories`;
+      
+      // Check for limit warning
+      if (response.data.skipped_due_to_limit) {
+        toast.warning(response.data.limit_message, {
+          duration: 8000,
+          action: {
+            label: "Upgrade",
+            onClick: () => window.location.href = "/upgrade"
+          }
+        });
+        message += ` (${response.data.skipped_due_to_limit} skipped due to free tier limit)`;
+      }
+      
+      toast.success(message);
       loadData();
     } catch (err) {
-      toast.error("Failed to scan directories");
+      if (err.response?.status === 403) {
+        toast.error(err.response.data.detail, {
+          action: {
+            label: "Upgrade",
+            onClick: () => window.location.href = "/upgrade"
+          }
+        });
+      } else {
+        toast.error("Failed to scan directories");
+      }
     } finally {
       setIsScanningAll(false);
     }
