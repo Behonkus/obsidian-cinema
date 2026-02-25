@@ -295,15 +295,38 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
             
-            {posterUrl && (
-              <div className="absolute bottom-4 left-6 w-24 md:w-32 aspect-[2/3] rounded-lg overflow-hidden border-2 border-border shadow-xl">
-                <img
-                  src={posterUrl}
-                  alt={displayTitle}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+            {/* Poster with Change Poster overlay */}
+            <div className="absolute bottom-4 left-6 w-24 md:w-32 aspect-[2/3] rounded-lg overflow-hidden border-2 border-border shadow-xl group">
+              {posterUrl ? (
+                <>
+                  <img
+                    src={posterUrl}
+                    alt={displayTitle}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Hover overlay to change poster */}
+                  <div 
+                    className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer"
+                    onClick={() => setShowSearch(true)}
+                    data-testid="change-poster-overlay"
+                  >
+                    <Search className="w-6 h-6 text-white mb-1" />
+                    <span className="text-xs text-white font-medium">Change</span>
+                    <span className="text-xs text-white font-medium">Poster</span>
+                  </div>
+                </>
+              ) : (
+                /* No poster - show search prompt */
+                <div 
+                  className="w-full h-full bg-secondary/50 flex flex-col items-center justify-center cursor-pointer hover:bg-secondary/70 transition-colors"
+                  onClick={() => setShowSearch(true)}
+                  data-testid="add-poster-btn"
+                >
+                  <Search className="w-6 h-6 text-muted-foreground mb-1" />
+                  <span className="text-xs text-muted-foreground font-medium text-center px-1">Find Poster</span>
+                </div>
+              )}
+            </div>
           </div>
           
           <ScrollArea className="flex-1 overflow-auto">
