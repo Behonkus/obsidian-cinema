@@ -67,6 +67,7 @@ export default function DirectoriesPage() {
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isBrowserOpen, setIsBrowserOpen] = useState(false);
   const [newDirPath, setNewDirPath] = useState("");
   const [newDirName, setNewDirName] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -74,6 +75,16 @@ export default function DirectoriesPage() {
   const [isImporting, setIsImporting] = useState(false);
   const [scanningDirId, setScanningDirId] = useState(null);
   const [isScanningAll, setIsScanningAll] = useState(false);
+
+  const handleBrowseSelect = (path) => {
+    setNewDirPath(path);
+    // Auto-generate name from path
+    const pathParts = path.replace(/\\/g, '/').split('/').filter(Boolean);
+    const suggestedName = pathParts[pathParts.length - 1] || path;
+    if (!newDirName) {
+      setNewDirName(suggestedName);
+    }
+  };
 
   useEffect(() => {
     loadData();
