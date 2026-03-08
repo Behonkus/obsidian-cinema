@@ -10,7 +10,7 @@ import json
 from datetime import datetime
 
 class ObsidianCinemaAPITester:
-    def __init__(self, base_url="https://obsidian-cinema-1.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://poster-player.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0

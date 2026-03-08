@@ -1,7 +1,9 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, dialog } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
+const fs = require('fs');
+const crypto = require('crypto');
 
 // Keep a global reference of the window object
 let mainWindow;
@@ -10,6 +12,140 @@ let backendProcess;
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const BACKEND_PORT = 8001;
 const FRONTEND_PORT = isDev ? 3000 : 8001;
+
+// License storage path
+const getLicenseFilePath = () => {
+  const userDataPath = app.getPath('userData');
+  return path.join(userDataPath, 'license.json');
+};
+
+// Generate a unique machine ID based on hardware
+const generateMachineId = () => {
+  const os = require('os');
+  const cpus = os.cpus();
+  const hostname = os.hostname();
+  const platform = os.platform();
+  const arch = os.arch();
+  const networkInterfaces = os.networkInterfaces();
+  
+  // Get first non-internal MAC address
+  let macAddress = '';
+  for (const interfaceName in networkInterfaces) {
+    const interfaces = networkInterfaces[interfaceName];
+    for (const iface of interfaces) {
+      if (!iface.internal && iface.mac && iface.mac !== '00:00:00:00:00:00') {
+        macAddress = iface.mac;
+        break;
+      }
+    }
+    if (macAddress) break;
+  }
+  
+  // Combine hardware info to create unique ID
+  const machineData = `${hostname}-${platform}-${arch}-${cpus[0]?.model || ''}-${macAddress}`;
+  return crypto.createHash('sha256').update(machineData).digest('hex').substring(0, 32).toUpperCase();
+};
+
+// License management functions
+const getLicenseData = () => {
+  try {
+    const licensePath = getLicenseFilePath();
+    if (fs.existsSync(licensePath)) {
+      const data = fs.readFileSync(licensePath, 'utf-8');
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error('Error reading license:', err);
+  }
+  return null;
+};
+
+const saveLicenseData = (licenseData) => {
+  try {
+    const licensePath = getLicenseFilePath();
+    fs.writeFileSync(licensePath, JSON.stringify(licenseData, null, 2));
+    return true;
+  } catch (err) {
+    console.error('Error saving license:', err);
+    return false;
+  }
+};
+
+const clearLicenseData = () => {
+  try {
+    const licensePath = getLicenseFilePath();
+    if (fs.existsSync(licensePath)) {
+      fs.unlinkSync(licensePath);
+    }
+    return true;
+  } catch (err) {
+    console.error('Error clearing license:', err);
+    return false;
+  }
+};
+
+// IPC Handlers for license management
+ipcMain.handle('license:get', () => {
+  return getLicenseData();
+});
+
+ipcMain.handle('license:set', (event, licenseData) => {
+  return saveLicenseData(licenseData);
+});
+
+ipcMain.handle('license:clear', () => {
+  return clearLicenseData();
+});
+
+ipcMain.handle('license:getMachineId', () => {
+  return generateMachineId();
+});
+
+// IPC Handlers for app info
+ipcMain.handle('app:version', () => {
+  return app.getVersion();
+});
+
+// IPC Handlers for file dialogs
+ipcMain.handle('dialog:openFile', async (event, options) => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    ...options
+  });
+  return result;
+});
+
+ipcMain.handle('dialog:openFolder', async (event, options) => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    ...options
+  });
+  return result;
+});
+
+// IPC Handlers for external links
+ipcMain.handle('shell:openExternal', (event, url) => {
+  shell.openExternal(url);
+});
+
+// IPC Handlers for window controls
+ipcMain.handle('window:minimize', () => {
+  if (mainWindow) mainWindow.minimize();
+});
+
+ipcMain.handle('window:maximize', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.handle('window:close', () => {
+  if (mainWindow) mainWindow.close();
+});
 
 // Check if backend is ready
 function waitForBackend(retries = 30) {

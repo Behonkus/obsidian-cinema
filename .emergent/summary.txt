@@ -1,57 +1,74 @@
 <analysis>**original_problem_statement:**
-The user wants to build an application named Obsidian Cinema that scans directories of movie files, displays associated movie posters, and allows playing the files by clicking on the posters, which should trigger .
+The user wants to build an application named Obsidian Cinema that scans directories of movie files, displays associated movie posters, and allows playing the files by clicking on the posters, which should trigger . The application should support both local and network drives, fetch metadata from TMDB, and include features like favorites, watchlists, custom collections, and sorting.
+
+The project has since evolved to include monetization via a Pro tier with Stripe, user authentication, a referral program, email notifications, and most recently, a request to convert the web application into an installable Windows desktop app using Electron to allow direct access to local drives like .
 
 **PRODUCT REQUIREMENTS:**
 - Scan local and shared network directories for movie files.
 - Fetch movie metadata and posters from The Movie Database (TMDB).
-- Do not store poster files in the movie directories; use a separate, dedicated repository for them.
+- Cache posters in a separate, dedicated directory.
 - Display the movie library in a grid of posters.
-- Clicking a movie poster should open a detail modal.
-- The modal should have a button to play the movie file using the  protocol.
-- Implement a settings page to configure the TMDB API key.
-- Add features for a user to mark movies as 'favorite', 'watchlist', or 'watched'.
-- Implement sorting options for the movie library (e.g., by title, year, rating, date added).
-- Allow users to create custom collections/playlists to group movies.
-- Monetize the application with a Pro tier using Stripe integration, offering premium features over a limited free tier.
+- Clicking a poster opens a detail modal with a play button ().
+- Implement a settings page for the TMDB API key.
+- Implement user-status features: 'favorite', 'watchlist', 'watched'.
+- Implement movie library sorting options.
+- Allow users to create custom collections/playlists.
+- Monetize with a Pro tier using Stripe, offering premium features over a limited free tier.
+- Implement a referral program.
+- Implement a graphical directory browser to select movie folders.
+- **Convert the application into an installable Windows desktop app (using Electron).**
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application with a React frontend and FastAPI backend is in place. The app, Obsidian Cinema, features a dark theme UI and successfully scans local and network directories to build a movie library. It fetches metadata from TMDB and caches posters in a local  directory. Core features like directory management, a movie detail modal with a play button, a settings page for the TMDB API key, favorites/watchlist functionality, movie sorting, and custom collections are all implemented and functional.
+A full-stack application with a React frontend and FastAPI backend. The application, Obsidian Cinema, successfully scans directories, fetches metadata from TMDB, and manages a local poster cache. Key features implemented include:
+- A Pro tier with Stripe integration and user authentication (Google OAuth).
+- Usage limits for the free tier (movies, collections).
+- A complete referral system with discounts.
+- An optional email notification system (using SendGrid).
+- A graphical directory browser for selecting movie paths.
+
+The agent has just begun the process of converting the application into an Electron-based desktop app by installing dependencies and creating the initial main process file (). The monetization strategy for the desktop version is currently under discussion.
 
 **Last working item**:
-    - Last item agent was working: The agent was about to begin implementing a monetization feature. The user agreed to add a Pro tier, and the agent has just received the integration playbook for Stripe to handle payments and subscriptions.
-    - Status: NOT STARTED
+    - Last item agent was working: Discussing the implications of converting the application to an installable Windows app on the existing monetization model (Stripe, Google Auth, webhooks). The agent presented four options, and is awaiting the user's decision.
+    - Status: BLOCKED
     - Agent Testing Done: N
-    - Which testing method agent to use? both
+    - Which testing method agent to use? NA
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-There are no pending or unresolved issues from the previous sessions. The application is stable.
+  Issue 1:  Monetization strategy for the desktop app is undecided. (Priority: P0)
+  
+  Issues Detail:
+  - Issue 1: 
+     - Attempted fixes: The agent has explained the technical challenges (Stripe Checkout, Google OAuth, Webhooks) and proposed four solutions:
+        1. **Hybrid Model:** Desktop app connects to a central server for license checks.
+        2. **License Key System:** Users enter a key purchased online.
+        3. **Desktop-Focused Payment Services:** Use Paddle, Gumroad, etc.
+        4. **Remove Monetization:** Make the desktop app free for personal use.
+     - Next debug checklist: The next agent must use the  tool to get the user's decision on which monetization strategy to implement for the Electron app.
+     - Why fix this issue and what will be achieved with the fix? The decision is critical for proceeding with the Electron app conversion, as it dictates how authentication, payments, and user state will be handled.
+     - Status:  BLOCKED
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? Both
+     - Blocked on other issue: User Decision
 
 **In progress Task List**:
-- **Task 1: Implement Pro Tier with Stripe Integration**
-  - **Where to resume:** The agent has the plan and the Stripe integration playbook. The next step is to begin the backend implementation by adding user authentication and subscription models.
-  - **What will be achieved with this?** This will introduce a freemium model. A Pro tier will offer unlimited features, while the free tier will have usage limits (e.g., number of movies, collections). This provides a path to monetization for the application.
-  - **Status:** NOT STARTED
-  - **Should Test frontend/backend/both after fix?** Both
-  - **Blocked on something:** None
+  - Task 1: Convert the web application to an Electron desktop app.
+     - Where to resume: The Electron dependencies (, ) have been added to  and a basic  file has been created. The  has been updated with a  entry. The next step is to get the user's decision on monetization before continuing the implementation.
+     - What will be achieved with this? A native Windows desktop application that can directly access local drives (like ) and feels like a standard installed program.
+     - Status:  IN PROGRESS
+     - Should Test frontend/backend/both after fix? Both
+     - Blocked on something: Issue 1: Undecided monetization strategy.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-- **P0: Implement User Authentication & Subscription Backend:**
-  - In , add user registration and login endpoints.
-  - Create a  collection in MongoDB to store user data, subscription status (               total        used        free      shared  buff/cache   available
-Mem:        16358500     9740692      397888       46152     6535384     6617808
-Swap:              0           0           0/), and .
-- **P0: Implement Stripe Endpoints:**
-  - In , create a  endpoint to initiate payment.
-  - In , create a  endpoint to listen for Stripe events (e.g., ) and update the user's subscription status.
-- **P0: Enforce Usage Limits:**
-  - In , modify endpoints for adding movies and collections to check the user's subscription status and enforce limits for the free tier.
-- **P0: Create Frontend for Pro Tier:**
-  - Create a new pricing/upgrade page ().
-  - Update the UI (, etc.) to display Pro badges, show upgrade prompts, and conditionally render features based on the user's subscription status.
+- **P0: Implement Chosen Monetization Strategy:** Based on user's choice, implement the hybrid, license key, or removal of the pro tier for the desktop app.
+- **P1: Finalize Electron Configuration:**
+    - Update  to handle the main process, create the browser window, and manage inter-process communication (IPC).
+    - Modify the backend  to be packaged and run alongside the Electron app.
+    - Create build scripts in  to package the Electron app into an  installer.
 
 **Future Tasks:**
 - Implement a watch party feature for synchronized playback.
@@ -59,16 +76,17 @@ Swap:              0           0           0/), and .
 - Integrate AI-based movie recommendations.
 - Automatically fetch and display movie trailers.
 - Add parental controls and multi-user profiles.
+- Implement a welcome email for new users.
 
 **Completed work in this session**
-- **Core Application:** Built the foundational movie library scanner and player UI.
-- **Network & Local Scanning:** Implemented backend logic in  to scan both local and network file paths.
-- **Local Poster Cache:** Created a system to download posters from TMDB and cache them locally in , with an endpoint  to serve them.
-- **Settings Page:** Added a  page () and backend endpoints in  to configure the TMDB API key and view library statistics.
-- **Favorites & Watchlist:** Implemented features to mark movies as favorite, watchlist, or watched, with UI elements in , , and filtering logic in .
-- **Movie Sorting:** Added a dropdown on  to sort the library by title, year, rating, and date added, supported by backend logic in .
-- **Custom Collections:** Implemented a full CRUD feature for user-defined collections, including  for management and integration into the .
-- **Deployment Health Check:** Verified that all services are running and key APIs are responsive.
+- **Pro Tier & Monetization:** Implemented a full-featured Pro tier with Stripe checkout, Google OAuth, and backend usage limits for free users.
+- **Referral Program:** Added a referral system where Pro users get a code, and referred users receive a discount on their upgrade.
+- **Email Notifications:** Integrated SendGrid to send email notifications upon successful referrals (currently disabled pending API key).
+- **Manual User Upgrade:** Successfully upgraded a user's account to Pro status directly via a database command.
+- **UI Enhancement for Poster Change:** Made the existing Search TMDB feature more prominent in the  UI.
+- **Dev Mode Auth Bypass:** Implemented and subsequently removed a temporary developer mode to bypass login for testing in the preview environment.
+- **Graphical Directory Browser:** Added a backend API and frontend component to graphically browse drives and folders, addressing the user's inability to access the  drive from the web preview.
+- **Electron Conversion (Started):** Installed Electron dependencies and created the initial main process file.
 
 **Earlier issues found/mentioned but not fixed**
 None.
@@ -80,83 +98,88 @@ None.
 
 
 **Key Technical Concepts**
-- **Backend:** FastAPI, Motor for asynchronous MongoDB operations, Pydantic for data modeling.
-- **Frontend:** React, Tailwind CSS, Shadcn UI components, Framer Motion for animations.
+- **Backend:** FastAPI, Motor (async MongoDB), Pydantic.
+- **Frontend:** React, Tailwind CSS, Shadcn UI, Framer Motion.
+- **Desktop:** Electron.js (new).
 - **Database:** MongoDB.
-- **External APIs:** The Movie Database (TMDB) for movie metadata.
+- **External APIs:** TMDB, Stripe, SendGrid, Google OAuth.
+- **Real-time:** Server-Sent Events (SSE) for scan progress.
 
 **key DB schema**
+- **users:** 
+- **referrals:** 
 - **directories:** 
 - **movies:** 
 - **collections:** 
-- **settings:** 
 
 **changes in tech stack**
-None.
+- **Electron.js** has been introduced to begin converting the web app into a desktop application.
 
 **All files of reference**
-- : Contains all backend logic, including API endpoints for movies, directories, collections, settings, and scanning. This file will be modified to add user authentication and Stripe integration.
-- : The main library view with the movie grid, filters, and sorting controls.
-- : The UI for managing custom movie collections.
-- : The UI for configuring the TMDB API key.
-- : The modal that displays movie details and actions like Play, Add to Collection, and Favorite.
-- : The main UI shell containing the sidebar navigation, which will be updated to reflect user auth status.
-- : The Product Requirements Document, which has been updated with each completed feature.
+- : New file for the Electron main process.
+- : Updated with Electron dependencies and  entry point.
+- : Heavily modified to include auth, payments, referrals, usage limits, and the new filesystem browsing API.
+- : Updated to include the new graphical .
+- : New component for filesystem navigation.
+- : Manages user authentication state.
+- : Handles Stripe checkout and referral code input.
+- : Updated to reflect all completed features.
 
 **key api endpoints**
-- : Retrieves movies with filtering, sorting, and search.
-- : Adds a new directory to scan.
-- : Triggers a scan of all directories.
-- : Toggles a movie's favorite status.
-- : Creates a new collection.
-- : Adds a movie to a collection.
-- : Serves locally cached poster images.
-- : Manages application settings like the TMDB key.
+- : Initiates Google OAuth flow.
+- : Retrieves current user's info, including subscription status.
+- : Creates a Stripe payment session.
+- : Handles Stripe payment events (requires public URL).
+- : Retrieves pricing and referral discount info.
+- : Validates a referral code.
+- : Initiates a directory scan and returns an SSE stream for progress.
+- : Lists available drives (for the directory browser).
+- : Lists contents of a given directory path.
 
 **Critical Info for New Agent**
-- The immediate task is to implement the Pro tier with user authentication and Stripe integration.
-- The Stripe integration playbook has already been provided by the  agent.
-- Per the playbook, you must use the Stripe test key available in the system environment and should not ask the user for it.
-- The implementation plan involves adding user models, auth endpoints, Stripe checkout and webhook endpoints, enforcing usage limits on the backend, and building out the corresponding pricing and upgrade UI on the frontend.
-- The user has been highly responsive and approves features in a stepwise manner. Continue this pattern of proposing a feature, getting approval, implementing, and testing.
+- The project's direction has shifted from a pure web app to a desktop application to solve the user's core problem of accessing local drives ().
+- You MUST start by asking the user to choose one of the four monetization strategies for the desktop app. This is a hard blocker.
+- Once a decision is made, you will need to continue the Electron implementation, which may involve significant changes to the authentication and payment flows depending on the user's choice.
+- Remind the user that features like webhooks (for Stripe) and simple redirects (for Google Auth) behave differently in a desktop app and may require a hybrid approach with a web server component if they want to sell the app to others.
 
 **documents and test reports created in this job**
-- 
-- 
-- 
+-  (updated)
 - 
 - 
 - 
 - 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1. : Agreed to implement a Pro tier with Stripe integration.
-2. : User inquired about monetization strategies.
-3. : User requested a pre-deployment check.
-4. : Agreed to add custom collections/playlists.
-5. : Agreed to add movie sorting options.
-6. : User specified the poster caching requirement.
-7. : Agreed to add a favorites/watchlist feature.
-8. : Agreed to add a settings page for the TMDB API key.
-9. : User requested network path support.
-10. : General instruction from the user to continue with the planned task.
+1.  : User chose Option 1 (Convert to Electron desktop app).
+2.  : User asked about the impact on the existing Stripe/Google auth setup.
+3.  : User requested to disable the temporary auth-skip feature.
+4.  : User chose to add a dev bypass for testing instead of deploying.
+5.  : User reported the login loop issue in the preview environment and asked how to test with their real library.
+6.  : User agreed to implement both bulk metadata fetch and real-time scan progress.
+7.  : User agreed to implement free tier usage limits.
+8.  : User chose to continue development instead of deploying.
+9.  : User asked about the development lifecycle post-deployment.
+10. : User agreed to make the Search TMDB button more prominent.
 
 **Project Health Check:**
-- **Running:** All services (frontend, backend, database) are running and healthy. Health checks performed by the agent passed successfully.
+- **Running:** All services (frontend, backend) are running.
 - **Mocked:** No parts of the application are mocked.
 
 **3rd Party Integrations**
-- **TMDB (The Movie Database):** Used for fetching movie metadata. Requires a user-provided API key.
-- **Stripe (Payments):** Pending implementation for the Pro subscription tier. The agent has the integration playbook and will use a system-provided test key.
+- **TMDB:** For movie metadata.
+- **Stripe:** For Pro tier payments (web version). Status for desktop TBD.
+- **Google Auth (Emergent-managed):** For user authentication (web version). Status for desktop TBD.
+- **SendGrid:** For email notifications (pending API key).
+- **Electron:** For packaging as a Windows desktop app (in progress).
 
 **Testing status**
-- **Testing agent used after significant changes:** YES, the testing agent was used successfully after every major feature was added.
+- **Testing agent used after significant changes:** YES, used extensively and successfully for all web-based features.
 - **Troubleshoot agent used after agent stuck in loop:** NO
 - **Test files created:** [ through ]
 - **Known regressions:** None.
 
 **Credentials to test flow:**
-No user credentials are required for the current application state. To test poster fetching, a TMDB API key can be entered on the  page.
+User authentication is handled via Google OAuth. There are no static credentials.
 
 **What agent forgot to execute**
-The agent has successfully executed all user requests and its own planned tasks up to this point.</analysis>
+The agent has followed all user requests and has not forgotten any tasks. The current pause is appropriate pending a critical decision from the user.</analysis>

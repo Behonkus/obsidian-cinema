@@ -152,6 +152,22 @@ def generate_referral_code() -> str:
     chars = uuid.uuid4().hex[:6].upper()
     return f"CINEMA-{chars}"
 
+def generate_license_key() -> str:
+    """Generate a unique license key like OBSIDIAN-XXXX-XXXX-XXXX-XXXX."""
+    parts = [uuid.uuid4().hex[:4].upper() for _ in range(4)]
+    return f"OBSIDIAN-{'-'.join(parts)}"
+
+# License Key Model
+class LicenseKey(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    license_key: str = Field(default_factory=generate_license_key)
+    user_id: str
+    email: str
+    is_active: bool = True
+    activated_machine_id: Optional[str] = None  # Machine ID where license is activated
+    activated_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # Email Service
 def send_referral_success_email(referrer_email: str, referrer_name: str, referred_name: str, new_referral_count: int):
     """Send email notification when a referred user upgrades to Pro."""
@@ -159,7 +175,7 @@ def send_referral_success_email(referrer_email: str, referrer_name: str, referre
         logging.warning("SendGrid API key not configured, skipping email notification")
         return False
     
-    subject = f"🎉 Your referral just upgraded to Pro!"
+    subject = "🎉 Your referral just upgraded to Pro!"
     
     html_content = f"""
     <!DOCTYPE html>
@@ -769,7 +785,7 @@ async def browse_directory(path: str = "/"):
                     })
             except PermissionError:
                 continue
-            except Exception as e:
+            except Exception:
                 continue
     except PermissionError:
         raise HTTPException(status_code=403, detail="Permission denied")
@@ -2205,6 +2221,24 @@ async def get_checkout_status(session_id: str, request: Request, background_task
             # Generate referral code for new Pro user
             new_referral_code = generate_referral_code()
             
+            # Generate license key for desktop app
+            new_license_key = generate_license_key()
+            license_doc = {
+                "license_key": new_license_key,
+                "user_id": user.user_id,
+                "email": user.email,
+                "is_active": True,
+                "activated_machine_id": None,
+                "activated_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            # Check if license already exists (shouldn't happen, but be safe)
+            existing_license = await db.license_keys.find_one({"user_id": user.user_id})
+            if not existing_license:
+                await db.license_keys.insert_one(license_doc)
+                logging.info(f"License key generated for user {user.user_id}: {new_license_key}")
+            
             # Upgrade user to Pro with referral code
             update_data = {
                 "subscription_tier": "pro",
@@ -2392,6 +2426,194 @@ async def validate_referral_code(code: str):
         "message": f"${REFERRAL_DISCOUNT} discount applied!"
     }
 
+# ============ LICENSE KEY ENDPOINTS (Desktop App) ============
+
+class LicenseActivateRequest(BaseModel):
+    license_key: str
+    machine_id: str  # Unique identifier for the machine
+
+@api_router.post("/license/generate")
+async def generate_license_for_user(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    """Generate a license key for a Pro user. Called after successful Stripe payment."""
+    user = await require_user(request, session_token)
+    
+    if user.subscription_tier != "pro":
+        raise HTTPException(status_code=403, detail="Only Pro users can generate license keys")
+    
+    # Check if user already has a license key
+    existing = await db.license_keys.find_one({"user_id": user.user_id}, {"_id": 0})
+    if existing:
+        return {
+            "license_key": existing["license_key"],
+            "email": existing["email"],
+            "is_activated": existing.get("activated_machine_id") is not None,
+            "created_at": existing["created_at"]
+        }
+    
+    # Generate new license key
+    license_key = generate_license_key()
+    license_doc = {
+        "license_key": license_key,
+        "user_id": user.user_id,
+        "email": user.email,
+        "is_active": True,
+        "activated_machine_id": None,
+        "activated_at": None,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.license_keys.insert_one(license_doc)
+    
+    return {
+        "license_key": license_key,
+        "email": user.email,
+        "is_activated": False,
+        "created_at": license_doc["created_at"],
+        "message": "License key generated! Use this key to activate the desktop app."
+    }
+
+@api_router.get("/license/my-license")
+async def get_my_license(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    """Get the current user's license key (if they have one)."""
+    user = await require_user(request, session_token)
+    
+    license_doc = await db.license_keys.find_one({"user_id": user.user_id}, {"_id": 0})
+    
+    if not license_doc:
+        return {
+            "has_license": False,
+            "message": "No license key found. Pro subscription required."
+        }
+    
+    return {
+        "has_license": True,
+        "license_key": license_doc["license_key"],
+        "email": license_doc["email"],
+        "is_active": license_doc.get("is_active", True),
+        "is_activated": license_doc.get("activated_machine_id") is not None,
+        "activated_machine_id": license_doc.get("activated_machine_id"),
+        "activated_at": license_doc.get("activated_at"),
+        "created_at": license_doc.get("created_at")
+    }
+
+@api_router.post("/license/activate")
+async def activate_license(data: LicenseActivateRequest):
+    """Activate a license key on a specific machine. Used by the desktop app."""
+    license_key = data.license_key.strip().upper()
+    machine_id = data.machine_id.strip()
+    
+    if not license_key or not machine_id:
+        raise HTTPException(status_code=400, detail="License key and machine ID are required")
+    
+    # Find the license
+    license_doc = await db.license_keys.find_one({"license_key": license_key}, {"_id": 0})
+    
+    if not license_doc:
+        return {
+            "success": False,
+            "error": "invalid_key",
+            "message": "Invalid license key. Please check and try again."
+        }
+    
+    if not license_doc.get("is_active", True):
+        return {
+            "success": False,
+            "error": "deactivated",
+            "message": "This license key has been deactivated. Please contact support."
+        }
+    
+    # Check if already activated on a different machine
+    existing_machine = license_doc.get("activated_machine_id")
+    if existing_machine and existing_machine != machine_id:
+        return {
+            "success": False,
+            "error": "already_activated",
+            "message": "This license is already activated on another device. Please deactivate it first or contact support."
+        }
+    
+    # Activate the license on this machine
+    await db.license_keys.update_one(
+        {"license_key": license_key},
+        {"$set": {
+            "activated_machine_id": machine_id,
+            "activated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Get user info for response
+    user_doc = await db.users.find_one({"user_id": license_doc["user_id"]}, {"_id": 0, "email": 1, "name": 1})
+    
+    return {
+        "success": True,
+        "message": "License activated successfully! Enjoy Obsidian Cinema Pro.",
+        "email": license_doc.get("email"),
+        "user_name": user_doc.get("name") if user_doc else None,
+        "subscription_tier": "pro"
+    }
+
+@api_router.post("/license/validate")
+async def validate_license(data: LicenseActivateRequest):
+    """Validate a license key for a specific machine. Used by desktop app on startup."""
+    license_key = data.license_key.strip().upper()
+    machine_id = data.machine_id.strip()
+    
+    if not license_key or not machine_id:
+        return {"valid": False, "error": "missing_data"}
+    
+    # Find the license
+    license_doc = await db.license_keys.find_one({"license_key": license_key}, {"_id": 0})
+    
+    if not license_doc:
+        return {"valid": False, "error": "invalid_key", "message": "License key not found"}
+    
+    if not license_doc.get("is_active", True):
+        return {"valid": False, "error": "deactivated", "message": "License has been deactivated"}
+    
+    # Check machine ID matches
+    activated_machine = license_doc.get("activated_machine_id")
+    if activated_machine and activated_machine != machine_id:
+        return {
+            "valid": False, 
+            "error": "machine_mismatch",
+            "message": "License is activated on a different device"
+        }
+    
+    # If not yet activated, that's okay - we allow it
+    return {
+        "valid": True,
+        "email": license_doc.get("email"),
+        "subscription_tier": "pro",
+        "is_activated": activated_machine is not None
+    }
+
+@api_router.post("/license/deactivate")
+async def deactivate_license(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    """Deactivate the license from the current machine. Allows reactivation on another device."""
+    user = await require_user(request, session_token)
+    
+    # Find user's license
+    license_doc = await db.license_keys.find_one({"user_id": user.user_id}, {"_id": 0})
+    
+    if not license_doc:
+        raise HTTPException(status_code=404, detail="No license found")
+    
+    if not license_doc.get("activated_machine_id"):
+        return {"message": "License is not currently activated on any device"}
+    
+    # Clear the machine activation
+    await db.license_keys.update_one(
+        {"user_id": user.user_id},
+        {"$set": {
+            "activated_machine_id": None,
+            "activated_at": None
+        }}
+    )
+    
+    return {
+        "success": True,
+        "message": "License deactivated. You can now activate it on another device."
+    }
+
 # Include the router
 app.include_router(api_router)
 
@@ -2410,7 +2632,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-import asyncio
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

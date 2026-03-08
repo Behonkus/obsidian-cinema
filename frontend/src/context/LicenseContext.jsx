@@ -1,0 +1,158 @@
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import axios from "axios";
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const LicenseContext = createContext(null);
+
+// Check if running in Electron
+const isElectron = () => {
+  return typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
+};
+
+export function LicenseProvider({ children }) {
+  const [license, setLicense] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isDesktopApp, setIsDesktopApp] = useState(false);
+  const [machineId, setMachineId] = useState(null);
+  const [licenseStatus, setLicenseStatus] = useState('checking'); // checking, valid, invalid, not_activated
+
+  useEffect(() => {
+    const init = async () => {
+      const electron = isElectron();
+      setIsDesktopApp(electron);
+      
+      if (electron) {
+        // Get machine ID for this device
+        const id = await window.electronAPI.getMachineId();
+        setMachineId(id);
+        
+        // Check locally stored license
+        const storedLicense = await window.electronAPI.getLicense();
+        if (storedLicense) {
+          setLicense(storedLicense);
+          // Validate with server
+          await validateLicenseWithServer(storedLicense.license_key, id);
+        } else {
+          setLicenseStatus('not_activated');
+        }
+      }
+      setLoading(false);
+    };
+    
+    init();
+  }, []);
+
+  const validateLicenseWithServer = useCallback(async (licenseKey, deviceId) => {
+    try {
+      const response = await axios.post(`${API}/license/validate`, {
+        license_key: licenseKey,
+        machine_id: deviceId
+      });
+      
+      if (response.data.valid) {
+        setLicenseStatus('valid');
+        return true;
+      } else {
+        setLicenseStatus('invalid');
+        // Clear invalid license
+        if (isElectron()) {
+          await window.electronAPI.clearLicense();
+        }
+        setLicense(null);
+        return false;
+      }
+    } catch (err) {
+      console.error('License validation error:', err);
+      // If server is unreachable, allow offline use if we have a stored license
+      if (license) {
+        setLicenseStatus('valid'); // Trust local license when offline
+        return true;
+      }
+      setLicenseStatus('invalid');
+      return false;
+    }
+  }, [license]);
+
+  const activateLicense = useCallback(async (licenseKey) => {
+    if (!isElectron()) {
+      return { success: false, message: 'License activation is only available in the desktop app.' };
+    }
+    
+    try {
+      const response = await axios.post(`${API}/license/activate`, {
+        license_key: licenseKey.trim().toUpperCase(),
+        machine_id: machineId
+      });
+      
+      if (response.data.success) {
+        const licenseData = {
+          license_key: licenseKey.trim().toUpperCase(),
+          email: response.data.email,
+          user_name: response.data.user_name,
+          subscription_tier: response.data.subscription_tier,
+          activated_at: new Date().toISOString()
+        };
+        
+        // Store locally
+        await window.electronAPI.setLicense(licenseData);
+        setLicense(licenseData);
+        setLicenseStatus('valid');
+        
+        return { success: true, message: response.data.message };
+      } else {
+        return { success: false, message: response.data.message, error: response.data.error };
+      }
+    } catch (err) {
+      console.error('License activation error:', err);
+      return { 
+        success: false, 
+        message: err.response?.data?.detail || 'Failed to activate license. Please try again.' 
+      };
+    }
+  }, [machineId]);
+
+  const deactivateLicense = useCallback(async () => {
+    if (!isElectron()) {
+      return { success: false, message: 'License management is only available in the desktop app.' };
+    }
+    
+    try {
+      // Clear local license
+      await window.electronAPI.clearLicense();
+      setLicense(null);
+      setLicenseStatus('not_activated');
+      
+      return { success: true, message: 'License deactivated from this device.' };
+    } catch (err) {
+      console.error('License deactivation error:', err);
+      return { success: false, message: 'Failed to deactivate license.' };
+    }
+  }, []);
+
+  const value = {
+    license,
+    loading,
+    isDesktopApp,
+    machineId,
+    licenseStatus,
+    isPro: licenseStatus === 'valid',
+    activateLicense,
+    deactivateLicense,
+    validateLicenseWithServer
+  };
+
+  return (
+    <LicenseContext.Provider value={value}>
+      {children}
+    </LicenseContext.Provider>
+  );
+}
+
+export function useLicense() {
+  const context = useContext(LicenseContext);
+  if (!context) {
+    throw new Error("useLicense must be used within a LicenseProvider");
+  }
+  return context;
+}

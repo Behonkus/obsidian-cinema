@@ -14,7 +14,10 @@ import {
   Gift,
   Tag,
   Copy,
-  Users
+  Users,
+  Key,
+  Download,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +49,148 @@ const PRO_FEATURES = [
   "Early access to new features",
   "Personal referral code"
 ];
+
+// License Key Card Component for Pro users
+function LicenseKeyCard({ user }) {
+  const [licenseData, setLicenseData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    loadLicense();
+  }, []);
+
+  const loadLicense = async () => {
+    try {
+      const response = await axios.get(`${API}/license/my-license`, { withCredentials: true });
+      setLicenseData(response.data);
+    } catch (err) {
+      console.error("Failed to load license:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateLicense = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await axios.post(`${API}/license/generate`, {}, { withCredentials: true });
+      setLicenseData({
+        has_license: true,
+        ...response.data
+      });
+      toast.success("License key generated!");
+    } catch (err) {
+      console.error("Failed to generate license:", err);
+      toast.error("Failed to generate license key");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const copyLicenseKey = () => {
+    if (licenseData?.license_key) {
+      navigator.clipboard.writeText(licenseData.license_key);
+      toast.success("License key copied!");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="mb-6"
+      >
+        <Card className="border-blue-500/30">
+          <CardContent className="py-8 flex items-center justify-center">
+            <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className="mb-6"
+    >
+      <Card className="bg-gradient-to-b from-blue-500/10 to-transparent border-blue-500/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Key className="w-5 h-5 text-blue-400" />
+            Desktop App License
+          </CardTitle>
+          <CardDescription>
+            Use this key to activate the desktop app on your Windows PC.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {licenseData?.has_license ? (
+            <>
+              {/* License Key Display */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 p-3 bg-secondary/50 rounded-lg border border-border font-mono text-sm text-center break-all">
+                  {licenseData.license_key}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={copyLicenseKey}
+                  className="h-12 w-12 shrink-0"
+                  data-testid="copy-license-btn"
+                >
+                  <Copy className="w-5 h-5" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span>Status: {licenseData.is_activated ? (
+                  <span className="text-green-400">Activated</span>
+                ) : (
+                  <span className="text-amber-400">Not activated</span>
+                )}</span>
+              </div>
+
+              {/* Download Desktop App Link */}
+              <Button variant="outline" className="w-full gap-2" disabled>
+                <Download className="w-4 h-4" />
+                Download Desktop App (Coming Soon)
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Generate a license key to use Obsidian Cinema on your desktop without needing to log in.
+              </p>
+              <Button 
+                onClick={generateLicense}
+                disabled={isGenerating}
+                className="w-full gap-2 bg-blue-500 hover:bg-blue-600"
+              >
+                {isGenerating ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Key className="w-4 h-4" />
+                    Generate License Key
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
 
 export default function UpgradePage() {
   const navigate = useNavigate();
@@ -226,11 +371,14 @@ export default function UpgradePage() {
             </p>
           </motion.div>
 
+          {/* License Key Card - for Desktop App */}
+          <LicenseKeyCard user={user} />
+
           {/* Referral Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.2 }}
           >
             <Card className="bg-gradient-to-b from-amber-500/10 to-transparent border-amber-500/30">
               <CardHeader>

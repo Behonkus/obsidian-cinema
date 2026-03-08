@@ -3,6 +3,7 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { LicenseProvider, useLicense } from "@/context/LicenseContext";
 import Layout from "@/components/Layout";
 import HomePage from "@/pages/HomePage";
 import DirectoriesPage from "@/pages/DirectoriesPage";
@@ -11,9 +12,15 @@ import CollectionsPage from "@/pages/CollectionsPage";
 import LoginPage from "@/pages/LoginPage";
 import AuthCallback from "@/pages/AuthCallback";
 import UpgradePage from "@/pages/UpgradePage";
+import LicenseActivationPage from "@/pages/LicenseActivationPage";
 import { RefreshCw } from "lucide-react";
 
-// Protected route wrapper
+// Check if running in Electron
+const isElectron = () => {
+  return typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
+};
+
+// Protected route wrapper for web (uses Auth)
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
@@ -38,25 +45,61 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+// Protected route wrapper for desktop (uses License)
+function DesktopProtectedRoute({ children }) {
+  const { isPro, loading, licenseStatus } = useLicense();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // In desktop mode, require valid license for Pro features, but allow basic access
+  // The license page is the entry point in desktop mode
+  if (licenseStatus === 'not_activated' || licenseStatus === 'invalid') {
+    return <Navigate to="/activate" replace />;
+  }
+
+  return children;
+}
+
+// Smart protected route that switches between web auth and desktop license
+function SmartProtectedRoute({ children }) {
+  if (isElectron()) {
+    return <DesktopProtectedRoute>{children}</DesktopProtectedRoute>;
+  }
+  return <ProtectedRoute>{children}</ProtectedRoute>;
+}
+
 // App Router - handles session_id detection
 function AppRouter() {
   const location = useLocation();
+  const desktopMode = isElectron();
   
   // Check URL fragment (not query params) for session_id synchronously during render
   // This prevents race conditions by processing new session_id FIRST before checking existing session_token
-  if (location.hash?.includes('session_id=')) {
+  if (location.hash?.includes('session_id=') && !desktopMode) {
     return <AuthCallback />;
   }
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      {/* Desktop-specific routes */}
+      <Route path="/activate" element={<LicenseActivationPage />} />
+      
+      {/* Web login - skip in desktop mode */}
+      {!desktopMode && <Route path="/login" element={<LoginPage />} />}
+      
+      {/* Main app routes */}
       <Route
         path="/"
         element={
-          <ProtectedRoute>
+          <SmartProtectedRoute>
             <Layout />
-          </ProtectedRoute>
+          </SmartProtectedRoute>
         }
       >
         <Route index element={<HomePage />} />
@@ -67,9 +110,13 @@ function AppRouter() {
       <Route
         path="/upgrade"
         element={
-          <ProtectedRoute>
-            <UpgradePage />
-          </ProtectedRoute>
+          desktopMode ? (
+            <LicenseActivationPage />
+          ) : (
+            <ProtectedRoute>
+              <UpgradePage />
+            </ProtectedRoute>
+          )
         }
       />
       <Route
@@ -89,7 +136,9 @@ function App() {
     <div className="App min-h-screen bg-background">
       <BrowserRouter>
         <AuthProvider>
-          <AppRouter />
+          <LicenseProvider>
+            <AppRouter />
+          </LicenseProvider>
         </AuthProvider>
       </BrowserRouter>
       <Toaster position="bottom-right" richColors />
