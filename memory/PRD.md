@@ -156,6 +156,7 @@ To enable referral success email notifications:
 - [ ] Welcome email for new users
 
 ## P2 Features (Nice to Have)
+- [x] **Graphical directory browser** - Browse drives and folders visually
 - [ ] Custom poster upload
 - [ ] Import/export library data
 - [ ] Keyboard shortcuts
