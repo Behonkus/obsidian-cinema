@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Film, LogIn, RefreshCw } from "lucide-react";
+import { Film, LogIn, RefreshCw, Monitor, Download, HardDrive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -49,12 +49,31 @@ export default function LoginPage() {
             Your personal movie library manager
           </p>
         </div>
+
+        {/* Desktop App CTA */}
+        <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-xl p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+              <Monitor className="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <h3 className="font-medium text-foreground text-sm">Looking to scan local drives?</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                The <strong>desktop app</strong> can access C:\, D:\, S:\, and USB drives. 
+                Sign in below to get your license key.
+              </p>
+            </div>
+          </div>
+        </div>
         
         {/* Login card */}
         <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
-          <h2 className="text-xl font-semibold text-center mb-6">
+          <h2 className="text-xl font-semibold text-center mb-2">
             Sign in to continue
           </h2>
+          <p className="text-xs text-muted-foreground text-center mb-6">
+            Manage your account & get your desktop license key
+          </p>
           
           <Button
             onClick={handleGoogleLogin}
@@ -95,12 +114,12 @@ export default function LoginPage() {
         {/* Features preview */}
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">
           <div className="p-3">
-            <p className="text-2xl font-bold text-primary">∞</p>
-            <p className="text-xs text-muted-foreground mt-1">Movies (Pro)</p>
+            <HardDrive className="w-6 h-6 mx-auto text-purple-400" />
+            <p className="text-xs text-muted-foreground mt-2">Local Drives</p>
           </div>
           <div className="p-3">
             <p className="text-2xl font-bold text-primary">TMDB</p>
-            <p className="text-xs text-muted-foreground mt-1">Integration</p>
+            <p className="text-xs text-muted-foreground mt-1">Posters</p>
           </div>
           <div className="p-3">
             <p className="text-2xl font-bold text-primary">MPC</p>

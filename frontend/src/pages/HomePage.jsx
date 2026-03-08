@@ -16,7 +16,8 @@ import {
   FolderHeart,
   X,
   ImageIcon,
-  FolderSearch
+  FolderSearch,
+  Monitor
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,8 @@ import MovieDetailModal from "@/components/MovieDetailModal";
 import EmptyState from "@/components/EmptyState";
 import BulkMetadataFetch from "@/components/BulkMetadataFetch";
 import ScanProgressModal from "@/components/ScanProgressModal";
+import DesktopAppBanner from "@/components/DesktopAppBanner";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import axios from "axios";
 
@@ -54,6 +57,7 @@ const SORT_OPTIONS = [
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const collectionIdFromUrl = searchParams.get("collection");
   
   const [movies, setMovies] = useState([]);
@@ -73,6 +77,23 @@ export default function HomePage() {
   const [gridSize, setGridSize] = useState("normal");
   const [showBulkFetch, setShowBulkFetch] = useState(false);
   const [showScanProgress, setShowScanProgress] = useState(false);
+  const [showDesktopBanner, setShowDesktopBanner] = useState(true);
+  const [hasLicense, setHasLicense] = useState(false);
+
+  // Check if user has a license
+  useEffect(() => {
+    const checkLicense = async () => {
+      if (user?.subscription_tier === 'pro') {
+        try {
+          const response = await axios.get(`${API}/license/my-license`, { withCredentials: true });
+          setHasLicense(response.data?.has_license || false);
+        } catch (err) {
+          setHasLicense(false);
+        }
+      }
+    };
+    checkLicense();
+  }, [user]);
 
   useEffect(() => {
     loadData();
@@ -202,6 +223,15 @@ export default function HomePage() {
     <div className="p-6 md:p-8 lg:p-10" data-testid="home-page">
       {/* Hero glow effect */}
       <div className="hero-glow-bg" />
+      
+      {/* Desktop App Banner - Show prominently */}
+      {showDesktopBanner && (
+        <DesktopAppBanner 
+          onDismiss={() => setShowDesktopBanner(false)}
+          isPro={user?.subscription_tier === 'pro'}
+          hasLicense={hasLicense}
+        />
+      )}
       
       {/* Collection filter banner */}
       {activeCollection && (
