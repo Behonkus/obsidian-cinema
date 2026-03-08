@@ -12,6 +12,7 @@ Build an app that will scan directories of movie files and display associated mo
 6. **Monetization**: Pro tier with one-time payment ($29.99)
 7. **Authentication**: Emergent-managed Google OAuth + JWT sessions
 8. **Referral Program**: Pro users get referral codes, referred users get $5 off
+9. **Desktop App**: Electron-based Windows app with License Key system for monetization
 
 ## Architecture
 
@@ -19,10 +20,11 @@ Build an app that will scan directories of movie files and display associated mo
 - **Frontend**: React 19, Tailwind CSS, Shadcn UI, Framer Motion
 - **Backend**: FastAPI (Python)
 - **Database**: MongoDB
+- **Desktop**: Electron.js with License Key authentication
 - **External APIs**: 
   - TMDB for movie posters/metadata
   - Stripe for payments
-  - Emergent Auth for Google OAuth
+  - Emergent Auth for Google OAuth (web only)
 
 ### API Endpoints
 | Method | Endpoint | Description |
@@ -58,12 +60,18 @@ Build an app that will scan directories of movie files and display associated mo
 | GET | /api/pricing | Get pricing info (with referral discount) |
 | **Referral Endpoints** | | |
 | GET | /api/referral/validate/{code} | Validate referral code |
+| **License Key Endpoints (Desktop App)** | | |
+| POST | /api/license/generate | Generate license key for Pro user |
+| GET | /api/license/my-license | Get user's license key |
+| POST | /api/license/activate | Activate license on a machine |
+| POST | /api/license/validate | Validate license for machine |
+| POST | /api/license/deactivate | Deactivate license from machine |
 
 ## What's Been Implemented
 
 ### Core Features (Feb 2026)
-- ✅ Full backend API with 35+ endpoints
-- ✅ MongoDB models for directories, movies, collections, users, payments
+- ✅ Full backend API with 40+ endpoints
+- ✅ MongoDB models for directories, movies, collections, users, payments, license_keys
 - ✅ TMDB integration with caching
 - ✅ Movie title/year extraction from filenames
 - ✅ React frontend with Obsidian Cinema dark theme
@@ -100,6 +108,28 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ "Share & Earn" section on Pro user upgrade page
 - ✅ Email notifications when referral converts (SendGrid integration ready, **requires API key**)
 
+### License Key System (Mar 8, 2026)
+- ✅ License key generation for Pro users (OBSIDIAN-XXXX-XXXX-XXXX-XXXX format)
+- ✅ Auto-generation on Stripe payment success
+- ✅ License activation tied to machine ID (one device at a time)
+- ✅ License validation for desktop app startup
+- ✅ License deactivation to move to another device
+- ✅ LicenseKeyCard component in UpgradePage for Pro users
+- ✅ LicenseActivationPage for desktop app (shows web message in browser)
+- ✅ LicenseContext for frontend state management
+- ✅ Electron main process with IPC handlers for license storage
+- ✅ Electron preload script for secure API exposure
+
+### Electron Desktop App (Mar 8, 2026)
+- ✅ Electron.js configuration
+- ✅ Main process (electron.js) with backend startup
+- ✅ Preload script for secure IPC
+- ✅ Machine ID generation for license binding
+- ✅ Local license storage in user data directory
+- ✅ Build configuration in package.json for Windows NSIS installer
+- ✅ External link handling for mpc-hc:// protocol
+- ⏳ Desktop app packaging and distribution (next step)
+
 ## Email Notifications (Ready but NOT ENABLED)
 To enable referral success email notifications:
 1. Get a SendGrid API key from https://app.sendgrid.com/settings/api_keys
@@ -130,11 +160,24 @@ To enable referral success email notifications:
 }
 ```
 
+### License Keys Collection
+```javascript
+{
+  license_key: "OBSIDIAN-XXXX-XXXX-XXXX-XXXX",
+  user_id: "user_xxx",
+  email: "user@example.com",
+  is_active: true,
+  activated_machine_id: "ABC123...",  // Hash of machine hardware
+  activated_at: ISODate(),
+  created_at: ISODate()
+}
+```
+
 ## Pricing Structure
 | Tier | Price | Features |
 |------|-------|----------|
 | Free | $0 | 30 movies, 3 collections, basic features |
-| Pro | $29.99 | Unlimited movies & collections, priority support, referral code |
+| Pro | $29.99 | Unlimited movies & collections, priority support, referral code, license key |
 | Pro (with referral) | $24.99 | Same as Pro, $5 discount applied |
 
 ## P0 Features (Critical - Done)
@@ -148,24 +191,33 @@ To enable referral success email notifications:
 - [x] User authentication (Google OAuth)
 - [x] Pro tier with Stripe
 - [x] Referral program
-- [x] **Free tier limits enforcement** (30 movies, 3 collections max)
+- [x] Free tier limits enforcement
+- [x] **License Key System for desktop app**
 
-## P1 Features (Important - Pending)
-- [x] **Bulk metadata fetch** - Auto-find posters for all movies without them (SSE progress)
-- [x] **Real-time scan progress indicator** - Shows directories, files found, movies added
+## P1 Features (Important - Done)
+- [x] Bulk metadata fetch (SSE progress)
+- [x] Real-time scan progress indicator
+- [x] Graphical directory browser
+- [x] **Electron desktop app configuration**
 - [ ] Welcome email for new users
 
 ## P2 Features (Nice to Have)
-- [x] **Graphical directory browser** - Browse drives and folders visually
 - [ ] Custom poster upload
 - [ ] Import/export library data
 - [ ] Keyboard shortcuts
 - [ ] Smart collections (auto-populated by rules)
+- [ ] **Desktop app distribution/packaging**
 
-## Next Action Items
-1. **Sign in** - Use Google OAuth to create your account
-2. **Add TMDB API key** - Get free key from themoviedb.org
-3. **Add directories** - Point to your movie collection folders
-4. **Scan & fetch metadata** - Let the app discover your movies
-5. **Upgrade to Pro** - $29.99 (or $24.99 with referral code) for unlimited access
-6. **Share your code** - Pro users can share their referral code for friends to save $5
+## Next Steps to Complete Desktop App
+1. **Build the Electron app**: Run `yarn electron:build` on a Windows machine
+2. **Set up MongoDB for local use**: Users need local MongoDB or use a cloud instance
+3. **Configure backend for desktop**: Bundle Python backend with the app
+4. **Create installer**: Use electron-builder to create NSIS installer
+5. **Test on Windows**: Verify local drive access (S:, D:, etc.)
+
+## Files Reference
+- `/app/frontend/electron.js` - Electron main process
+- `/app/frontend/electron/preload.js` - IPC bridge for renderer
+- `/app/frontend/src/context/LicenseContext.jsx` - License state management
+- `/app/frontend/src/pages/LicenseActivationPage.jsx` - Desktop license activation UI
+- `/app/backend/server.py` - License API endpoints (lines 2397-2590)
