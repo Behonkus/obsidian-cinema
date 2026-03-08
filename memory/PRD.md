@@ -128,6 +128,8 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ Local license storage in user data directory
 - ✅ Build configuration in package.json for Windows NSIS installer
 - ✅ External link handling for mpc-hc:// protocol
+- ✅ **Download Desktop App section** on Pro user upgrade page
+- ✅ **Installation & Setup Guide** with 4-step instructions
 - ⏳ Desktop app packaging and distribution (next step)
 
 ## Email Notifications (Ready but NOT ENABLED)

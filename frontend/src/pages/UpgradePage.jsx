@@ -55,6 +55,7 @@ function LicenseKeyCard({ user }) {
   const [licenseData, setLicenseData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
 
   useEffect(() => {
     loadLicense();
@@ -117,13 +118,117 @@ function LicenseKeyCard({ user }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="mb-6"
+      className="mb-6 space-y-4"
     >
+      {/* Desktop App Download Card */}
+      <Card className="bg-gradient-to-b from-purple-500/10 to-transparent border-purple-500/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="w-5 h-5 text-purple-400" />
+            Download Desktop App
+          </CardTitle>
+          <CardDescription>
+            Access your local movie library directly from your Windows PC.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3">
+            {/* Windows Download */}
+            <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg border border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-medium">Windows</p>
+                  <p className="text-xs text-muted-foreground">Windows 10/11 (64-bit)</p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+                onClick={() => toast.info("Desktop app download coming soon! Check back after we release the installer.")}
+                data-testid="download-windows-btn"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </Button>
+            </div>
+          </div>
+
+          {/* Setup Guide Toggle */}
+          <Button 
+            variant="ghost" 
+            className="w-full justify-between"
+            onClick={() => setShowSetupGuide(!showSetupGuide)}
+          >
+            <span className="flex items-center gap-2">
+              <ExternalLink className="w-4 h-4" />
+              Installation & Setup Guide
+            </span>
+            <span className={`transition-transform ${showSetupGuide ? 'rotate-180' : ''}`}>▼</span>
+          </Button>
+
+          {showSetupGuide && (
+            <div className="p-4 bg-secondary/30 rounded-lg space-y-4 text-sm">
+              <div>
+                <h4 className="font-medium text-foreground mb-2">1. Download & Install</h4>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Download the installer above</li>
+                  <li>• Run the .exe file and follow the wizard</li>
+                  <li>• Choose your installation directory</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-foreground mb-2">2. Enter Your License Key</h4>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Launch Obsidian Cinema</li>
+                  <li>• Copy your license key from below</li>
+                  <li>• Paste it in the activation screen</li>
+                  <li>• Click "Activate License"</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-medium text-foreground mb-2">3. Add Your Movie Folders</h4>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Go to Directories in the sidebar</li>
+                  <li>• Click "Add Directory"</li>
+                  <li>• Browse to your movie folder (e.g., S:\Movies)</li>
+                  <li>• Click "Scan" to import movies</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-medium text-foreground mb-2">4. Fetch Movie Posters</h4>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Go to Settings</li>
+                  <li>• Add your TMDB API key (free at themoviedb.org)</li>
+                  <li>• Click "Fetch All Metadata" to get posters</li>
+                </ul>
+              </div>
+
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <p className="text-amber-400 text-xs">
+                  <strong>Note:</strong> Your license key can only be activated on one device at a time. 
+                  To move to another PC, deactivate first from Settings.
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* License Key Card */}
       <Card className="bg-gradient-to-b from-blue-500/10 to-transparent border-blue-500/30">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="w-5 h-5 text-blue-400" />
-            Desktop App License
+            Your License Key
           </CardTitle>
           <CardDescription>
             Use this key to activate the desktop app on your Windows PC.
@@ -148,19 +253,29 @@ function LicenseKeyCard({ user }) {
                 </Button>
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span>Status: {licenseData.is_activated ? (
-                  <span className="text-green-400">Activated</span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Status:</span>
+                {licenseData.is_activated ? (
+                  <span className="flex items-center gap-1 text-green-400">
+                    <Check className="w-4 h-4" />
+                    Activated
+                  </span>
                 ) : (
-                  <span className="text-amber-400">Not activated</span>
-                )}</span>
+                  <span className="flex items-center gap-1 text-amber-400">
+                    <Key className="w-4 h-4" />
+                    Ready to activate
+                  </span>
+                )}
               </div>
 
-              {/* Download Desktop App Link */}
-              <Button variant="outline" className="w-full gap-2" disabled>
-                <Download className="w-4 h-4" />
-                Download Desktop App (Coming Soon)
-              </Button>
+              {licenseData.is_activated && licenseData.activated_at && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Activated on:</span>
+                  <span className="text-foreground">
+                    {new Date(licenseData.activated_at).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
             </>
           ) : (
             <>
