@@ -446,24 +446,34 @@ export default function DirectoriesPage() {
                 <DialogHeader>
                   <DialogTitle>Add Directory</DialogTitle>
                   <DialogDescription>
-                    Enter the path to a directory containing movie files. Supports local and network paths.
+                    Browse or enter the path to a directory containing movie files.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="path">Directory Path</Label>
-                    <Input
-                      id="path"
-                      placeholder="C:\Movies or \\server\share\movies"
-                      value={newDirPath}
-                      onChange={(e) => setNewDirPath(e.target.value)}
-                      className="mt-1.5 font-mono text-sm"
-                      data-testid="directory-path-input"
-                    />
+                    <div className="flex gap-2 mt-1.5">
+                      <Input
+                        id="path"
+                        placeholder="C:\Movies or \\server\share\movies"
+                        value={newDirPath}
+                        onChange={(e) => setNewDirPath(e.target.value)}
+                        className="flex-1 font-mono text-sm"
+                        data-testid="directory-path-input"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsBrowserOpen(true)}
+                        data-testid="browse-btn"
+                      >
+                        <Search className="w-4 h-4 mr-2" />
+                        Browse
+                      </Button>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Examples:<br />
-                      • Local: <code className="bg-secondary px-1 rounded">C:\Movies</code> or <code className="bg-secondary px-1 rounded">/home/user/movies</code><br />
-                      • Network: <code className="bg-secondary px-1 rounded">\\server\share\movies</code> or <code className="bg-secondary px-1 rounded">//nas/media/films</code>
+                      Click Browse to select a folder, or type a path manually:<br />
+                      • Network: <code className="bg-secondary px-1 rounded">\\server\share\movies</code>
                     </p>
                   </div>
                   <div>
@@ -487,7 +497,7 @@ export default function DirectoriesPage() {
                   </Button>
                   <Button
                     onClick={handleAddDirectory}
-                    disabled={isAdding}
+                    disabled={isAdding || !newDirPath.trim()}
                     className="bg-primary hover:bg-primary/90"
                     data-testid="confirm-add-btn"
                   >
