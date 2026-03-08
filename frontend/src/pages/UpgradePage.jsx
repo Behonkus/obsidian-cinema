@@ -36,7 +36,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Free tier feature list
 const FREE_FEATURES = [
-  "Up to 30 movies",
+  "Up to 50 movies",
   "Up to 3 collections",
   "Basic features"
 ];
@@ -502,7 +502,7 @@ export default function UpgradePage() {
                   Share & Earn
                 </CardTitle>
                 <CardDescription>
-                  Share your referral code with friends. They get $5 off their Pro upgrade!
+                  Share your referral code with friends. They get $10 off their Pro upgrade!
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -570,7 +570,7 @@ export default function UpgradePage() {
 
   const displayPrice = appliedDiscount?.valid 
     ? appliedDiscount.final_price 
-    : (pricing?.pro_tier?.price || 29.99);
+    : (pricing?.pro_tier?.price || 39.99);
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8" data-testid="upgrade-page">
