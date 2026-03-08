@@ -704,6 +704,13 @@ export default function DirectoriesPage() {
           </ScrollArea>
         </motion.div>
       )}
+      
+      {/* Directory Browser Modal */}
+      <DirectoryBrowser
+        isOpen={isBrowserOpen}
+        onClose={() => setIsBrowserOpen(false)}
+        onSelect={handleBrowseSelect}
+      />
     </div>
   );
 }
