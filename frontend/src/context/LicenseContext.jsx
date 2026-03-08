@@ -15,7 +15,8 @@ export function LicenseProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [isDesktopApp, setIsDesktopApp] = useState(false);
   const [machineId, setMachineId] = useState(null);
-  const [licenseStatus, setLicenseStatus] = useState('checking'); // checking, valid, invalid, not_activated
+  const [licenseStatus, setLicenseStatus] = useState('checking'); // checking, valid, free, invalid, not_activated
+  const [isFreeTier, setIsFreeTier] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -30,9 +31,15 @@ export function LicenseProvider({ children }) {
         // Check locally stored license
         const storedLicense = await window.electronAPI.getLicense();
         if (storedLicense) {
-          setLicense(storedLicense);
-          // Validate with server
-          await validateLicenseWithServer(storedLicense.license_key, id);
+          // Check if it's a free tier marker
+          if (storedLicense.subscription_tier === 'free') {
+            setIsFreeTier(true);
+            setLicenseStatus('free');
+          } else {
+            setLicense(storedLicense);
+            // Validate with server
+            await validateLicenseWithServer(storedLicense.license_key, id);
+          }
         } else {
           setLicenseStatus('not_activated');
         }
@@ -90,7 +97,7 @@ export function LicenseProvider({ children }) {
           license_key: licenseKey.trim().toUpperCase(),
           email: response.data.email,
           user_name: response.data.user_name,
-          subscription_tier: response.data.subscription_tier,
+          subscription_tier: 'pro',
           activated_at: new Date().toISOString()
         };
         
@@ -98,6 +105,7 @@ export function LicenseProvider({ children }) {
         await window.electronAPI.setLicense(licenseData);
         setLicense(licenseData);
         setLicenseStatus('valid');
+        setIsFreeTier(false);
         
         return { success: true, message: response.data.message };
       } else {
@@ -122,6 +130,7 @@ export function LicenseProvider({ children }) {
       await window.electronAPI.clearLicense();
       setLicense(null);
       setLicenseStatus('not_activated');
+      setIsFreeTier(false);
       
       return { success: true, message: 'License deactivated from this device.' };
     } catch (err) {
@@ -130,16 +139,33 @@ export function LicenseProvider({ children }) {
     }
   }, []);
 
+  // Set free tier mode (no license needed, limited features)
+  const setFreeTier = useCallback(async () => {
+    if (!isElectron()) return;
+    
+    // Store free tier marker locally
+    const freeTierData = {
+      subscription_tier: 'free',
+      activated_at: new Date().toISOString()
+    };
+    
+    await window.electronAPI.setLicense(freeTierData);
+    setIsFreeTier(true);
+    setLicenseStatus('free');
+  }, []);
+
   const value = {
     license,
     loading,
     isDesktopApp,
     machineId,
     licenseStatus,
+    isFreeTier,
     isPro: licenseStatus === 'valid',
     activateLicense,
     deactivateLicense,
-    validateLicenseWithServer
+    validateLicenseWithServer,
+    setFreeTier
   };
 
   return (

@@ -1,13 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useLicense } from "../context/LicenseContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { toast } from "sonner";
-import { Key, CheckCircle2, AlertCircle, ExternalLink, Copy, Loader2 } from "lucide-react";
+import { Key, CheckCircle2, AlertCircle, ExternalLink, Copy, Loader2, Film, Sparkles } from "lucide-react";
 
 export default function LicenseActivationPage() {
-  const { license, licenseStatus, activateLicense, deactivateLicense, machineId, isDesktopApp } = useLicense();
+  const navigate = useNavigate();
+  const { license, licenseStatus, activateLicense, deactivateLicense, machineId, isDesktopApp, setFreeTier } = useLicense();
   const [licenseKey, setLicenseKey] = useState("");
   const [isActivating, setIsActivating] = useState(false);
 
@@ -24,9 +26,19 @@ export default function LicenseActivationPage() {
     if (result.success) {
       toast.success(result.message);
       setLicenseKey("");
+      navigate("/");
     } else {
       toast.error(result.message);
     }
+  };
+
+  const handleContinueFree = () => {
+    // Set free tier mode and continue to app
+    if (setFreeTier) {
+      setFreeTier();
+    }
+    toast.success("Welcome! You're using the free tier (50 movies, 3 collections)");
+    navigate("/");
   };
 
   const handleDeactivate = async () => {
@@ -94,9 +106,16 @@ export default function LicenseActivationPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Status</span>
-                <span className="text-green-500 font-medium">Pro</span>
+                <span className="text-green-500 font-medium">Pro - Unlimited</span>
               </div>
             </div>
+
+            <Button 
+              className="w-full"
+              onClick={() => navigate("/")}
+            >
+              Continue to Library
+            </Button>
 
             <Button 
               variant="outline" 
@@ -114,54 +133,40 @@ export default function LicenseActivationPage() {
     );
   }
 
-  // License not activated - show activation form
+  // License not activated - show activation form with free option
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
-            <Key className="w-8 h-8 text-amber-500" />
+          <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+            <Film className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle>Activate License</CardTitle>
+          <CardTitle>Welcome to Obsidian Cinema</CardTitle>
           <CardDescription>
-            Enter your license key to unlock Obsidian Cinema Pro features.
+            Choose how you'd like to use the app
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">License Key</label>
-            <Input
-              placeholder="OBSIDIAN-XXXX-XXXX-XXXX-XXXX"
-              value={licenseKey}
-              onChange={(e) => setLicenseKey(e.target.value.toUpperCase())}
-              className="font-mono text-center tracking-wider"
-            />
-          </div>
-
-          <Button 
-            className="w-full bg-amber-500 hover:bg-amber-600 text-black"
-            onClick={handleActivate}
-            disabled={isActivating || !licenseKey.trim()}
-          >
-            {isActivating ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Activating...
-              </>
-            ) : (
-              <>
-                <Key className="w-4 h-4 mr-2" />
-                Activate License
-              </>
-            )}
-          </Button>
-
-          {licenseStatus === 'invalid' && (
-            <div className="flex items-center gap-2 text-destructive text-sm">
-              <AlertCircle className="w-4 h-4" />
-              Invalid or expired license key
+          {/* Free Tier Option */}
+          <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium">Free Tier</h3>
+              <span className="text-xs text-muted-foreground">No license needed</span>
             </div>
-          )}
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• Up to 50 movies</li>
+              <li>• Up to 3 collections</li>
+              <li>• Full local drive access</li>
+            </ul>
+            <Button 
+              variant="outline"
+              className="w-full"
+              onClick={handleContinueFree}
+            >
+              <Film className="w-4 h-4 mr-2" />
+              Continue with Free
+            </Button>
+          </div>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
@@ -169,38 +174,63 @@ export default function LicenseActivationPage() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Don't have a license?
+                Or unlock unlimited
               </span>
             </div>
           </div>
 
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={openPurchasePage}
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Purchase License Online
-          </Button>
-
-          {machineId && (
-            <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Machine ID</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 px-2"
-                  onClick={copyMachineId}
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              <code className="text-xs font-mono text-muted-foreground break-all">
-                {machineId}
-              </code>
+          {/* Pro License Option */}
+          <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-amber-400 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Pro License
+              </h3>
+              <span className="text-xs text-amber-400">Unlimited everything</span>
             </div>
-          )}
+            
+            <div className="space-y-2">
+              <Input
+                placeholder="OBSIDIAN-XXXX-XXXX-XXXX-XXXX"
+                value={licenseKey}
+                onChange={(e) => setLicenseKey(e.target.value.toUpperCase())}
+                className="font-mono text-center tracking-wider text-sm"
+              />
+              <Button 
+                className="w-full bg-amber-500 hover:bg-amber-600 text-black"
+                onClick={handleActivate}
+                disabled={isActivating || !licenseKey.trim()}
+              >
+                {isActivating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Activating...
+                  </>
+                ) : (
+                  <>
+                    <Key className="w-4 h-4 mr-2" />
+                    Activate Pro License
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {licenseStatus === 'invalid' && (
+              <div className="flex items-center gap-2 text-destructive text-sm">
+                <AlertCircle className="w-4 h-4" />
+                Invalid or expired license key
+              </div>
+            )}
+
+            <Button 
+              variant="ghost" 
+              className="w-full text-amber-400 hover:text-amber-300"
+              onClick={openPurchasePage}
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Get a license key ($39.99)
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

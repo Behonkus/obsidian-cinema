@@ -9,7 +9,8 @@ import {
   ChevronRight,
   Sparkles,
   Film,
-  FolderOpen
+  FolderOpen,
+  Crown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -75,38 +76,26 @@ export default function DesktopAppBanner({ onDismiss, isPro, hasLicense }) {
 
             {/* CTA */}
             <div className="shrink-0 flex flex-col gap-2 w-full lg:w-auto">
-              {isPro && hasLicense ? (
-                <Button 
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white gap-2"
-                  onClick={() => window.location.href = '/upgrade'}
-                >
-                  <Download className="w-4 h-4" />
-                  Download for Windows
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              ) : isPro ? (
-                <Button 
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white gap-2"
-                  onClick={() => window.location.href = '/upgrade'}
-                >
-                  <Key className="w-4 h-4" />
-                  Get License Key
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              ) : (
-                <Button 
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white gap-2"
-                  onClick={() => window.location.href = '/upgrade'}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Upgrade to Pro
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              )}
+              {/* Download button - available to everyone */}
+              <Button 
+                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white gap-2"
+                onClick={() => window.location.href = '/upgrade'}
+              >
+                <Download className="w-4 h-4" />
+                Download for Windows
+                <ChevronRight className="w-4 h-4" />
+              </Button>
               
-              <p className="text-xs text-muted-foreground text-center">
-                {isPro ? "Your Pro license includes the desktop app" : "Pro required for desktop app"}
-              </p>
+              {isPro ? (
+                <p className="text-xs text-green-400 text-center flex items-center justify-center gap-1">
+                  <Crown className="w-3 h-3" />
+                  Pro: Unlimited movies
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center">
+                  Free: 50 movies • <span className="text-purple-400 cursor-pointer hover:underline" onClick={() => window.location.href = '/upgrade'}>Upgrade for unlimited</span>
+                </p>
+              )}
             </div>
           </div>
 

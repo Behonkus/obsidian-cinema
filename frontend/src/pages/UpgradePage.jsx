@@ -184,12 +184,11 @@ function LicenseKeyCard({ user }) {
               </div>
               
               <div>
-                <h4 className="font-medium text-foreground mb-2">2. Enter Your License Key</h4>
+                <h4 className="font-medium text-foreground mb-2">2. Start Using (Free Tier)</h4>
                 <ul className="space-y-1 text-muted-foreground">
                   <li>• Launch Obsidian Cinema</li>
-                  <li>• Copy your license key from below</li>
-                  <li>• Paste it in the activation screen</li>
-                  <li>• Click "Activate License"</li>
+                  <li>• Click "Continue with Free" to start</li>
+                  <li>• Free tier: 50 movies, 3 collections</li>
                 </ul>
               </div>
 
@@ -212,10 +211,9 @@ function LicenseKeyCard({ user }) {
                 </ul>
               </div>
 
-              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                <p className="text-amber-400 text-xs">
-                  <strong>Note:</strong> Your license key can only be activated on one device at a time. 
-                  To move to another PC, deactivate first from Settings.
+              <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                <p className="text-purple-400 text-xs">
+                  <strong>Upgrade to Pro:</strong> Enter a license key (from below) to unlock unlimited movies and collections.
                 </p>
               </div>
             </div>

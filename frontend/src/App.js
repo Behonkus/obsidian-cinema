@@ -48,7 +48,7 @@ function ProtectedRoute({ children }) {
 
 // Protected route wrapper for desktop (uses License)
 function DesktopProtectedRoute({ children }) {
-  const { isPro, loading, licenseStatus } = useLicense();
+  const { isPro, loading, licenseStatus, isFreeTier } = useLicense();
   
   if (loading) {
     return (
@@ -58,12 +58,13 @@ function DesktopProtectedRoute({ children }) {
     );
   }
 
-  // In desktop mode, require valid license for Pro features, but allow basic access
-  // The license page is the entry point in desktop mode
+  // Allow access if user has Pro license OR is using free tier
+  // Only redirect to activate page if they haven't chosen either option
   if (licenseStatus === 'not_activated' || licenseStatus === 'invalid') {
     return <Navigate to="/activate" replace />;
   }
 
+  // Free tier and Pro users can access the app
   return children;
 }
 
