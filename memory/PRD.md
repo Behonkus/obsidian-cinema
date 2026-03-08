@@ -130,6 +130,9 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ External link handling for mpc-hc:// protocol
 - ✅ **Download Desktop App section** on Pro user upgrade page
 - ✅ **Installation & Setup Guide** with 4-step instructions
+- ✅ **Hybrid Auto-Update System** with electron-updater
+- ✅ **Update notification popup** (download/install flow)
+- ✅ **Check for Updates button** in Settings page (desktop only)
 - ⏳ Desktop app packaging and distribution (next step)
 
 ## Email Notifications (Ready but NOT ENABLED)

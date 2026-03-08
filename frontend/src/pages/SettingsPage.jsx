@@ -12,7 +12,9 @@ import {
   Save,
   Film,
   HardDrive,
-  Info
+  Info,
+  Download,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +33,11 @@ import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Check if running in Electron
+const isElectron = () => {
+  return typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
+};
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState(null);
   const [stats, setStats] = useState(null);
@@ -40,9 +47,39 @@ export default function SettingsPage() {
   const [isTesting, setIsTesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  
+  // Desktop app state
+  const [appVersion, setAppVersion] = useState(null);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState(null);
 
   useEffect(() => {
     loadData();
+    
+    // Get app version if in Electron
+    if (isElectron()) {
+      window.electronAPI.getAppVersion().then(version => {
+        setAppVersion(version);
+      });
+      
+      // Listen for update status
+      window.electronAPI.onUpdateStatus(({ status, data }) => {
+        setUpdateStatus({ status, data });
+        setIsCheckingUpdate(false);
+        
+        if (status === 'available') {
+          toast.success(`Update v${data.version} is available!`);
+        } else if (status === 'not-available') {
+          toast.info("You're running the latest version!");
+        } else if (status === 'error') {
+          toast.error("Failed to check for updates");
+        }
+      });
+      
+      return () => {
+        window.electronAPI.removeUpdateListener();
+      };
+    }
   }, []);
 
   const loadData = async () => {
@@ -114,6 +151,20 @@ export default function SettingsPage() {
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCheckForUpdates = async () => {
+    if (!isElectron()) return;
+    
+    setIsCheckingUpdate(true);
+    setUpdateStatus(null);
+    
+    try {
+      await window.electronAPI.checkForUpdates();
+    } catch (err) {
+      toast.error("Failed to check for updates");
+      setIsCheckingUpdate(false);
     }
   };
 
@@ -351,6 +402,100 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </motion.div>
+        
+        {/* App Updates Card - Desktop Only */}
+        {isElectron() && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <CardTitle>App Updates</CardTitle>
+                    <CardDescription>
+                      Keep Obsidian Cinema up to date
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Current Version */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Current Version:</span>
+                  <Badge variant="secondary" className="font-mono">
+                    v{appVersion || '1.0.0'}
+                  </Badge>
+                </div>
+                
+                {/* Update Status */}
+                {updateStatus && (
+                  <div className={`p-3 rounded-lg ${
+                    updateStatus.status === 'available' 
+                      ? 'bg-purple-500/10 border border-purple-500/20' 
+                      : updateStatus.status === 'not-available'
+                      ? 'bg-green-500/10 border border-green-500/20'
+                      : 'bg-secondary/30 border border-border'
+                  }`}>
+                    {updateStatus.status === 'available' && (
+                      <div className="flex items-center gap-2">
+                        <Download className="w-4 h-4 text-purple-400" />
+                        <span className="text-sm text-purple-300">
+                          Update v{updateStatus.data?.version} available!
+                        </span>
+                      </div>
+                    )}
+                    {updateStatus.status === 'not-available' && (
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                        <span className="text-sm text-green-300">
+                          You're running the latest version
+                        </span>
+                      </div>
+                    )}
+                    {updateStatus.status === 'downloaded' && (
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                        <span className="text-sm text-green-300">
+                          Update downloaded! Restart to install.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Check for Updates Button */}
+                <Button
+                  onClick={handleCheckForUpdates}
+                  disabled={isCheckingUpdate}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {isCheckingUpdate ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Checking...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Check for Updates
+                    </>
+                  )}
+                </Button>
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  Updates are checked automatically on startup
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
         
         {/* About Card */}
         <motion.div

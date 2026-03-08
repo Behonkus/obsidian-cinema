@@ -13,6 +13,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: () => ipcRenderer.invoke('app:version'),
   isElectron: () => true,
   
+  // Auto-update
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  getUpdateStatus: () => ipcRenderer.invoke('update:getStatus'),
+  onUpdateStatus: (callback) => {
+    ipcRenderer.on('update-status', (event, data) => callback(data));
+  },
+  removeUpdateListener: () => {
+    ipcRenderer.removeAllListeners('update-status');
+  },
+  
   // File system access (desktop only)
   openFileDialog: (options) => ipcRenderer.invoke('dialog:openFile', options),
   openFolderDialog: (options) => ipcRenderer.invoke('dialog:openFolder', options),

@@ -13,6 +13,7 @@ import LoginPage from "@/pages/LoginPage";
 import AuthCallback from "@/pages/AuthCallback";
 import UpgradePage from "@/pages/UpgradePage";
 import LicenseActivationPage from "@/pages/LicenseActivationPage";
+import UpdateNotification from "@/components/UpdateNotification";
 import { RefreshCw } from "lucide-react";
 
 // Check if running in Electron
@@ -138,6 +139,7 @@ function App() {
         <AuthProvider>
           <LicenseProvider>
             <AppRouter />
+            <UpdateNotification />
           </LicenseProvider>
         </AuthProvider>
       </BrowserRouter>

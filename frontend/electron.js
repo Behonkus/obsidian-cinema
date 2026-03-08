@@ -1,4 +1,5 @@
 const { app, BrowserWindow, shell, ipcMain, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
@@ -12,6 +13,115 @@ let backendProcess;
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const BACKEND_PORT = 8001;
 const FRONTEND_PORT = isDev ? 3000 : 8001;
+
+// ============ AUTO-UPDATER CONFIGURATION ============
+
+// Configure auto-updater
+autoUpdater.autoDownload = false; // Don't auto-download, let user decide
+autoUpdater.autoInstallOnAppQuit = true;
+
+// Update state
+let updateAvailable = null;
+let downloadProgress = 0;
+let isDownloading = false;
+
+// Auto-updater event handlers
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for updates...');
+  sendUpdateStatus('checking');
+});
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available:', info.version);
+  updateAvailable = {
+    version: info.version,
+    releaseDate: info.releaseDate,
+    releaseNotes: info.releaseNotes
+  };
+  sendUpdateStatus('available', updateAvailable);
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  console.log('No updates available');
+  sendUpdateStatus('not-available');
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('Update error:', err);
+  sendUpdateStatus('error', { message: err.message });
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  downloadProgress = progressObj.percent;
+  isDownloading = true;
+  sendUpdateStatus('downloading', {
+    percent: progressObj.percent,
+    bytesPerSecond: progressObj.bytesPerSecond,
+    transferred: progressObj.transferred,
+    total: progressObj.total
+  });
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update downloaded');
+  isDownloading = false;
+  sendUpdateStatus('downloaded', {
+    version: info.version,
+    releaseNotes: info.releaseNotes
+  });
+});
+
+// Send update status to renderer
+function sendUpdateStatus(status, data = null) {
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send('update-status', { status, data });
+  }
+}
+
+// IPC Handlers for updates
+ipcMain.handle('update:check', async () => {
+  if (isDev) {
+    console.log('Skipping update check in development mode');
+    return { status: 'dev-mode' };
+  }
+  
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { status: 'checking', result };
+  } catch (err) {
+    console.error('Failed to check for updates:', err);
+    return { status: 'error', message: err.message };
+  }
+});
+
+ipcMain.handle('update:download', async () => {
+  if (!updateAvailable) {
+    return { status: 'no-update' };
+  }
+  
+  try {
+    await autoUpdater.downloadUpdate();
+    return { status: 'downloading' };
+  } catch (err) {
+    console.error('Failed to download update:', err);
+    return { status: 'error', message: err.message };
+  }
+});
+
+ipcMain.handle('update:install', () => {
+  autoUpdater.quitAndInstall(false, true);
+});
+
+ipcMain.handle('update:getStatus', () => {
+  return {
+    updateAvailable,
+    downloadProgress,
+    isDownloading,
+    currentVersion: app.getVersion()
+  };
+});
+
+// ============ LICENSE MANAGEMENT ============
 
 // License storage path
 const getLicenseFilePath = () => {
@@ -101,6 +211,8 @@ ipcMain.handle('license:getMachineId', () => {
   return generateMachineId();
 });
 
+// ============ APP INFO & UTILITIES ============
+
 // IPC Handlers for app info
 ipcMain.handle('app:version', () => {
   return app.getVersion();
@@ -146,6 +258,8 @@ ipcMain.handle('window:maximize', () => {
 ipcMain.handle('window:close', () => {
   if (mainWindow) mainWindow.close();
 });
+
+// ============ BACKEND MANAGEMENT ============
 
 // Check if backend is ready
 function waitForBackend(retries = 30) {
@@ -220,6 +334,8 @@ function startBackend() {
   });
 }
 
+// ============ WINDOW CREATION ============
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -251,6 +367,15 @@ function createWindow() {
     if (isDev) {
       mainWindow.webContents.openDevTools();
     }
+    
+    // Check for updates after window is shown (with delay)
+    if (!isDev) {
+      setTimeout(() => {
+        autoUpdater.checkForUpdates().catch(err => {
+          console.error('Auto-update check failed:', err);
+        });
+      }, 3000);
+    }
   });
 
   // Handle external links
@@ -274,7 +399,8 @@ function createWindow() {
   });
 }
 
-// App lifecycle
+// ============ APP LIFECYCLE ============
+
 app.whenReady().then(async () => {
   try {
     await startBackend();

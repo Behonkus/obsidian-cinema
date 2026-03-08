@@ -41,6 +41,7 @@
     "cmdk": "^1.1.1",
     "cra-template": "1.2.0",
     "date-fns": "^4.1.0",
+    "electron-updater": "^6.8.3",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.31.0",
     "input-otp": "^1.4.2",
@@ -92,7 +93,9 @@
       }
     ],
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "public/favicon.ico"
     },
     "nsis": {
@@ -100,6 +103,11 @@
       "allowToChangeInstallationDirectory": true,
       "installerIcon": "public/favicon.ico",
       "uninstallerIcon": "public/favicon.ico"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "YOUR_GITHUB_USERNAME",
+      "repo": "obsidian-cinema"
     }
   },
   "browserslist": {
