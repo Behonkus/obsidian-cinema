@@ -345,6 +345,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      webSecurity: false,  // Allow loading local files
       preload: path.join(__dirname, 'electron', 'preload.js')
     },
     backgroundColor: '#0a0a0a',
@@ -360,7 +361,22 @@ function createWindow() {
     : `file://${path.join(__dirname, 'index.html')}`;
   
   console.log('Loading URL:', startUrl);
+  console.log('__dirname:', __dirname);
+  console.log('isDev:', isDev);
+  
   mainWindow.loadURL(startUrl);
+  
+  // Open DevTools to see errors (remove this later)
+  mainWindow.webContents.openDevTools();
+  
+  // Log any load errors
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Failed to load:', errorCode, errorDescription);
+  });
+  
+  mainWindow.webContents.on('console-message', (event, level, message) => {
+    console.log('Renderer console:', message);
+  });
 
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
