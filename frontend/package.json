@@ -106,7 +106,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "YOUR_GITHUB_USERNAME",
+      "owner": "Behonkus",
       "repo": "obsidian-cinema"
     }
   },
