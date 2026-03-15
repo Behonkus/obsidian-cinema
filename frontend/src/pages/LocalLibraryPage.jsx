@@ -9,7 +9,10 @@ import {
   Trash2,
   ExternalLink,
   Copy,
-  HardDrive
+  HardDrive,
+  Image,
+  Settings,
+  Key
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +20,17 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
 
@@ -27,26 +39,41 @@ const isElectron = () => {
   return typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
 };
 
-// Local storage key for movies
+// Local storage keys
 const STORAGE_KEY = 'obsidian_cinema_local_movies';
 const DIRS_KEY = 'obsidian_cinema_local_dirs';
+const TMDB_KEY = 'obsidian_cinema_tmdb_key';
+
+// TMDB API base URL
+const TMDB_API = 'https://api.themoviedb.org/3';
+const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 
 export default function LocalLibraryPage() {
   const [movies, setMovies] = useState([]);
   const [directories, setDirectories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [tmdbApiKey, setTmdbApiKey] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [tempApiKey, setTempApiKey] = useState('');
+  const [fetchingPosters, setFetchingPosters] = useState(false);
+  const [fetchProgress, setFetchProgress] = useState(0);
 
   // Load from localStorage on mount
   useEffect(() => {
     const savedMovies = localStorage.getItem(STORAGE_KEY);
     const savedDirs = localStorage.getItem(DIRS_KEY);
+    const savedTmdbKey = localStorage.getItem(TMDB_KEY);
     
     if (savedMovies) {
       setMovies(JSON.parse(savedMovies));
     }
     if (savedDirs) {
       setDirectories(JSON.parse(savedDirs));
+    }
+    if (savedTmdbKey) {
+      setTmdbApiKey(savedTmdbKey);
+      setTempApiKey(savedTmdbKey);
     }
   }, []);
 
@@ -58,6 +85,81 @@ export default function LocalLibraryPage() {
   useEffect(() => {
     localStorage.setItem(DIRS_KEY, JSON.stringify(directories));
   }, [directories]);
+
+  const saveTmdbKey = () => {
+    localStorage.setItem(TMDB_KEY, tempApiKey);
+    setTmdbApiKey(tempApiKey);
+    setShowSettings(false);
+    toast.success('TMDB API key saved!');
+  };
+
+  // Fetch poster from TMDB
+  const fetchPosterForMovie = async (movie) => {
+    if (!tmdbApiKey) return null;
+    
+    try {
+      const query = encodeURIComponent(movie.title);
+      const yearParam = movie.year ? `&year=${movie.year}` : '';
+      const response = await fetch(
+        `${TMDB_API}/search/movie?api_key=${tmdbApiKey}&query=${query}${yearParam}`
+      );
+      const data = await response.json();
+      
+      if (data.results && data.results.length > 0) {
+        const result = data.results[0];
+        return {
+          poster_path: result.poster_path ? `${TMDB_IMG}${result.poster_path}` : null,
+          tmdb_id: result.id,
+          overview: result.overview,
+          rating: result.vote_average,
+          release_date: result.release_date
+        };
+      }
+    } catch (err) {
+      console.error('TMDB fetch error:', err);
+    }
+    return null;
+  };
+
+  // Fetch posters for all movies without posters
+  const fetchAllPosters = async () => {
+    if (!tmdbApiKey) {
+      toast.error('Please add your TMDB API key in settings first');
+      setShowSettings(true);
+      return;
+    }
+
+    const moviesNeedingPosters = movies.filter(m => !m.poster_path);
+    if (moviesNeedingPosters.length === 0) {
+      toast.info('All movies already have posters');
+      return;
+    }
+
+    setFetchingPosters(true);
+    setFetchProgress(0);
+
+    const updatedMovies = [...movies];
+    let fetched = 0;
+
+    for (const movie of moviesNeedingPosters) {
+      const tmdbData = await fetchPosterForMovie(movie);
+      if (tmdbData) {
+        const index = updatedMovies.findIndex(m => m.id === movie.id);
+        if (index !== -1) {
+          updatedMovies[index] = { ...updatedMovies[index], ...tmdbData };
+        }
+      }
+      fetched++;
+      setFetchProgress((fetched / moviesNeedingPosters.length) * 100);
+      
+      // Small delay to avoid rate limiting
+      await new Promise(r => setTimeout(r, 250));
+    }
+
+    setMovies(updatedMovies);
+    setFetchingPosters(false);
+    toast.success(`Fetched posters for ${fetched} movies!`);
+  };
 
   const handleMoviesFound = (newMovies, dirPath) => {
     // Add directory if not already added
@@ -162,13 +264,54 @@ export default function LocalLibraryPage() {
         <div className="flex items-center gap-2">
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
           {movies.length > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchAllPosters}
+              disabled={fetchingPosters}
+            >
+              {fetchingPosters ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Image className="w-4 h-4 mr-2" />
+              )}
+              {fetchingPosters ? 'Fetching...' : 'Fetch Posters'}
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => { setTempApiKey(tmdbApiKey); setShowSettings(true); }}>
+            <Settings className="w-4 h-4" />
+          </Button>
+          {movies.length > 0 && (
             <Button variant="outline" size="sm" onClick={clearLibrary}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              Clear
+              <Trash2 className="w-4 h-4" />
             </Button>
           )}
         </div>
       </div>
+
+      {/* Poster Fetch Progress */}
+      {fetchingPosters && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span>Fetching posters from TMDB...</span>
+            <span>{Math.round(fetchProgress)}%</span>
+          </div>
+          <Progress value={fetchProgress} />
+        </div>
+      )}
+
+      {/* TMDB API Key Warning */}
+      {!tmdbApiKey && movies.length > 0 && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Key className="w-5 h-5 text-amber-400" />
+            <span className="text-sm">Add your TMDB API key to fetch movie posters</span>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setShowSettings(true)}>
+            Add Key
+          </Button>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">
@@ -216,8 +359,17 @@ export default function LocalLibraryPage() {
             >
               <Card className="overflow-hidden hover:border-primary/50 transition-colors cursor-pointer"
                     onClick={() => setSelectedMovie(movie)}>
-                <div className="aspect-[2/3] bg-gradient-to-br from-primary/20 to-secondary relative flex items-center justify-center">
-                  <Film className="w-12 h-12 text-primary/50" />
+                <div className="aspect-[2/3] bg-gradient-to-br from-primary/20 to-secondary relative flex items-center justify-center overflow-hidden">
+                  {movie.poster_path ? (
+                    <img 
+                      src={movie.poster_path} 
+                      alt={movie.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <Film className="w-12 h-12 text-primary/50" />
+                  )}
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Button size="sm" onClick={(e) => { e.stopPropagation(); playMovie(movie); }}>
                       <Play className="w-4 h-4 mr-1" />
@@ -227,9 +379,14 @@ export default function LocalLibraryPage() {
                 </div>
                 <CardContent className="p-3">
                   <h3 className="font-medium truncate text-sm">{movie.title}</h3>
-                  {movie.year && (
-                    <p className="text-xs text-muted-foreground">{movie.year}</p>
-                  )}
+                  <div className="flex items-center justify-between">
+                    {movie.year && (
+                      <p className="text-xs text-muted-foreground">{movie.year}</p>
+                    )}
+                    {movie.rating && (
+                      <p className="text-xs text-amber-400">★ {movie.rating.toFixed(1)}</p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -243,12 +400,30 @@ export default function LocalLibraryPage() {
              onClick={() => setSelectedMovie(null)}>
           <Card className="max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
             <CardContent className="p-6 space-y-4">
-              <div>
-                <h2 className="text-xl font-bold">{selectedMovie.title}</h2>
-                {selectedMovie.year && (
-                  <p className="text-muted-foreground">{selectedMovie.year}</p>
+              <div className="flex gap-4">
+                {selectedMovie.poster_path && (
+                  <img 
+                    src={selectedMovie.poster_path} 
+                    alt={selectedMovie.title}
+                    className="w-24 h-36 object-cover rounded-lg"
+                  />
                 )}
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold">{selectedMovie.title}</h2>
+                  {selectedMovie.year && (
+                    <p className="text-muted-foreground">{selectedMovie.year}</p>
+                  )}
+                  {selectedMovie.rating && (
+                    <p className="text-amber-400">★ {selectedMovie.rating.toFixed(1)}</p>
+                  )}
+                </div>
               </div>
+
+              {selectedMovie.overview && (
+                <p className="text-sm text-muted-foreground line-clamp-3">
+                  {selectedMovie.overview}
+                </p>
+              )}
               
               <div className="p-3 bg-secondary/50 rounded-lg">
                 <p className="text-xs text-muted-foreground mb-1">File path:</p>
@@ -296,6 +471,56 @@ export default function LocalLibraryPage() {
           </Card>
         </div>
       )}
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Settings</DialogTitle>
+            <DialogDescription>
+              Configure your TMDB API key to fetch movie posters
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">TMDB API Key</label>
+              <Input
+                type="password"
+                placeholder="Enter your TMDB API key"
+                value={tempApiKey}
+                onChange={(e) => setTempApiKey(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Get a free API key at{' '}
+                <a 
+                  href="https://www.themoviedb.org/settings/api" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (isElectron() && window.electronAPI?.openExternal) {
+                      window.electronAPI.openExternal('https://www.themoviedb.org/settings/api');
+                    }
+                  }}
+                >
+                  themoviedb.org
+                </a>
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSettings(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveTmdbKey} disabled={!tempApiKey}>
+              Save Key
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

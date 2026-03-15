@@ -42,7 +42,7 @@ jobs:
         shell: bash
         env:
           CI: false
-          REACT_APP_BACKEND_URL: https://poster-player.preview.emergentagent.com
+          REACT_APP_BACKEND_URL: https://cinema-hub-402.preview.emergentagent.com
 
       - name: Copy Electron files to build
         run: |
