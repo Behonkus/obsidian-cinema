@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { LicenseProvider, useLicense } from "@/context/LicenseContext";
@@ -20,6 +20,9 @@ import { RefreshCw } from "lucide-react";
 const isElectron = () => {
   return typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
 };
+
+// Use HashRouter for Electron (file:// protocol), BrowserRouter for web
+const Router = isElectron() ? HashRouter : BrowserRouter;
 
 // Protected route wrapper for web (uses Auth)
 function ProtectedRoute({ children }) {
@@ -136,14 +139,14 @@ function AppRouter() {
 function App() {
   return (
     <div className="App min-h-screen bg-background">
-      <BrowserRouter>
+      <Router>
         <AuthProvider>
           <LicenseProvider>
             <AppRouter />
             <UpdateNotification />
           </LicenseProvider>
         </AuthProvider>
-      </BrowserRouter>
+      </Router>
       <Toaster position="bottom-right" richColors />
     </div>
   );
