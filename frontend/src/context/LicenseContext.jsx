@@ -48,6 +48,7 @@ export function LicenseProvider({ children }) {
     };
     
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const validateLicenseWithServer = useCallback(async (licenseKey, deviceId) => {

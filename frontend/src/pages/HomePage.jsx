@@ -97,6 +97,7 @@ export default function HomePage() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortOption, collectionIdFromUrl]);
 
   const loadData = async () => {

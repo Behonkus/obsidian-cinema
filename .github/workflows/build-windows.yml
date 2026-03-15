@@ -41,6 +41,7 @@ jobs:
           yarn build
         shell: bash
         env:
+          CI: false
           REACT_APP_BACKEND_URL: https://poster-player.preview.emergentagent.com
 
       - name: Build Electron app
