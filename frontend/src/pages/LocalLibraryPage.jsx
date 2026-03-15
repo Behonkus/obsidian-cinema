@@ -74,15 +74,40 @@ export default function LocalLibraryPage() {
   };
 
   const playMovie = (movie) => {
-    // Try to open with MPC-HC protocol
-    const mpcUrl = `mpc-hc://open/"${movie.file_path}"`;
-    
-    if (isElectron() && window.electronAPI?.openExternal) {
-      window.electronAPI.openExternal(mpcUrl);
+    if (isElectron()) {
+      // Open with system default player
+      if (window.electronAPI?.openPath) {
+        window.electronAPI.openPath(movie.file_path);
+      } else if (window.electronAPI?.openExternal) {
+        window.electronAPI.openExternal(movie.file_path);
+      }
+      toast.success(`Opening: ${movie.title}`);
     } else {
-      window.location.href = mpcUrl;
+      // Fallback: copy path
+      navigator.clipboard.writeText(movie.file_path);
+      toast.info('Path copied - paste in your video player');
     }
-    toast.success(`Opening: ${movie.title}`);
+  };
+
+  const openInVLC = (movie) => {
+    if (isElectron() && window.electronAPI?.openExternal) {
+      // VLC command line format
+      const vlcPath = `vlc://${movie.file_path}`;
+      window.electronAPI.openExternal(vlcPath);
+    }
+  };
+
+  const openFolder = (movie) => {
+    if (isElectron()) {
+      if (window.electronAPI?.showItemInFolder) {
+        // This opens the folder AND selects the file
+        window.electronAPI.showItemInFolder(movie.file_path);
+      } else if (window.electronAPI?.openExternal) {
+        const folderPath = movie.file_path.substring(0, movie.file_path.lastIndexOf('\\'));
+        window.electronAPI.openExternal(folderPath);
+      }
+      toast.success('Opening folder');
+    }
   };
 
   const copyPath = (path) => {
@@ -233,10 +258,21 @@ export default function LocalLibraryPage() {
               <div className="flex gap-2">
                 <Button className="flex-1" onClick={() => playMovie(selectedMovie)}>
                   <Play className="w-4 h-4 mr-2" />
-                  Play with MPC-HC
+                  Play (Default Player)
                 </Button>
                 <Button variant="outline" onClick={() => copyPath(selectedMovie.file_path)}>
                   <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => openFolder(selectedMovie)}
+                >
+                  <FolderOpen className="w-4 h-4 mr-2" />
+                  Open Folder
                 </Button>
               </div>
 

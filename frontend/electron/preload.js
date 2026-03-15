@@ -35,8 +35,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFileDialog: (options) => ipcRenderer.invoke('dialog:openFile', options),
   openFolderDialog: (options) => ipcRenderer.invoke('dialog:openFolder', options),
   
-  // External links
+  // External links and file opening
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
+  openPath: (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
+  showItemInFolder: (filePath) => ipcRenderer.invoke('shell:showItemInFolder', filePath),
   
   // Window controls
   minimizeWindow: () => ipcRenderer.invoke('window:minimize'),

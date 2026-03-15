@@ -367,9 +367,24 @@ ipcMain.handle('dialog:openFolder', async (event, options) => {
   return result;
 });
 
-// IPC Handlers for external links
-ipcMain.handle('shell:openExternal', (event, url) => {
-  shell.openExternal(url);
+// IPC Handlers for external links and file opening
+ipcMain.handle('shell:openExternal', (event, urlOrPath) => {
+  // Check if it's a file path (Windows style)
+  if (urlOrPath.match(/^[A-Za-z]:\\/)) {
+    // It's a file path - open with default app
+    shell.openPath(urlOrPath);
+  } else {
+    // It's a URL
+    shell.openExternal(urlOrPath);
+  }
+});
+
+ipcMain.handle('shell:openPath', (event, filePath) => {
+  shell.openPath(filePath);
+});
+
+ipcMain.handle('shell:showItemInFolder', (event, filePath) => {
+  shell.showItemInFolder(filePath);
 });
 
 // IPC Handlers for window controls
