@@ -78,8 +78,6 @@
     },
     "files": [
       "build/**/*",
-      "electron.js",
-      "electron/**/*",
       "package.json"
     ],
     "extraResources": [

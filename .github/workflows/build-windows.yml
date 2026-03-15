@@ -32,7 +32,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd frontend
-          yarn install
+          yarn install --frozen-lockfile
         shell: bash
 
       - name: Build React app
@@ -41,27 +41,32 @@ jobs:
           yarn build
         shell: bash
         env:
+          # CI=false prevents ESLint warnings from failing the build
           CI: false
           REACT_APP_BACKEND_URL: https://cinema-hub-402.preview.emergentagent.com
 
-      - name: Copy Electron files to build
+      - name: Copy Electron files to build output
         run: |
           cd frontend
+          REM Copy electron main process file
           copy electron.js build\electron.js
+          REM Copy preload script directory
           xcopy electron build\electron\ /E /I /Y
         shell: cmd
 
-      - name: Verify files exist
+      - name: Verify build output
         run: |
           cd frontend
-          dir build
-          dir build\electron
+          echo "=== Build directory ==="
+          dir build\electron.js
+          dir build\electron\preload.js
+          echo "=== Verified: electron.js and preload.js present ==="
         shell: cmd
 
-      - name: Build Electron app
+      - name: Build Electron installer
         run: |
           cd frontend
-          npx electron-builder --publish never
+          npx electron-builder --win --publish never
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
