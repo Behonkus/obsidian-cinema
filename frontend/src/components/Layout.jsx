@@ -35,12 +35,21 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   const navigate = useNavigate();
   const { user, logout, isPro } = useAuth();
   
-  const navItems = [
-    { path: "/", icon: Film, label: "Library" },
-    { path: "/collections", icon: FolderHeart, label: "Collections" },
-    { path: "/directories", icon: FolderOpen, label: "Directories" },
-    { path: "/settings", icon: Settings, label: "Settings" },
-  ];
+  // Check if running in Electron
+  const desktopMode = typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
+  
+  // Different nav items for web vs desktop
+  const navItems = desktopMode 
+    ? [
+        { path: "/", icon: Film, label: "Library" },
+        { path: "/collections", icon: FolderHeart, label: "Collections" },
+        { path: "/directories", icon: FolderOpen, label: "Directories" },
+        { path: "/settings", icon: Settings, label: "Settings" },
+      ]
+    : [
+        { path: "/", icon: Film, label: "Dashboard" },
+        { path: "/settings", icon: Settings, label: "Settings" },
+      ];
 
   const handleLogout = async () => {
     await logout();

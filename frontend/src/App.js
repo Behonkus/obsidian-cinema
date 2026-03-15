@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { LicenseProvider, useLicense } from "@/context/LicenseContext";
 import Layout from "@/components/Layout";
 import HomePage from "@/pages/HomePage";
+import AccountDashboard from "@/pages/AccountDashboard";
 import DirectoriesPage from "@/pages/DirectoriesPage";
 import SettingsPage from "@/pages/SettingsPage";
 import CollectionsPage from "@/pages/CollectionsPage";
@@ -108,10 +109,10 @@ function AppRouter() {
           </SmartProtectedRoute>
         }
       >
-        {/* Use LocalLibraryPage for desktop, HomePage for web */}
-        <Route index element={desktopMode ? <LocalLibraryPage /> : <HomePage />} />
-        <Route path="directories" element={desktopMode ? <LocalLibraryPage /> : <DirectoriesPage />} />
-        <Route path="collections" element={<CollectionsPage />} />
+        {/* Use LocalLibraryPage for desktop, AccountDashboard for web */}
+        <Route index element={desktopMode ? <LocalLibraryPage /> : <AccountDashboard />} />
+        <Route path="directories" element={desktopMode ? <LocalLibraryPage /> : <AccountDashboard />} />
+        <Route path="collections" element={desktopMode ? <CollectionsPage /> : <AccountDashboard />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route
