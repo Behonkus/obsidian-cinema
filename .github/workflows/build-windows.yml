@@ -39,6 +39,8 @@ jobs:
         run: |
           cd frontend
           yarn build
+          cp electron.js build/
+          cp -r electron build/
         shell: bash
         env:
           CI: false

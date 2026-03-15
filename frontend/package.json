@@ -4,7 +4,7 @@
   "description": "Your Personal Movie Library Manager",
   "author": "Obsidian Cinema",
   "private": true,
-  "main": "electron.js",
+  "main": "build/electron.js",
   "homepage": "./",
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -72,13 +72,15 @@
   "build": {
     "appId": "com.obsidiancinema.app",
     "productName": "Obsidian Cinema",
+    "extends": null,
     "directories": {
       "output": "dist"
     },
     "files": [
       "build/**/*",
       "electron.js",
-      "electron/**/*"
+      "electron/**/*",
+      "package.json"
     ],
     "extraResources": [
       {
