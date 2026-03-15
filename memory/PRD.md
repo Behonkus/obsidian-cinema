@@ -141,6 +141,20 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ Days remaining countdown per trashed movie
 - ✅ Safety confirmation dialogs for Empty Trash
 - ✅ All stored in localStorage (TRASH_KEY)
+
+### Account Dashboard for Web Portal (Mar 15, 2026)
+- ✅ Created AccountDashboard.jsx as the post-login landing page (replaces movie library HomePage)
+- ✅ Shows: Welcome message, Download Desktop App CTA, Subscription status, License key, Referral code
+- ✅ Simplified sidebar navigation for web (Dashboard + Settings only)
+- ✅ Updated App.js routing: web → AccountDashboard, desktop → LocalLibraryPage
+- ✅ Updated page title to "Obsidian Cinema" and meta description
+- ✅ Clear "web portal" notice explaining this is for account management only
+
+### GitHub Actions Build Stabilization (Mar 15, 2026)
+- ✅ Cleaned up build-windows.yml with better verification steps
+- ✅ Removed redundant files entries from electron-builder config
+- ✅ Added --frozen-lockfile to yarn install for deterministic builds
+
 - ✅ Electron.js configuration
 - ✅ Main process (electron.js) with backend startup
 - ✅ Preload script for secure IPC
