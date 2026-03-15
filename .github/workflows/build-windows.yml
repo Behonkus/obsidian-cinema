@@ -39,17 +39,29 @@ jobs:
         run: |
           cd frontend
           yarn build
-          cp electron.js build/
-          cp -r electron build/
         shell: bash
         env:
           CI: false
           REACT_APP_BACKEND_URL: https://poster-player.preview.emergentagent.com
 
+      - name: Copy Electron files to build
+        run: |
+          cd frontend
+          copy electron.js build\electron.js
+          xcopy electron build\electron\ /E /I /Y
+        shell: cmd
+
+      - name: Verify files exist
+        run: |
+          cd frontend
+          dir build
+          dir build\electron
+        shell: cmd
+
       - name: Build Electron app
         run: |
           cd frontend
-          yarn electron:build --publish never
+          npx electron-builder --publish never
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
