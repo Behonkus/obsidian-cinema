@@ -25,59 +25,43 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install Yarn
+        run: npm install -g yarn
 
       - name: Install frontend dependencies
-        working-directory: frontend
-        run: yarn install --frozen-lockfile
+        run: |
+          cd frontend
+          yarn install
+        shell: bash
 
       - name: Build React app
-        working-directory: frontend
+        run: |
+          cd frontend
+          yarn build
+        shell: bash
         env:
-          REACT_APP_BACKEND_URL: ${{ secrets.BACKEND_URL || 'https://your-app.emergentagent.com' }}
-        run: yarn build
+          REACT_APP_BACKEND_URL: https://poster-player.preview.emergentagent.com
 
       - name: Build Electron app
-        working-directory: frontend
+        run: |
+          cd frontend
+          yarn electron:build --publish never
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn electron:build --publish never
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: obsidian-cinema-windows-installer
-          path: |
-            frontend/dist/*.exe
-            frontend/dist/*.exe.blockmap
+          path: frontend/dist/*.exe
           retention-days: 30
 
       - name: Upload to Release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            frontend/dist/*.exe
+          files: frontend/dist/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # Optional: Build backend as standalone (for fully offline app)
-  # Uncomment if you want to bundle Python backend
-  # build-backend:
-  #   runs-on: windows-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Setup Python
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: '3.11'
-  #     - name: Install dependencies
-  #       run: |
-  #         cd backend
-  #         pip install -r requirements.txt
-  #         pip install pyinstaller
-  #     - name: Build executable
-  #       run: |
-  #         cd backend
-  #         pyinstaller --onefile server.py
