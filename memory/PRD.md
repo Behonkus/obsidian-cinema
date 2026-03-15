@@ -129,6 +129,18 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ Login page updated (MPC → VLC)
 - ✅ Settings page updated (MPC-HC integration → System default player integration)
 - ✅ electron.js cleaned up (removed MPC-HC protocol handler)
+
+### Recently Deleted / Trash Feature (Mar 15, 2026)
+- ✅ Soft-delete: movies moved to "Recently Deleted" instead of permanent removal
+- ✅ 30-day auto-purge on app load
+- ✅ Trash view toggle in header with item count badge
+- ✅ Individual restore and permanent delete per movie
+- ✅ "Restore All" and "Empty Trash" bulk actions
+- ✅ Undo toast on delete with instant restore
+- ✅ Greyscale poster treatment for trashed movies
+- ✅ Days remaining countdown per trashed movie
+- ✅ Safety confirmation dialogs for Empty Trash
+- ✅ All stored in localStorage (TRASH_KEY)
 - ✅ Electron.js configuration
 - ✅ Main process (electron.js) with backend startup
 - ✅ Preload script for secure IPC

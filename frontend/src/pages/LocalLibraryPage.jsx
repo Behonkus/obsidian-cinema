@@ -12,7 +12,10 @@ import {
   HardDrive,
   Image,
   Settings,
-  Key
+  Key,
+  Undo2,
+  Clock,
+  ArchiveRestore
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +56,10 @@ const isElectron = () => {
 const STORAGE_KEY = 'obsidian_cinema_local_movies';
 const DIRS_KEY = 'obsidian_cinema_local_dirs';
 const TMDB_KEY = 'obsidian_cinema_tmdb_key';
+const TRASH_KEY = 'obsidian_cinema_trash';
+
+// 30 days in milliseconds
+const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 // TMDB API base URL
 const TMDB_API = 'https://api.themoviedb.org/3';
@@ -70,12 +77,16 @@ export default function LocalLibraryPage() {
   const [fetchProgress, setFetchProgress] = useState(0);
   const [movieToDelete, setMovieToDelete] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [trashedMovies, setTrashedMovies] = useState([]);
+  const [showTrash, setShowTrash] = useState(false);
+  const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
     const savedMovies = localStorage.getItem(STORAGE_KEY);
     const savedDirs = localStorage.getItem(DIRS_KEY);
     const savedTmdbKey = localStorage.getItem(TMDB_KEY);
+    const savedTrash = localStorage.getItem(TRASH_KEY);
     
     if (savedMovies) {
       setMovies(JSON.parse(savedMovies));
@@ -87,6 +98,14 @@ export default function LocalLibraryPage() {
       setTmdbApiKey(savedTmdbKey);
       setTempApiKey(savedTmdbKey);
     }
+    if (savedTrash) {
+      // Auto-purge items older than 30 days
+      const now = Date.now();
+      const filtered = JSON.parse(savedTrash).filter(
+        m => now - m.deleted_at < TRASH_RETENTION_MS
+      );
+      setTrashedMovies(filtered);
+    }
   }, []);
 
   // Save to localStorage when movies change
@@ -97,6 +116,11 @@ export default function LocalLibraryPage() {
   useEffect(() => {
     localStorage.setItem(DIRS_KEY, JSON.stringify(directories));
   }, [directories]);
+
+  // Save trash to localStorage
+  useEffect(() => {
+    localStorage.setItem(TRASH_KEY, JSON.stringify(trashedMovies));
+  }, [trashedMovies]);
 
   const saveTmdbKey = () => {
     localStorage.setItem(TMDB_KEY, tempApiKey);
@@ -230,17 +254,69 @@ export default function LocalLibraryPage() {
   };
 
   const removeMovie = (movieId) => {
+    const movie = movies.find(m => m.id === movieId);
+    if (movie) {
+      setTrashedMovies(prev => [...prev, { ...movie, deleted_at: Date.now() }]);
+    }
     setMovies(movies.filter(m => m.id !== movieId));
     setMovieToDelete(null);
     setSelectedMovie(null);
-    toast.success('Movie removed from library');
+    toast.success('Movie moved to Recently Deleted', {
+      description: 'You can restore it within 30 days',
+      action: {
+        label: "Undo",
+        onClick: () => {
+          if (movie) {
+            setMovies(prev => [...prev, movie]);
+            setTrashedMovies(prev => prev.filter(m => m.id !== movieId));
+          }
+        },
+      },
+    });
   };
 
   const clearLibrary = () => {
+    const now = Date.now();
+    const trashEntries = movies.map(m => ({ ...m, deleted_at: now }));
+    setTrashedMovies(prev => [...prev, ...trashEntries]);
     setMovies([]);
     setDirectories([]);
     setShowClearConfirm(false);
-    toast.success('Library cleared');
+    toast.success('Library cleared — movies moved to Recently Deleted');
+  };
+
+  const restoreMovie = (movieId) => {
+    const movie = trashedMovies.find(m => m.id === movieId);
+    if (movie) {
+      const { deleted_at, ...cleanMovie } = movie;
+      setMovies(prev => [...prev, cleanMovie]);
+      setTrashedMovies(prev => prev.filter(m => m.id !== movieId));
+      toast.success(`"${movie.title}" restored to library`);
+    }
+  };
+
+  const restoreAllMovies = () => {
+    const restored = trashedMovies.map(({ deleted_at, ...m }) => m);
+    setMovies(prev => [...prev, ...restored]);
+    setTrashedMovies([]);
+    toast.success(`${restored.length} movies restored to library`);
+  };
+
+  const permanentlyDelete = (movieId) => {
+    setTrashedMovies(prev => prev.filter(m => m.id !== movieId));
+    toast.success('Movie permanently removed');
+  };
+
+  const emptyTrash = () => {
+    setTrashedMovies([]);
+    setShowEmptyTrashConfirm(false);
+    toast.success('Trash emptied');
+  };
+
+  const getDaysRemaining = (deletedAt) => {
+    const elapsed = Date.now() - deletedAt;
+    const remaining = Math.ceil((TRASH_RETENTION_MS - elapsed) / (24 * 60 * 60 * 1000));
+    return Math.max(0, remaining);
   };
 
   const filteredMovies = movies.filter(movie => {
@@ -282,6 +358,7 @@ export default function LocalLibraryPage() {
               size="sm" 
               onClick={fetchAllPosters}
               disabled={fetchingPosters}
+              data-testid="fetch-posters-btn"
             >
               {fetchingPosters ? (
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -291,11 +368,23 @@ export default function LocalLibraryPage() {
               {fetchingPosters ? 'Fetching...' : 'Fetch Posters'}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => { setTempApiKey(tmdbApiKey); setShowSettings(true); }}>
+          <Button 
+            variant={showTrash ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => setShowTrash(!showTrash)}
+            data-testid="toggle-trash-btn"
+            className={showTrash ? "bg-destructive hover:bg-destructive/90" : ""}
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            {trashedMovies.length > 0 && (
+              <span className="text-xs">{trashedMovies.length}</span>
+            )}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => { setTempApiKey(tmdbApiKey); setShowSettings(true); }} data-testid="settings-btn">
             <Settings className="w-4 h-4" />
           </Button>
           {movies.length > 0 && (
-            <Button variant="outline" size="sm" onClick={() => setShowClearConfirm(true)}>
+            <Button variant="outline" size="sm" onClick={() => setShowClearConfirm(true)} data-testid="clear-library-btn">
               <Trash2 className="w-4 h-4" />
             </Button>
           )}
@@ -349,8 +438,92 @@ export default function LocalLibraryPage() {
         </div>
       )}
 
-      {/* Movies Grid */}
-      {movies.length === 0 ? (
+      {/* Movies Grid or Trash View */}
+      {showTrash ? (
+        /* Recently Deleted View */
+        <div className="space-y-4" data-testid="trash-view">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" />
+              <h2 className="text-lg font-semibold">Recently Deleted</h2>
+              <Badge variant="secondary">{trashedMovies.length}</Badge>
+            </div>
+            {trashedMovies.length > 0 && (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={restoreAllMovies} data-testid="restore-all-btn">
+                  <ArchiveRestore className="w-4 h-4 mr-2" />
+                  Restore All
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => setShowEmptyTrashConfirm(true)} data-testid="empty-trash-btn">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Empty Trash
+                </Button>
+              </div>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Movies here will be automatically removed after 30 days. No files are ever deleted from your system.
+          </p>
+          {trashedMovies.length === 0 ? (
+            <Card className="p-8">
+              <div className="text-center space-y-3">
+                <Trash2 className="w-12 h-12 mx-auto text-muted-foreground/40" />
+                <h3 className="font-medium text-muted-foreground">Trash is empty</h3>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {trashedMovies.map((movie) => (
+                <motion.div
+                  key={movie.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="group"
+                >
+                  <Card className="overflow-hidden opacity-70 hover:opacity-100 transition-opacity" data-testid={`trash-movie-${movie.id}`}>
+                    <div className="aspect-[2/3] bg-gradient-to-br from-destructive/10 to-secondary relative flex items-center justify-center overflow-hidden">
+                      {movie.poster_path ? (
+                        <img 
+                          src={movie.poster_path} 
+                          alt={movie.title}
+                          className="w-full h-full object-cover grayscale"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <Film className="w-12 h-12 text-muted-foreground/30" />
+                      )}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <Button size="sm" variant="secondary" onClick={() => restoreMovie(movie.id)} data-testid={`restore-${movie.id}`}>
+                          <Undo2 className="w-4 h-4 mr-1" />
+                          Restore
+                        </Button>
+                      </div>
+                    </div>
+                    <CardContent className="p-3">
+                      <h3 className="font-medium truncate text-sm">{movie.title}</h3>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {getDaysRemaining(movie.deleted_at)}d left
+                        </p>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 px-2 text-destructive hover:text-destructive"
+                          onClick={() => permanentlyDelete(movie.id)}
+                          data-testid={`perm-delete-${movie.id}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : movies.length === 0 ? (
         <Card className="p-8">
           <div className="text-center space-y-4">
             <FolderOpen className="w-16 h-16 mx-auto text-muted-foreground" />
@@ -542,7 +715,7 @@ export default function LocalLibraryPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remove "{movieToDelete?.title}" from library?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will only remove the movie from your Obsidian Cinema library.
+              This movie will be moved to Recently Deleted where you can restore it within 30 days.
               <span className="block mt-2 font-medium text-foreground">
                 No files will be deleted from your system. Your actual movie file will remain untouched.
               </span>
@@ -567,7 +740,7 @@ export default function LocalLibraryPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Clear entire library?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove all movies and scanned directories from your Obsidian Cinema library.
+              This will move all movies to Recently Deleted where you can restore them within 30 days.
               <span className="block mt-2 font-medium text-foreground">
                 No files will be deleted from your system. All your actual movie files will remain untouched.
               </span>
@@ -581,6 +754,31 @@ export default function LocalLibraryPage() {
               data-testid="confirm-clear-library-btn"
             >
               Clear Library
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Empty Trash Confirmation */}
+      <AlertDialog open={showEmptyTrashConfirm} onOpenChange={setShowEmptyTrashConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Empty trash permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove {trashedMovies.length} movie{trashedMovies.length !== 1 ? 's' : ''} from your Recently Deleted list. This cannot be undone.
+              <span className="block mt-2 font-medium text-foreground">
+                No files will be deleted from your system. Your actual movie files will remain untouched.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={emptyTrash}
+              data-testid="confirm-empty-trash-btn"
+            >
+              Empty Trash
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
