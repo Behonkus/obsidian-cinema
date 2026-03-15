@@ -342,7 +342,6 @@ function createWindow() {
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    icon: path.join(__dirname, 'public', 'favicon.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -355,10 +354,12 @@ function createWindow() {
   });
 
   // Load the app
+  // In production, electron.js is in the build folder, so index.html is in same directory
   const startUrl = isDev 
     ? 'http://localhost:3000'
-    : `file://${path.join(__dirname, 'build', 'index.html')}`;
+    : `file://${path.join(__dirname, 'index.html')}`;
   
+  console.log('Loading URL:', startUrl);
   mainWindow.loadURL(startUrl);
 
   // Show window when ready
