@@ -17,7 +17,8 @@ import {
   FolderHeart,
   Plus,
   Minus,
-  ImageIcon
+  ImageIcon,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import axios from "axios";
 
@@ -57,6 +68,7 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
   const [showSearch, setShowSearch] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [collections, setCollections] = useState([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -216,6 +228,17 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
     }
   };
 
+  const handleDeleteMovie = async () => {
+    try {
+      await axios.delete(`${API}/movies/${movie.id}`);
+      toast.success("Movie removed from library");
+      setShowDeleteConfirm(false);
+      onClose();
+    } catch (err) {
+      toast.error("Failed to remove movie");
+    }
+  };
+
   const isInCollection = (collectionId) => {
     return (movie.collection_ids || []).includes(collectionId);
   };
@@ -228,6 +251,7 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
   const movieGenres = movie.genres || [];
 
   return (
+    <>
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
@@ -499,6 +523,15 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
                   <Search className="w-4 h-4 mr-2" />
                   {showSearch ? "Hide Search" : "Change Poster"}
                 </Button>
+                <Button
+                  variant="outline"
+                  className="rounded-full px-6 border-destructive/50 text-destructive hover:bg-destructive/10"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  data-testid="delete-movie-btn"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
               </div>
               
               {showSearch && (
@@ -590,5 +623,31 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
         </motion.div>
       </motion.div>
     </AnimatePresence>
+
+    {/* Delete Movie Confirmation */}
+    <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove "{movie?.title || movie?.file_name}" from library?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will only remove the movie from your Obsidian Cinema library database.
+            <span className="block mt-2 font-medium text-foreground">
+              No files will be deleted from your system. Your actual movie file will remain untouched.
+            </span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={handleDeleteMovie}
+            data-testid="confirm-delete-movie-btn"
+          >
+            Remove from Library
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

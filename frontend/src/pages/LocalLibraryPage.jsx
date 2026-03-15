@@ -28,6 +28,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
@@ -58,6 +68,8 @@ export default function LocalLibraryPage() {
   const [tempApiKey, setTempApiKey] = useState('');
   const [fetchingPosters, setFetchingPosters] = useState(false);
   const [fetchProgress, setFetchProgress] = useState(0);
+  const [movieToDelete, setMovieToDelete] = useState(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -219,15 +231,16 @@ export default function LocalLibraryPage() {
 
   const removeMovie = (movieId) => {
     setMovies(movies.filter(m => m.id !== movieId));
+    setMovieToDelete(null);
+    setSelectedMovie(null);
     toast.success('Movie removed from library');
   };
 
   const clearLibrary = () => {
-    if (confirm('Are you sure you want to clear your entire library?')) {
-      setMovies([]);
-      setDirectories([]);
-      toast.success('Library cleared');
-    }
+    setMovies([]);
+    setDirectories([]);
+    setShowClearConfirm(false);
+    toast.success('Library cleared');
   };
 
   const filteredMovies = movies.filter(movie => {
@@ -282,7 +295,7 @@ export default function LocalLibraryPage() {
             <Settings className="w-4 h-4" />
           </Button>
           {movies.length > 0 && (
-            <Button variant="outline" size="sm" onClick={clearLibrary}>
+            <Button variant="outline" size="sm" onClick={() => setShowClearConfirm(true)}>
               <Trash2 className="w-4 h-4" />
             </Button>
           )}
@@ -461,7 +474,8 @@ export default function LocalLibraryPage() {
                 </Button>
                 <Button 
                   variant="destructive"
-                  onClick={() => { removeMovie(selectedMovie.id); setSelectedMovie(null); }}
+                  onClick={() => setMovieToDelete(selectedMovie)}
+                  data-testid="remove-movie-btn"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Remove
@@ -521,6 +535,56 @@ export default function LocalLibraryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Remove Movie Confirmation */}
+      <AlertDialog open={!!movieToDelete} onOpenChange={(open) => !open && setMovieToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove "{movieToDelete?.title}" from library?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will only remove the movie from your Obsidian Cinema library.
+              <span className="block mt-2 font-medium text-foreground">
+                No files will be deleted from your system. Your actual movie file will remain untouched.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => removeMovie(movieToDelete?.id)}
+              data-testid="confirm-remove-movie-btn"
+            >
+              Remove from Library
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear Library Confirmation */}
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear entire library?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all movies and scanned directories from your Obsidian Cinema library.
+              <span className="block mt-2 font-medium text-foreground">
+                No files will be deleted from your system. All your actual movie files will remain untouched.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={clearLibrary}
+              data-testid="confirm-clear-library-btn"
+            >
+              Clear Library
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

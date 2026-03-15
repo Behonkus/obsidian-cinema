@@ -122,7 +122,7 @@ export default function LoginPage() {
             <p className="text-xs text-muted-foreground mt-1">Posters</p>
           </div>
           <div className="p-3">
-            <p className="text-2xl font-bold text-primary">MPC</p>
+            <p className="text-2xl font-bold text-primary">VLC</p>
             <p className="text-xs text-muted-foreground mt-1">Playback</p>
           </div>
         </div>

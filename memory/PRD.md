@@ -120,7 +120,15 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ Electron main process with IPC handlers for license storage
 - ✅ Electron preload script for secure API exposure
 
-### Electron Desktop App (Mar 8, 2026)
+### Playback Rework & MPC-HC Cleanup (Mar 15, 2026)
+- ✅ Replaced all MPC-HC references with system default player
+- ✅ MovieDetailModal.jsx and MovieCard.jsx now use `shell.openPath` (Electron) or clipboard fallback (web)
+- ✅ Added Delete Movie button to MovieDetailModal with safety confirmation dialog
+- ✅ Added safety confirmation dialogs for Remove Movie and Clear Library in LocalLibraryPage (desktop)
+- ✅ All delete/remove actions clearly state: "No files will be deleted from your system"
+- ✅ Login page updated (MPC → VLC)
+- ✅ Settings page updated (MPC-HC integration → System default player integration)
+- ✅ electron.js cleaned up (removed MPC-HC protocol handler)
 - ✅ Electron.js configuration
 - ✅ Main process (electron.js) with backend startup
 - ✅ Preload script for secure IPC
@@ -188,7 +196,7 @@ To enable referral success email notifications:
 ## P0 Features (Critical - Done)
 - [x] Directory management
 - [x] Movie import/display
-- [x] Play/copy functionality
+- [x] Play/copy functionality (system default player)
 - [x] Network share scanning
 - [x] TMDB API key configuration
 - [x] Favorites/Watchlist/Watched
@@ -198,6 +206,7 @@ To enable referral success email notifications:
 - [x] Referral program
 - [x] Free tier limits enforcement
 - [x] **License Key System for desktop app**
+- [x] **Delete movie safety confirmation dialogs**
 
 ## P1 Features (Important - Done)
 - [x] Bulk metadata fetch (SSE progress)
