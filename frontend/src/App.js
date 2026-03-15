@@ -13,6 +13,7 @@ import LoginPage from "@/pages/LoginPage";
 import AuthCallback from "@/pages/AuthCallback";
 import UpgradePage from "@/pages/UpgradePage";
 import LicenseActivationPage from "@/pages/LicenseActivationPage";
+import LocalLibraryPage from "@/pages/LocalLibraryPage";
 import UpdateNotification from "@/components/UpdateNotification";
 import { RefreshCw } from "lucide-react";
 
@@ -107,8 +108,9 @@ function AppRouter() {
           </SmartProtectedRoute>
         }
       >
-        <Route index element={<HomePage />} />
-        <Route path="directories" element={<DirectoriesPage />} />
+        {/* Use LocalLibraryPage for desktop, HomePage for web */}
+        <Route index element={desktopMode ? <LocalLibraryPage /> : <HomePage />} />
+        <Route path="directories" element={desktopMode ? <LocalLibraryPage /> : <DirectoriesPage />} />
         <Route path="collections" element={<CollectionsPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

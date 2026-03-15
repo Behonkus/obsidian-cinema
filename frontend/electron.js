@@ -1,10 +1,11 @@
 const { app, BrowserWindow, shell, ipcMain, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 const crypto = require('crypto');
+const os = require('os');
 
 // Keep a global reference of the window object
 let mainWindow;
@@ -13,6 +14,137 @@ let backendProcess;
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const BACKEND_PORT = 8001;
 const FRONTEND_PORT = isDev ? 3000 : 8001;
+
+// Video file extensions to scan for
+const VIDEO_EXTENSIONS = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.mpg', '.mpeg', '.3gp', '.ts'];
+
+// ============ LOCAL FILE SYSTEM OPERATIONS ============
+
+// Get list of available drives (Windows)
+function getWindowsDrives() {
+  try {
+    const drives = [];
+    // Use wmic to get drive letters
+    const output = execSync('wmic logicaldisk get caption', { encoding: 'utf8' });
+    const lines = output.split('\n').filter(line => line.trim());
+    lines.forEach(line => {
+      const drive = line.trim();
+      if (drive && drive.match(/^[A-Z]:$/)) {
+        drives.push({
+          name: drive,
+          path: drive + '\\'
+        });
+      }
+    });
+    return drives;
+  } catch (err) {
+    console.error('Error getting drives:', err);
+    // Fallback to common drives
+    return [
+      { name: 'C:', path: 'C:\\' },
+      { name: 'D:', path: 'D:\\' }
+    ];
+  }
+}
+
+// List contents of a directory
+function listDirectory(dirPath) {
+  try {
+    const items = fs.readdirSync(dirPath, { withFileTypes: true });
+    return items
+      .filter(item => {
+        // Skip hidden files and system folders
+        if (item.name.startsWith('.')) return false;
+        if (item.name === '$RECYCLE.BIN') return false;
+        if (item.name === 'System Volume Information') return false;
+        return true;
+      })
+      .map(item => ({
+        name: item.name,
+        path: path.join(dirPath, item.name),
+        isDirectory: item.isDirectory()
+      }))
+      .sort((a, b) => {
+        // Directories first, then files
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
+        return a.name.localeCompare(b.name);
+      });
+  } catch (err) {
+    console.error('Error listing directory:', err);
+    return [];
+  }
+}
+
+// Scan directory for video files
+function scanForVideos(dirPath, recursive = true) {
+  const videos = [];
+  
+  function scan(currentPath) {
+    try {
+      const items = fs.readdirSync(currentPath, { withFileTypes: true });
+      
+      for (const item of items) {
+        const fullPath = path.join(currentPath, item.name);
+        
+        if (item.isDirectory() && recursive) {
+          // Skip system folders
+          if (item.name.startsWith('.') || 
+              item.name === '$RECYCLE.BIN' || 
+              item.name === 'System Volume Information') {
+            continue;
+          }
+          scan(fullPath);
+        } else if (item.isFile()) {
+          const ext = path.extname(item.name).toLowerCase();
+          if (VIDEO_EXTENSIONS.includes(ext)) {
+            // Extract title and year from filename
+            const nameWithoutExt = path.basename(item.name, ext);
+            const yearMatch = nameWithoutExt.match(/[\(\[\s]*(19|20)\d{2}[\)\]\s]*/);
+            const year = yearMatch ? parseInt(yearMatch[0].replace(/[\(\[\]\)\s]/g, '')) : null;
+            const title = nameWithoutExt
+              .replace(/[\(\[\s]*(19|20)\d{2}[\)\]\s]*/g, '')
+              .replace(/\./g, ' ')
+              .replace(/[_-]/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            
+            videos.push({
+              id: crypto.randomUUID(),
+              file_path: fullPath,
+              file_name: item.name,
+              title: title,
+              year: year,
+              directory_path: currentPath
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error scanning:', currentPath, err.message);
+    }
+  }
+  
+  scan(dirPath);
+  return videos;
+}
+
+// IPC Handlers for local file system
+ipcMain.handle('fs:getDrives', () => {
+  return getWindowsDrives();
+});
+
+ipcMain.handle('fs:listDirectory', (event, dirPath) => {
+  return listDirectory(dirPath);
+});
+
+ipcMain.handle('fs:scanForVideos', (event, dirPath, recursive) => {
+  return scanForVideos(dirPath, recursive);
+});
+
+ipcMain.handle('fs:pathExists', (event, checkPath) => {
+  return fs.existsSync(checkPath);
+});
 
 // ============ AUTO-UPDATER CONFIGURATION ============
 
@@ -366,16 +498,14 @@ function createWindow() {
   
   mainWindow.loadURL(startUrl);
   
-  // Open DevTools to see errors (remove this later)
-  mainWindow.webContents.openDevTools();
+  // Only open DevTools in development
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
   
   // Log any load errors
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
     console.error('Failed to load:', errorCode, errorDescription);
-  });
-  
-  mainWindow.webContents.on('console-message', (event, level, message) => {
-    console.log('Renderer console:', message);
   });
 
   // Show window when ready

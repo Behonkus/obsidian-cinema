@@ -25,6 +25,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('update-status');
   },
   
+  // Local file system (desktop only)
+  getDrives: () => ipcRenderer.invoke('fs:getDrives'),
+  listDirectory: (dirPath) => ipcRenderer.invoke('fs:listDirectory', dirPath),
+  scanForVideos: (dirPath, recursive) => ipcRenderer.invoke('fs:scanForVideos', dirPath, recursive),
+  pathExists: (checkPath) => ipcRenderer.invoke('fs:pathExists', checkPath),
+  
   // File system access (desktop only)
   openFileDialog: (options) => ipcRenderer.invoke('dialog:openFile', options),
   openFolderDialog: (options) => ipcRenderer.invoke('dialog:openFolder', options),
