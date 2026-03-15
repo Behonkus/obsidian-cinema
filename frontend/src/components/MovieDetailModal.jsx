@@ -87,11 +87,15 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
   };
 
   const handlePlay = () => {
-    const mpcLink = `mpc-hc://play/${encodeURIComponent(movie.file_path)}`;
-    window.location.href = mpcLink;
-    toast.info("Opening in MPC-HC...", {
-      description: "If it doesn't open, copy the path and paste in MPC-HC",
-    });
+    // Use system default video player
+    if (window.electronAPI?.openPath) {
+      window.electronAPI.openPath(movie.file_path);
+      toast.success("Opening with default player...");
+    } else {
+      // Web fallback: copy path
+      navigator.clipboard.writeText(movie.file_path);
+      toast.info("Path copied — paste in your video player");
+    }
   };
 
   const handleFetchMetadata = async () => {
@@ -409,7 +413,7 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
                   data-testid="modal-play-btn"
                 >
                   <Play className="w-4 h-4 mr-2 fill-white" />
-                  Play in MPC-HC
+                  Play Movie
                 </Button>
                 <Button
                   variant="secondary"

@@ -1,13 +1,13 @@
 # Obsidian Cinema - PRD
 
 ## Original Problem Statement
-Build an app that will scan directories of movie files and display associated movie posters that can be clicked on to play the file using MPC-HC.
+Build an app that will scan directories of movie files and display associated movie posters that can be clicked on to play the file using the system default video player.
 
 ## User Choices
 1. **Poster Source**: TMDB API (The Movie Database)
 2. **Video Formats**: All formats supported (.mp4, .mkv, .avi, .mov, .wmv, etc.)
 3. **Directory Scanning**: Multiple directories with recursive scanning, including network shares
-4. **Play Options**: Both MPC-HC protocol link + clipboard copy
+4. **Play Options**: System default video player + clipboard copy
 5. **Theme**: Dark theme
 6. **Monetization**: Pro tier with one-time payment ($29.99)
 7. **Authentication**: Emergent-managed Google OAuth + JWT sessions
@@ -127,7 +127,7 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ Machine ID generation for license binding
 - ✅ Local license storage in user data directory
 - ✅ Build configuration in package.json for Windows NSIS installer
-- ✅ External link handling for mpc-hc:// protocol
+- ✅ System default video player integration (replaced MPC-HC)
 - ✅ **Download Desktop App section** on Pro user upgrade page
 - ✅ **Installation & Setup Guide** with 4-step instructions
 - ✅ **Hybrid Auto-Update System** with electron-updater

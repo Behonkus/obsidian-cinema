@@ -38,16 +38,19 @@ export default function MovieCard({ movie, onClick, onUpdate, index = 0 }) {
 
   const handlePlay = (e) => {
     e.stopPropagation();
-    const mpcLink = `mpc-hc://play/${encodeURIComponent(movie.file_path)}`;
-    window.location.href = mpcLink;
-    
-    toast.info("Opening in MPC-HC...", {
-      description: "If it doesn't open, copy the path and paste in MPC-HC",
-      action: {
-        label: "Copy Path",
-        onClick: () => handleCopyPath(e),
-      },
-    });
+    if (window.electronAPI?.openPath) {
+      window.electronAPI.openPath(movie.file_path);
+      toast.success("Opening with default player...");
+    } else {
+      // Web fallback: copy path
+      navigator.clipboard.writeText(movie.file_path);
+      toast.info("Path copied — paste in your video player", {
+        action: {
+          label: "Copy Path",
+          onClick: () => handleCopyPath(e),
+        },
+      });
+    }
   };
 
   const handleToggleFavorite = async (e) => {

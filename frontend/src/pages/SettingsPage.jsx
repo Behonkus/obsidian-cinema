@@ -525,7 +525,7 @@ export default function SettingsPage() {
                   <ul className="space-y-1 text-muted-foreground">
                     <li>• Scan local & network directories</li>
                     <li>• TMDB movie posters & metadata</li>
-                    <li>• MPC-HC integration</li>
+                    <li>• System default player integration</li>
                     <li>• Search & filter movies</li>
                   </ul>
                 </div>

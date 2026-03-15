@@ -548,11 +548,11 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // Handle mpc-hc:// protocol links
+  // Handle navigation events
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (url.startsWith('mpc-hc://')) {
+    // Block external navigation from renderer
+    if (!url.startsWith('file://')) {
       event.preventDefault();
-      shell.openExternal(url);
     }
   });
 
