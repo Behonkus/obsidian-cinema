@@ -157,6 +157,11 @@ export default function LocalLibraryPage() {
   const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false);
   const [gridSize, setGridSize] = useState(() => localStorage.getItem(GRID_SIZE_KEY) || 'medium');
   const [sortBy, setSortBy] = useState(() => localStorage.getItem(SORT_KEY) || 'added-desc');
+  const [posterMode, setPosterMode] = useState(null); // 'search' | 'url' | null
+  const [posterSearch, setPosterSearch] = useState('');
+  const [posterResults, setPosterResults] = useState([]);
+  const [posterSearching, setPosterSearching] = useState(false);
+  const [posterUrl, setPosterUrl] = useState('');
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -242,6 +247,97 @@ export default function LocalLibraryPage() {
       console.error('TMDB fetch error:', err);
     }
     return null;
+  };
+
+  // Update a single movie's poster
+  const updateMoviePoster = (movieId, posterPath) => {
+    setMovies(prev => prev.map(m => m.id === movieId ? { ...m, poster_path: posterPath } : m));
+    if (selectedMovie && selectedMovie.id === movieId) {
+      setSelectedMovie(prev => ({ ...prev, poster_path: posterPath }));
+    }
+    setPosterMode(null);
+    setPosterSearch('');
+    setPosterResults([]);
+    setPosterUrl('');
+    toast.success('Poster updated!');
+  };
+
+  // Search TMDB for poster options
+  const searchPosters = async () => {
+    if (!tmdbApiKey) {
+      toast.error('Add your TMDB API key in settings first');
+      return;
+    }
+    if (!posterSearch.trim()) return;
+
+    setPosterSearching(true);
+    try {
+      const query = encodeURIComponent(posterSearch.trim());
+      const resp = await fetch(TMDB_API + '/search/movie?api_key=' + tmdbApiKey + '&query=' + query);
+      const data = await resp.json();
+      var results = [];
+      if (data.results) {
+        for (var i = 0; i < Math.min(data.results.length, 8); i++) {
+          var r = data.results[i];
+          if (r.poster_path) {
+            results.push({
+              id: r.id,
+              title: r.title,
+              year: r.release_date ? r.release_date.substring(0, 4) : '',
+              poster: TMDB_IMG + r.poster_path,
+              overview: r.overview,
+              rating: r.vote_average,
+            });
+          }
+        }
+      }
+      setPosterResults(results);
+      if (results.length === 0) toast.info('No posters found for that search');
+    } catch (err) {
+      toast.error('Search failed');
+    }
+    setPosterSearching(false);
+  };
+
+  // Browse for local image (Electron only)
+  const browseLocalImage = async () => {
+    if (isElectron() && window.electronAPI && window.electronAPI.openFileDialog) {
+      try {
+        var result = await window.electronAPI.openFileDialog({
+          filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif'] }],
+          properties: ['openFile']
+        });
+        if (result && !result.canceled && result.filePaths && result.filePaths.length > 0 && selectedMovie) {
+          updateMoviePoster(selectedMovie.id, 'file://' + result.filePaths[0]);
+        }
+      } catch (err) {
+        toast.error('Could not open file browser');
+      }
+    }
+  };
+
+  // Apply URL as poster
+  const applyPosterUrl = () => {
+    if (!posterUrl.trim()) return;
+    if (selectedMovie) {
+      updateMoviePoster(selectedMovie.id, posterUrl.trim());
+    }
+  };
+
+  // Remove poster
+  const removePoster = () => {
+    if (selectedMovie) {
+      updateMoviePoster(selectedMovie.id, null);
+    }
+  };
+
+  // Reset poster state when closing modal
+  const closeDetail = () => {
+    setSelectedMovie(null);
+    setPosterMode(null);
+    setPosterSearch('');
+    setPosterResults([]);
+    setPosterUrl('');
   };
 
   // Fetch posters for all movies without posters
@@ -790,17 +886,29 @@ export default function LocalLibraryPage() {
       {/* Movie Detail Modal */}
       {selectedMovie && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-             onClick={() => setSelectedMovie(null)}>
-          <Card className="max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+             onClick={closeDetail}>
+          <Card className="max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <CardContent className="p-6 space-y-4">
               <div className="flex gap-4">
-                {selectedMovie.poster_path && (
-                  <img 
-                    src={selectedMovie.poster_path} 
-                    alt={selectedMovie.title}
-                    className="w-24 h-36 object-cover rounded-lg"
-                  />
-                )}
+                <div 
+                  className="w-24 h-36 rounded-lg overflow-hidden bg-secondary flex items-center justify-center cursor-pointer group relative shrink-0"
+                  onClick={() => { setPosterMode(posterMode ? null : 'search'); setPosterSearch(selectedMovie.title || ''); }}
+                  data-testid="poster-change-trigger"
+                >
+                  {selectedMovie.poster_path ? (
+                    <>
+                      <img src={selectedMovie.poster_path} alt={selectedMovie.title} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Image className="w-5 h-5 text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center p-2">
+                      <Image className="w-6 h-6 mx-auto text-muted-foreground/50 mb-1" />
+                      <p className="text-[10px] text-muted-foreground">Click to add poster</p>
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1">
                   <h2 className="text-xl font-bold">{selectedMovie.title}</h2>
                   {selectedMovie.year && (
@@ -816,6 +924,99 @@ export default function LocalLibraryPage() {
                 <p className="text-sm text-muted-foreground line-clamp-3">
                   {selectedMovie.overview}
                 </p>
+              )}
+
+              {/* Poster Management */}
+              {posterMode && (
+                <div className="space-y-3 p-3 border border-border rounded-lg bg-secondary/30" data-testid="poster-editor">
+                  {/* Mode Tabs */}
+                  <div className="flex gap-1">
+                    <Button
+                      variant={posterMode === 'search' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setPosterMode('search')}
+                      className="text-xs flex-1"
+                    >
+                      <Search className="w-3 h-3 mr-1" /> Search TMDB
+                    </Button>
+                    <Button
+                      variant={posterMode === 'url' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setPosterMode('url')}
+                      className="text-xs flex-1"
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" /> Image URL
+                    </Button>
+                    {isElectron() && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={browseLocalImage}
+                        className="text-xs flex-1"
+                      >
+                        <FolderOpen className="w-3 h-3 mr-1" /> Local File
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* TMDB Search */}
+                  {posterMode === 'search' && (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Search movie title..."
+                          value={posterSearch}
+                          onChange={(e) => setPosterSearch(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && searchPosters()}
+                          className="text-sm h-8"
+                          data-testid="poster-search-input"
+                        />
+                        <Button size="sm" onClick={searchPosters} disabled={posterSearching} className="h-8">
+                          {posterSearching ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
+                        </Button>
+                      </div>
+                      {posterResults.length > 0 && (
+                        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                          {posterResults.map(function(result) {
+                            return (
+                              <div
+                                key={result.id}
+                                className="cursor-pointer rounded overflow-hidden border border-transparent hover:border-primary transition-colors"
+                                onClick={() => updateMoviePoster(selectedMovie.id, result.poster)}
+                                data-testid={'poster-result-' + result.id}
+                              >
+                                <img src={result.poster} alt={result.title} className="w-full aspect-[2/3] object-cover" />
+                                <p className="text-[10px] p-1 truncate">{result.title} {result.year && ('(' + result.year + ')')}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* URL Input */}
+                  {posterMode === 'url' && (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="https://example.com/poster.jpg"
+                        value={posterUrl}
+                        onChange={(e) => setPosterUrl(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && applyPosterUrl()}
+                        className="text-sm h-8"
+                        data-testid="poster-url-input"
+                      />
+                      <Button size="sm" onClick={applyPosterUrl} className="h-8">Apply</Button>
+                    </div>
+                  )}
+
+                  {/* Remove poster option */}
+                  {selectedMovie.poster_path && (
+                    <Button variant="ghost" size="sm" onClick={removePoster} className="text-xs text-destructive hover:text-destructive w-full">
+                      Remove current poster
+                    </Button>
+                  )}
+                </div>
               )}
               
               <div className="p-3 bg-secondary/50 rounded-lg">
@@ -848,7 +1049,7 @@ export default function LocalLibraryPage() {
                 <Button 
                   variant="outline" 
                   className="flex-1"
-                  onClick={() => setSelectedMovie(null)}
+                  onClick={closeDetail}
                 >
                   Close
                 </Button>
