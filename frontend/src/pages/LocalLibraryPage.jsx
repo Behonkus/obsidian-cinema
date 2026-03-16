@@ -762,6 +762,14 @@ export default function LocalLibraryPage() {
         </div>
       )}
 
+      {/* Naming Convention Tip */}
+      {movies.length > 0 && movies.some(m => !m.poster_path) && tmdbApiKey && (
+        <div className="p-3 bg-secondary/50 border border-border/50 rounded-lg text-sm text-muted-foreground flex items-start gap-2">
+          <Film className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+          <span>For best poster fetch results, name your files as: <code className="px-1.5 py-0.5 bg-secondary rounded text-xs font-mono text-foreground">Movie Title (Year).mp4</code> — for example <code className="px-1.5 py-0.5 bg-secondary rounded text-xs font-mono text-foreground">The Dark Knight (2008).mkv</code></span>
+        </div>
+      )}
+
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
