@@ -17,6 +17,7 @@ import UpgradePage from "@/pages/UpgradePage";
 import LicenseActivationPage from "@/pages/LicenseActivationPage";
 import LocalLibraryPage from "@/pages/LocalLibraryPage";
 import StatsPage from "@/pages/StatsPage";
+import LandingPage from "@/pages/LandingPage";
 import UpdateNotification from "@/components/UpdateNotification";
 import { RefreshCw } from "lucide-react";
 
@@ -50,7 +51,7 @@ function ProtectedRoute({ children }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/landing" replace />;
   }
 
   return children;
@@ -102,8 +103,9 @@ function AppRouter() {
       {/* Desktop-specific routes */}
       <Route path="/activate" element={<LicenseActivationPage />} />
       
-      {/* Web login - skip in desktop mode */}
-      {!desktopMode && <Route path="/login" element={<LoginPage />} />}
+      {/* Web routes - skip in desktop mode */}
+      {!desktopMode && <Route path="/login" element={<LandingPage />} />}
+      {!desktopMode && <Route path="/landing" element={<LandingPage />} />}
       
       {/* Main app routes */}
       <Route
