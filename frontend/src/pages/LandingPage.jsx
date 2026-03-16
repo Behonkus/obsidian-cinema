@@ -183,6 +183,34 @@ export default function LandingPage() {
             Free tier includes 50 movies. No credit card required.
           </p>
         </motion.div>
+
+        {/* App Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3 }}
+          className="relative z-10 max-w-5xl mx-auto mt-16"
+          data-testid="hero-app-preview"
+        >
+          <div className="relative rounded-xl overflow-hidden border border-border/40 shadow-2xl shadow-primary/10">
+            <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent z-10 pointer-events-none" />
+            <img
+              src="https://static.prod-images.emergentagent.com/jobs/a071450f-a804-4cde-af66-dfb703c293d2/images/79991acb230c733b851764a1db6f6a261f05c651ec6f4d7233467c78d3f82ba9.png"
+              alt="Obsidian Cinema desktop app showing a movie library with posters"
+              className="w-full h-auto"
+              loading="eager"
+            />
+            {/* Play button overlay for future video */}
+            <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer group">
+              <div className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
+                <Play className="w-7 h-7 text-primary-foreground ml-1" />
+              </div>
+              <span className="absolute bottom-6 text-xs text-muted-foreground font-medium bg-background/80 px-3 py-1 rounded-full backdrop-blur-sm">
+                Demo coming soon
+              </span>
+            </div>
+          </div>
+        </motion.div>
       </section>
 
       {/* ── Features ── */}
