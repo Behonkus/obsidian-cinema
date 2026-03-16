@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { 
   Film, 
@@ -162,6 +162,8 @@ export default function LocalLibraryPage() {
   const [posterResults, setPosterResults] = useState([]);
   const [posterSearching, setPosterSearching] = useState(false);
   const [posterUrl, setPosterUrl] = useState('');
+  const fetchAbortRef = useRef(false);
+  const fetchCountRef = useRef({ fetched: 0, found: 0, total: 0 });
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -354,30 +356,46 @@ export default function LocalLibraryPage() {
       return;
     }
 
+    fetchAbortRef.current = false;
+    fetchCountRef.current = { fetched: 0, found: 0, total: moviesNeedingPosters.length };
     setFetchingPosters(true);
     setFetchProgress(0);
 
-    const updatedMovies = [...movies];
     let fetched = 0;
+    let found = 0;
 
-    for (const movie of moviesNeedingPosters) {
-      const tmdbData = await fetchPosterForMovie(movie);
-      if (tmdbData) {
-        const index = updatedMovies.findIndex(m => m.id === movie.id);
-        if (index !== -1) {
-          updatedMovies[index] = { ...updatedMovies[index], ...tmdbData };
-        }
+    for (var i = 0; i < moviesNeedingPosters.length; i++) {
+      // Check abort
+      if (fetchAbortRef.current) {
+        toast.info('Poster fetch paused — ' + found + ' of ' + fetched + ' processed saved. Click "Fetch Posters" to continue where you left off.');
+        break;
       }
+
+      const movie = moviesNeedingPosters[i];
+      const tmdbData = await fetchPosterForMovie(movie);
+
+      if (tmdbData) {
+        // Save each poster immediately so progress is never lost
+        setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, ...tmdbData } : m));
+        found++;
+      }
+
       fetched++;
+      fetchCountRef.current = { fetched: fetched, found: found, total: moviesNeedingPosters.length };
       setFetchProgress((fetched / moviesNeedingPosters.length) * 100);
-      
+
       // Small delay to avoid rate limiting
       await new Promise(r => setTimeout(r, 250));
     }
 
-    setMovies(updatedMovies);
     setFetchingPosters(false);
-    toast.success(`Fetched posters for ${fetched} movies!`);
+    if (!fetchAbortRef.current) {
+      toast.success('Done! Found posters for ' + found + ' of ' + fetched + ' movies.');
+    }
+  };
+
+  const abortFetch = () => {
+    fetchAbortRef.current = true;
   };
 
   const handleMoviesFound = (newMovies, dirPath) => {
@@ -675,7 +693,13 @@ export default function LocalLibraryPage() {
               ) : (
                 <Image className="w-4 h-4 mr-2" />
               )}
-              {fetchingPosters ? 'Fetching...' : 'Fetch Posters'}
+              {fetchingPosters 
+                ? 'Fetching...' 
+                : (function() {
+                    var missing = movies.filter(function(m) { return !m.poster_path; }).length;
+                    return missing > 0 ? 'Fetch Posters (' + missing + ')' : 'Fetch Posters';
+                  })()
+              }
             </Button>
           )}
           <Button 
@@ -708,9 +732,18 @@ export default function LocalLibraryPage() {
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span>Fetching posters from TMDB...</span>
-            <span>{Math.round(fetchProgress)}%</span>
+            <span>{fetchCountRef.current.found} found / {fetchCountRef.current.fetched} of {fetchCountRef.current.total} checked ({Math.round(fetchProgress)}%)</span>
           </div>
           <Progress value={fetchProgress} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={abortFetch}
+            className="text-amber-400 border-amber-400/30 hover:bg-amber-400/10"
+            data-testid="abort-fetch-btn"
+          >
+            Pause — Save Progress
+          </Button>
         </div>
       )}
 
