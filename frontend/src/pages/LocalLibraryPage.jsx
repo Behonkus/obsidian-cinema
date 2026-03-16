@@ -590,16 +590,18 @@ export default function LocalLibraryPage() {
             className={showTrash ? "bg-destructive hover:bg-destructive/90" : ""}
           >
             <Trash2 className="w-4 h-4 mr-1" />
+            <span className="text-xs">Deleted</span>
             {trashedMovies.length > 0 && (
-              <span className="text-xs">{trashedMovies.length}</span>
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{trashedMovies.length}</Badge>
             )}
           </Button>
           <Button variant="outline" size="sm" onClick={() => { setTempApiKey(tmdbApiKey); setShowSettings(true); }} data-testid="settings-btn">
             <Settings className="w-4 h-4" />
           </Button>
           {movies.length > 0 && (
-            <Button variant="outline" size="sm" onClick={() => setShowClearConfirm(true)} data-testid="clear-library-btn">
-              <Trash2 className="w-4 h-4" />
+            <Button variant="outline" size="sm" onClick={() => setShowClearConfirm(true)} data-testid="clear-library-btn" className="text-destructive hover:text-destructive">
+              <Trash2 className="w-4 h-4 mr-1" />
+              <span className="text-xs">Clear All</span>
             </Button>
           )}
         </div>
