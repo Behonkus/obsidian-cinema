@@ -674,11 +674,11 @@ export default function SettingsPage() {
               <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5 space-y-3">
                 <div>
                   <p className="font-medium text-destructive text-sm">Reset Entire Library</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    This will permanently delete your entire Obsidian Cinema database — all movies, collections, scanned directories, and poster data will be erased. This allows you to start over completely from scratch.
-                  </p>
                   <p className="text-sm text-foreground font-medium mt-2">
-                    Your actual movie files on disk are never modified or deleted. Only the app's internal database is affected.
+                    Your actual movie files on disk are never modified or deleted.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This only clears the app's internal database — your scanned movie list, collections, poster data, and directories will be removed from Obsidian Cinema, allowing you to start fresh. Nothing on your hard drive is touched.
                   </p>
                 </div>
                 <Button
@@ -749,9 +749,8 @@ export default function SettingsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive">Reset entire library database?</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
-              <span className="block">This will permanently erase your entire Obsidian Cinema database:</span>
-              <span className="block text-foreground font-medium">All movies, collections, scanned directories, poster data, and Recently Deleted items will be permanently removed. This cannot be undone.</span>
-              <span className="block mt-2 p-2 bg-secondary rounded text-foreground text-sm font-medium">Your actual movie files on disk are never modified or deleted. Only the app's internal database is affected.</span>
+              <span className="block p-2 bg-secondary rounded text-foreground text-sm font-medium">Your actual movie files are completely safe. Nothing on your hard drive will be touched.</span>
+              <span className="block">This will clear the app's internal database only — your scanned movie list, poster data, collections, and directories will be removed from Obsidian Cinema so you can start fresh.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
