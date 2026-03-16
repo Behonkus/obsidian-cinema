@@ -15,7 +15,10 @@ import {
   Key,
   Undo2,
   Clock,
-  ArchiveRestore
+  ArchiveRestore,
+  LayoutGrid,
+  Grid3X3,
+  Grid2X2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,9 +60,17 @@ const STORAGE_KEY = 'obsidian_cinema_local_movies';
 const DIRS_KEY = 'obsidian_cinema_local_dirs';
 const TMDB_KEY = 'obsidian_cinema_tmdb_key';
 const TRASH_KEY = 'obsidian_cinema_trash';
+const GRID_SIZE_KEY = 'obsidian_cinema_grid_size';
 
 // 30 days in milliseconds
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Grid size configurations
+const GRID_SIZES = {
+  small:  { label: 'S', cols: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10', gap: 'gap-2' },
+  medium: { label: 'M', cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7', gap: 'gap-3' },
+  large:  { label: 'L', cols: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5', gap: 'gap-4' },
+};
 
 // TMDB API base URL
 const TMDB_API = 'https://api.themoviedb.org/3';
@@ -80,6 +91,7 @@ export default function LocalLibraryPage() {
   const [trashedMovies, setTrashedMovies] = useState([]);
   const [showTrash, setShowTrash] = useState(false);
   const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false);
+  const [gridSize, setGridSize] = useState(() => localStorage.getItem(GRID_SIZE_KEY) || 'medium');
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -121,6 +133,11 @@ export default function LocalLibraryPage() {
   useEffect(() => {
     localStorage.setItem(TRASH_KEY, JSON.stringify(trashedMovies));
   }, [trashedMovies]);
+
+  // Save grid size preference
+  useEffect(() => {
+    localStorage.setItem(GRID_SIZE_KEY, gridSize);
+  }, [gridSize]);
 
   const saveTmdbKey = () => {
     localStorage.setItem(TMDB_KEY, tempApiKey);
@@ -352,6 +369,23 @@ export default function LocalLibraryPage() {
         </div>
         <div className="flex items-center gap-2">
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
+          {/* Grid Size Toggle */}
+          <div className="flex items-center border rounded-lg overflow-hidden" data-testid="grid-size-toggle">
+            {Object.entries(GRID_SIZES).map(([key, { label }]) => (
+              <button
+                key={key}
+                onClick={() => setGridSize(key)}
+                className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  gridSize === key 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'hover:bg-secondary text-muted-foreground'
+                }`}
+                data-testid={`grid-size-${key}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           {movies.length > 0 && (
             <Button 
               variant="outline" 
@@ -472,7 +506,7 @@ export default function LocalLibraryPage() {
               </div>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
               {trashedMovies.map((movie) => (
                 <motion.div
                   key={movie.id}
@@ -499,23 +533,25 @@ export default function LocalLibraryPage() {
                         </Button>
                       </div>
                     </div>
-                    <CardContent className="p-3">
-                      <h3 className="font-medium truncate text-sm">{movie.title}</h3>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {getDaysRemaining(movie.deleted_at)}d left
-                        </p>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-6 px-2 text-destructive hover:text-destructive"
-                          onClick={() => permanentlyDelete(movie.id)}
-                          data-testid={`perm-delete-${movie.id}`}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
+                    <CardContent className={gridSize === 'small' ? 'p-2' : 'p-3'}>
+                      <h3 className={`font-medium truncate ${gridSize === 'small' ? 'text-xs' : 'text-sm'}`}>{movie.title}</h3>
+                      {gridSize !== 'small' && (
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {getDaysRemaining(movie.deleted_at)}d left
+                          </p>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 px-2 text-destructive hover:text-destructive"
+                            onClick={() => permanentlyDelete(movie.id)}
+                            data-testid={`perm-delete-${movie.id}`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -535,7 +571,7 @@ export default function LocalLibraryPage() {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
           {filteredMovies.map((movie) => (
             <motion.div
               key={movie.id}
@@ -563,16 +599,18 @@ export default function LocalLibraryPage() {
                     </Button>
                   </div>
                 </div>
-                <CardContent className="p-3">
-                  <h3 className="font-medium truncate text-sm">{movie.title}</h3>
-                  <div className="flex items-center justify-between">
-                    {movie.year && (
-                      <p className="text-xs text-muted-foreground">{movie.year}</p>
-                    )}
-                    {movie.rating && (
-                      <p className="text-xs text-amber-400">★ {movie.rating.toFixed(1)}</p>
-                    )}
-                  </div>
+                <CardContent className={gridSize === 'small' ? 'p-2' : 'p-3'}>
+                  <h3 className={`font-medium truncate ${gridSize === 'small' ? 'text-xs' : 'text-sm'}`}>{movie.title}</h3>
+                  {gridSize !== 'small' && (
+                    <div className="flex items-center justify-between">
+                      {movie.year && (
+                        <p className="text-xs text-muted-foreground">{movie.year}</p>
+                      )}
+                      {movie.rating && (
+                        <p className="text-xs text-amber-400">★ {movie.rating.toFixed(1)}</p>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
