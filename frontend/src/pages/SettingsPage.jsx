@@ -17,7 +17,8 @@ import {
   Sparkles,
   Palette,
   LayoutGrid,
-  Check
+  Check,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,16 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import axios from "axios";
 import { THEMES, applyTheme, THEME_STORAGE_KEY } from "@/components/ThemeSelector";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -59,6 +70,7 @@ export default function SettingsPage() {
   const [gridSize, setGridSize] = useState(function() {
     return localStorage.getItem('obsidian_cinema_grid_size') || 'medium';
   });
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [appVersion, setAppVersion] = useState(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
@@ -639,6 +651,48 @@ export default function SettingsPage() {
           </Card>
         </motion.div>
 
+        {/* Library Management Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.28 }}
+          className="md:col-span-2"
+        >
+          <Card className="bg-card border-destructive/30">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                </div>
+                <div>
+                  <CardTitle>Library Management</CardTitle>
+                  <CardDescription>Manage your local movie database</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5 space-y-3">
+                <div>
+                  <p className="font-medium text-destructive text-sm">Reset Entire Library</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This will permanently delete your entire Obsidian Cinema database — all movies, collections, scanned directories, and poster data will be erased. This allows you to start over completely from scratch.
+                  </p>
+                  <p className="text-sm text-foreground font-medium mt-2">
+                    Your actual movie files on disk are never modified or deleted. Only the app's internal database is affected.
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  onClick={function() { setShowResetConfirm(true); }}
+                  data-testid="settings-clear-library-btn"
+                >
+                  Reset Library Database
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* About Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -688,6 +742,36 @@ export default function SettingsPage() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Reset Library Confirmation */}
+      <AlertDialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">Reset entire library database?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <span className="block">This will permanently erase your entire Obsidian Cinema database:</span>
+              <span className="block text-foreground font-medium">All movies, collections, scanned directories, poster data, and Recently Deleted items will be permanently removed. This cannot be undone.</span>
+              <span className="block mt-2 p-2 bg-secondary rounded text-foreground text-sm font-medium">Your actual movie files on disk are never modified or deleted. Only the app's internal database is affected.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={function() {
+                localStorage.removeItem('obsidian_cinema_local_movies');
+                localStorage.removeItem('obsidian_cinema_local_dirs');
+                localStorage.removeItem('obsidian_cinema_trash');
+                setShowResetConfirm(false);
+                toast.success('Library database has been reset');
+              }}
+              data-testid="confirm-reset-library-btn"
+            >
+              Yes, Reset Everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

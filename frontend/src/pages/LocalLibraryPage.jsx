@@ -701,12 +701,6 @@ export default function LocalLibraryPage() {
           <Button variant="outline" size="sm" onClick={() => { setTempApiKey(tmdbApiKey); setShowSettings(true); }} data-testid="settings-btn">
             <Settings className="w-4 h-4" />
           </Button>
-          {movies.length > 0 && (
-            <Button variant="outline" size="sm" onClick={() => setShowClearConfirm(true)} data-testid="clear-library-btn" className="text-destructive hover:text-destructive">
-              <Trash2 className="w-4 h-4 mr-1" />
-              <span className="text-xs">Clear All</span>
-            </Button>
-          )}
         </div>
       </div>
 
