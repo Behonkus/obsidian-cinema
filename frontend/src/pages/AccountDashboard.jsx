@@ -137,7 +137,7 @@ export default function AccountDashboard() {
               {isPro ? (
                 <>
                   <div className="space-y-2">
-                    {["Unlimited movies", "Unlimited collections", "Priority support", "Referral program"].map((feature) => (
+                    {["Unlimited movies", "Unlimited collections", "Priority support", "Early access to new features"].map((feature) => (
                       <div key={feature} className="flex items-center gap-2 text-sm">
                         <CheckCircle className="w-4 h-4 text-green-400" />
                         <span className="text-foreground">{feature}</span>
@@ -166,7 +166,7 @@ export default function AccountDashboard() {
                     data-testid="upgrade-btn"
                   >
                     <Crown className="w-4 h-4 mr-2" />
-                    Upgrade to Pro — $39.99
+                    Upgrade to Pro — $20
                   </Button>
                 </>
               )}
@@ -220,35 +220,6 @@ export default function AccountDashboard() {
                   <p className="text-sm text-muted-foreground">
                     Your license key will appear here after purchase
                   </p>
-                )}
-
-                {/* Referral Code */}
-                {user?.referral_code && (
-                  <div className="pt-4 border-t border-border/50">
-                    <div className="flex items-center gap-2 text-sm text-amber-400 mb-2">
-                      <Gift className="w-4 h-4" />
-                      Referral Code
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 px-3 py-2 bg-secondary rounded-lg text-sm font-mono">
-                        {user.referral_code}
-                      </code>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => copyToClipboard(user.referral_code)}
-                        data-testid="copy-referral-btn"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    {user.referral_count > 0 && (
-                      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                        <Users className="w-3 h-3" />
-                        {user.referral_count} friend{user.referral_count !== 1 ? 's' : ''} referred
-                      </div>
-                    )}
-                  </div>
                 )}
               </CardContent>
             </Card>

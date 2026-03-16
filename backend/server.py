@@ -37,7 +37,7 @@ SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@obsidiancinema.app')
 
 # Pro tier pricing (one-time payment)
-PRO_TIER_PRICE = 39.99
+PRO_TIER_PRICE = 20.00
 PRO_TIER_CURRENCY = "usd"
 
 # Free tier limits
@@ -145,8 +145,8 @@ class TMDBSearchResult(BaseModel):
     overview: Optional[str]
 
 # Referral Configuration
-REFERRAL_DISCOUNT = 10.00  # $10 off for referred users
-PRO_TIER_DISCOUNTED_PRICE = PRO_TIER_PRICE - REFERRAL_DISCOUNT  # $29.99
+REFERRAL_DISCOUNT = 0  # Referral discount currently disabled
+PRO_TIER_DISCOUNTED_PRICE = PRO_TIER_PRICE  # No discount active
 
 def generate_referral_code() -> str:
     """Generate a unique referral code like CINEMA-ABC123."""
@@ -2374,16 +2374,13 @@ async def get_pricing():
     return {
         "pro_tier": {
             "price": PRO_TIER_PRICE,
-            "discounted_price": PRO_TIER_DISCOUNTED_PRICE,
-            "discount_amount": REFERRAL_DISCOUNT,
             "currency": PRO_TIER_CURRENCY,
             "type": "one_time",
             "features": [
                 "Unlimited movies",
                 "Unlimited collections",
                 "Priority support",
-                "Early access to new features",
-                "Personal referral code"
+                "Early access to new features"
             ]
         },
         "free_tier": {
@@ -2393,11 +2390,6 @@ async def get_pricing():
                 f"Up to {FREE_TIER_COLLECTION_LIMIT} collections",
                 "Basic features"
             ]
-        },
-        "referral": {
-            "discount": REFERRAL_DISCOUNT,
-            "description": f"Share your code and friends get ${REFERRAL_DISCOUNT} off!",
-            "email_notifications": bool(SENDGRID_API_KEY)
         }
     }
 
