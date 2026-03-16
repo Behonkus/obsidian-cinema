@@ -59,7 +59,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
-import ThemeSelector from "@/components/ThemeSelector";
 
 // Check if running in Electron
 const isElectron = () => {
@@ -664,23 +663,6 @@ export default function LocalLibraryPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {/* Grid Size Toggle */}
-          <div className="flex items-center border rounded-lg overflow-hidden" data-testid="grid-size-toggle">
-            {Object.entries(GRID_SIZES).map(([key, { label }]) => (
-              <button
-                key={key}
-                onClick={() => setGridSize(key)}
-                className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                  gridSize === key 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'hover:bg-secondary text-muted-foreground'
-                }`}
-                data-testid={`grid-size-${key}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
           {movies.length > 0 && (
             <Button 
               variant="outline" 
@@ -716,7 +698,6 @@ export default function LocalLibraryPage() {
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{trashedMovies.length}</Badge>
             )}
           </Button>
-          <ThemeSelector />
           <Button variant="outline" size="sm" onClick={() => { setTempApiKey(tmdbApiKey); setShowSettings(true); }} data-testid="settings-btn">
             <Settings className="w-4 h-4" />
           </Button>

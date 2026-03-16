@@ -14,7 +14,10 @@ import {
   HardDrive,
   Info,
   Download,
-  Sparkles
+  Sparkles,
+  Palette,
+  LayoutGrid,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import axios from "axios";
+import { THEMES, applyTheme, THEME_STORAGE_KEY } from "@/components/ThemeSelector";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -49,6 +53,12 @@ export default function SettingsPage() {
   const [testResult, setTestResult] = useState(null);
   
   // Desktop app state
+  const [currentTheme, setCurrentTheme] = useState(function() {
+    return localStorage.getItem(THEME_STORAGE_KEY) || 'crimson';
+  });
+  const [gridSize, setGridSize] = useState(function() {
+    return localStorage.getItem('obsidian_cinema_grid_size') || 'medium';
+  });
   const [appVersion, setAppVersion] = useState(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
@@ -497,6 +507,138 @@ export default function SettingsPage() {
           </motion.div>
         )}
         
+        {/* Appearance Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="md:col-span-2"
+        >
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Palette className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Appearance</CardTitle>
+                  <CardDescription>Customize the look and feel</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Color Theme */}
+              <div>
+                <Label className="text-sm font-medium mb-3 block">Color Theme</Label>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Solid</p>
+                    <div className="flex flex-wrap gap-2">
+                      {THEMES.filter(function(t) { return !t.id.startsWith('pastel') && t.id !== 'rainbow'; }).map(function(theme) {
+                        var active = currentTheme === theme.id;
+                        return (
+                          <button
+                            key={theme.id}
+                            onClick={function() {
+                              setCurrentTheme(theme.id);
+                              localStorage.setItem(THEME_STORAGE_KEY, theme.id);
+                              applyTheme(theme.id);
+                            }}
+                            className={'w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center ' + (active ? 'border-foreground scale-110' : 'border-transparent hover:scale-105')}
+                            style={{ background: theme.preview }}
+                            title={theme.name}
+                            data-testid={'settings-theme-' + theme.id}
+                          >
+                            {active && <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Pastel</p>
+                    <div className="flex flex-wrap gap-2">
+                      {THEMES.filter(function(t) { return t.id.startsWith('pastel'); }).map(function(theme) {
+                        var active = currentTheme === theme.id;
+                        return (
+                          <button
+                            key={theme.id}
+                            onClick={function() {
+                              setCurrentTheme(theme.id);
+                              localStorage.setItem(THEME_STORAGE_KEY, theme.id);
+                              applyTheme(theme.id);
+                            }}
+                            className={'w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center ' + (active ? 'border-foreground scale-110' : 'border-transparent hover:scale-105')}
+                            style={{ background: theme.preview }}
+                            title={theme.name}
+                            data-testid={'settings-theme-' + theme.id}
+                          >
+                            {active && <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Special</p>
+                    {THEMES.filter(function(t) { return t.id === 'rainbow'; }).map(function(theme) {
+                      var active = currentTheme === theme.id;
+                      return (
+                        <button
+                          key={theme.id}
+                          onClick={function() {
+                            setCurrentTheme(theme.id);
+                            localStorage.setItem(THEME_STORAGE_KEY, theme.id);
+                            applyTheme(theme.id);
+                          }}
+                          className={'h-9 px-6 rounded-full border-2 transition-all flex items-center justify-center gap-2 text-xs font-medium text-white ' + (active ? 'border-foreground' : 'border-transparent hover:scale-[1.02]')}
+                          style={{ background: theme.preview }}
+                          title={theme.name}
+                          data-testid={'settings-theme-' + theme.id}
+                        >
+                          {active && <Check className="w-3.5 h-3.5 drop-shadow-md" />}
+                          {theme.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Poster Size */}
+              <div>
+                <Label className="text-sm font-medium mb-3 block">Poster Size</Label>
+                <div className="flex items-center gap-2">
+                  {[
+                    { key: 'small', label: 'Small', desc: '8-10 per row' },
+                    { key: 'medium', label: 'Medium', desc: '5-7 per row' },
+                    { key: 'large', label: 'Large', desc: '3-5 per row' },
+                  ].map(function(size) {
+                    var active = gridSize === size.key;
+                    return (
+                      <button
+                        key={size.key}
+                        onClick={function() {
+                          setGridSize(size.key);
+                          localStorage.setItem('obsidian_cinema_grid_size', size.key);
+                        }}
+                        className={'flex-1 p-3 rounded-lg border-2 transition-all text-center ' + (active ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/30')}
+                        data-testid={'settings-grid-' + size.key}
+                      >
+                        <LayoutGrid className={'w-5 h-5 mx-auto mb-1 ' + (active ? 'text-primary' : 'text-muted-foreground')} />
+                        <p className={'text-sm font-medium ' + (active ? 'text-primary' : 'text-foreground')}>{size.label}</p>
+                        <p className="text-xs text-muted-foreground">{size.desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* About Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
