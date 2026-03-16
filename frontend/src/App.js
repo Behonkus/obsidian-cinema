@@ -4,6 +4,7 @@ import { BrowserRouter, HashRouter, Routes, Route, useLocation, Navigate } from 
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { LicenseProvider, useLicense } from "@/context/LicenseContext";
+import { initTheme } from "@/components/ThemeSelector";
 import Layout from "@/components/Layout";
 import HomePage from "@/pages/HomePage";
 import AccountDashboard from "@/pages/AccountDashboard";
@@ -26,6 +27,9 @@ const isElectron = () => {
 
 // Use HashRouter for Electron (file:// protocol), BrowserRouter for web
 const Router = isElectron() ? HashRouter : BrowserRouter;
+
+// Apply saved theme immediately
+initTheme();
 
 // Protected route wrapper for web (uses Auth)
 function ProtectedRoute({ children }) {

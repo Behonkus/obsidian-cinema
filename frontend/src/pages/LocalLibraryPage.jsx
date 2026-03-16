@@ -59,6 +59,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
+import ThemeSelector from "@/components/ThemeSelector";
 
 // Check if running in Electron
 const isElectron = () => {
@@ -715,6 +716,7 @@ export default function LocalLibraryPage() {
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{trashedMovies.length}</Badge>
             )}
           </Button>
+          <ThemeSelector />
           <Button variant="outline" size="sm" onClick={() => { setTempApiKey(tmdbApiKey); setShowSettings(true); }} data-testid="settings-btn">
             <Settings className="w-4 h-4" />
           </Button>
