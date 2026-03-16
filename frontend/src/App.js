@@ -15,6 +15,7 @@ import AuthCallback from "@/pages/AuthCallback";
 import UpgradePage from "@/pages/UpgradePage";
 import LicenseActivationPage from "@/pages/LicenseActivationPage";
 import LocalLibraryPage from "@/pages/LocalLibraryPage";
+import StatsPage from "@/pages/StatsPage";
 import UpdateNotification from "@/components/UpdateNotification";
 import { RefreshCw } from "lucide-react";
 
@@ -111,6 +112,7 @@ function AppRouter() {
       >
         {/* Use LocalLibraryPage for desktop, AccountDashboard for web */}
         <Route index element={desktopMode ? <LocalLibraryPage /> : <AccountDashboard />} />
+        <Route path="stats" element={desktopMode ? <StatsPage /> : <AccountDashboard />} />
         <Route path="directories" element={desktopMode ? <LocalLibraryPage /> : <AccountDashboard />} />
         <Route path="collections" element={desktopMode ? <CollectionsPage /> : <AccountDashboard />} />
         <Route path="settings" element={<SettingsPage />} />

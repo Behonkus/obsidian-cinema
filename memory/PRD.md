@@ -155,6 +155,24 @@ Build an app that will scan directories of movie files and display associated mo
 - ✅ Removed redundant files entries from electron-builder config
 - ✅ Added --frozen-lockfile to yarn install for deterministic builds
 
+### Sort & Grid Size Options (Mar 16, 2026)
+- ✅ Grid size toggle (S/M/L) with responsive columns, persisted to localStorage
+- ✅ 13 sort options: Title A-Z/Z-A, Year Newest/Oldest, Rating Highest/Lowest, Recently/First Added, By Directory (grouped), Filename A-Z/Z-A, Has/Missing Poster
+- ✅ "By Directory" sort shows grouped sections with folder headers and movie counts
+- ✅ Extracted reusable MovieCard component
+- ✅ Sort & grid preferences persist between sessions
+
+### Library Stats Page (Mar 16, 2026)
+- ✅ New Stats page in desktop sidebar with BarChart3 icon
+- ✅ Key stats: Total movies, directories, poster coverage %, avg rating, trash count
+- ✅ Oldest & newest movie in library
+- ✅ Charts: Movies by decade (bar), Rating distribution (bar), File formats (pie), Movies per directory (horizontal bar)
+- ✅ Top 5 highest rated movies with poster thumbnails
+- ✅ Collection health: Missing posters/year/rating counts with data completeness %
+- ✅ Recently added movies list
+- ✅ All data computed from localStorage, no backend needed
+
+
 - ✅ Electron.js configuration
 - ✅ Main process (electron.js) with backend startup
 - ✅ Preload script for secure IPC
