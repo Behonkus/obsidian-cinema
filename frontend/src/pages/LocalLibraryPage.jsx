@@ -18,7 +18,9 @@ import {
   ArchiveRestore,
   LayoutGrid,
   Grid3X3,
-  Grid2X2
+  Grid2X2,
+  ArrowUpDown,
+  ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +46,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
@@ -61,9 +71,27 @@ const DIRS_KEY = 'obsidian_cinema_local_dirs';
 const TMDB_KEY = 'obsidian_cinema_tmdb_key';
 const TRASH_KEY = 'obsidian_cinema_trash';
 const GRID_SIZE_KEY = 'obsidian_cinema_grid_size';
+const SORT_KEY = 'obsidian_cinema_sort';
 
 // 30 days in milliseconds
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Sort options
+const SORT_OPTIONS = {
+  'title-asc':      { label: 'Title A → Z',         group: 'title' },
+  'title-desc':     { label: 'Title Z → A',         group: 'title' },
+  'year-desc':      { label: 'Year (Newest)',        group: 'year' },
+  'year-asc':       { label: 'Year (Oldest)',        group: 'year' },
+  'rating-desc':    { label: 'Rating (Highest)',     group: 'rating' },
+  'rating-asc':     { label: 'Rating (Lowest)',      group: 'rating' },
+  'added-desc':     { label: 'Recently Added',       group: 'added' },
+  'added-asc':      { label: 'First Added',          group: 'added' },
+  'directory':      { label: 'By Directory',         group: 'directory' },
+  'filename-asc':   { label: 'Filename A → Z',      group: 'filename' },
+  'filename-desc':  { label: 'Filename Z → A',      group: 'filename' },
+  'has-poster':     { label: 'Has Poster First',     group: 'misc' },
+  'no-poster':      { label: 'Missing Poster First', group: 'misc' },
+};
 
 // Grid size configurations
 const GRID_SIZES = {
@@ -71,6 +99,42 @@ const GRID_SIZES = {
   medium: { label: 'M', cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7', gap: 'gap-3' },
   large:  { label: 'L', cols: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5', gap: 'gap-4' },
 };
+
+// Reusable movie card component
+function MovieCard({ movie, gridSize, onClick, onPlay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="group"
+    >
+      <Card className="overflow-hidden hover:border-primary/50 transition-colors cursor-pointer" onClick={onClick}>
+        <div className="aspect-[2/3] bg-gradient-to-br from-primary/20 to-secondary relative flex items-center justify-center overflow-hidden">
+          {movie.poster_path ? (
+            <img src={movie.poster_path} alt={movie.title} className="w-full h-full object-cover" loading="lazy" />
+          ) : (
+            <Film className="w-12 h-12 text-primary/50" />
+          )}
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Button size="sm" onClick={onPlay}>
+              <Play className="w-4 h-4 mr-1" /> Play
+            </Button>
+          </div>
+        </div>
+        <CardContent className={gridSize === 'small' ? 'p-2' : 'p-3'}>
+          <h3 className={`font-medium truncate ${gridSize === 'small' ? 'text-xs' : 'text-sm'}`}>{movie.title}</h3>
+          {gridSize !== 'small' && (
+            <div className="flex items-center justify-between">
+              {movie.year && <p className="text-xs text-muted-foreground">{movie.year}</p>}
+              {movie.rating && <p className="text-xs text-amber-400">★ {movie.rating.toFixed(1)}</p>}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
 
 // TMDB API base URL
 const TMDB_API = 'https://api.themoviedb.org/3';
@@ -92,6 +156,7 @@ export default function LocalLibraryPage() {
   const [showTrash, setShowTrash] = useState(false);
   const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false);
   const [gridSize, setGridSize] = useState(() => localStorage.getItem(GRID_SIZE_KEY) || 'medium');
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem(SORT_KEY) || 'added-desc');
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -138,6 +203,11 @@ export default function LocalLibraryPage() {
   useEffect(() => {
     localStorage.setItem(GRID_SIZE_KEY, gridSize);
   }, [gridSize]);
+
+  // Save sort preference
+  useEffect(() => {
+    localStorage.setItem(SORT_KEY, sortBy);
+  }, [sortBy]);
 
   const saveTmdbKey = () => {
     localStorage.setItem(TMDB_KEY, tempApiKey);
@@ -222,7 +292,10 @@ export default function LocalLibraryPage() {
 
     // Merge movies, avoiding duplicates by file path
     const existingPaths = new Set(movies.map(m => m.file_path));
-    const uniqueNewMovies = newMovies.filter(m => !existingPaths.has(m.file_path));
+    const now = Date.now();
+    const uniqueNewMovies = newMovies
+      .filter(m => !existingPaths.has(m.file_path))
+      .map(m => ({ ...m, added_at: now }));
     
     setMovies([...movies, ...uniqueNewMovies]);
     toast.success(`Added ${uniqueNewMovies.length} new movies to library`);
@@ -336,12 +409,61 @@ export default function LocalLibraryPage() {
     return Math.max(0, remaining);
   };
 
-  const filteredMovies = movies.filter(movie => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return movie.title?.toLowerCase().includes(query) || 
-           movie.file_name?.toLowerCase().includes(query);
-  });
+  // Helper: extract directory from file path
+  const getDirectory = (filePath) => {
+    if (!filePath) return '';
+    const sep = filePath.includes('/') ? '/' : '\\';
+    return filePath.substring(0, filePath.lastIndexOf(sep));
+  };
+
+  // Sort function
+  const sortMovies = (movieList) => {
+    const sorted = [...movieList];
+    switch (sortBy) {
+      case 'title-asc':
+        return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      case 'title-desc':
+        return sorted.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+      case 'year-desc':
+        return sorted.sort((a, b) => (b.year || 0) - (a.year || 0));
+      case 'year-asc':
+        return sorted.sort((a, b) => (a.year || 9999) - (b.year || 9999));
+      case 'rating-desc':
+        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      case 'rating-asc':
+        return sorted.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+      case 'added-desc':
+        return sorted.sort((a, b) => (b.added_at || 0) - (a.added_at || 0));
+      case 'added-asc':
+        return sorted.sort((a, b) => (a.added_at || 0) - (b.added_at || 0));
+      case 'directory':
+        return sorted.sort((a, b) => {
+          const dirA = getDirectory(a.file_path);
+          const dirB = getDirectory(b.file_path);
+          const dirCompare = dirA.localeCompare(dirB);
+          return dirCompare !== 0 ? dirCompare : (a.title || '').localeCompare(b.title || '');
+        });
+      case 'filename-asc':
+        return sorted.sort((a, b) => (a.file_name || '').localeCompare(b.file_name || ''));
+      case 'filename-desc':
+        return sorted.sort((a, b) => (b.file_name || '').localeCompare(a.file_name || ''));
+      case 'has-poster':
+        return sorted.sort((a, b) => (b.poster_path ? 1 : 0) - (a.poster_path ? 1 : 0));
+      case 'no-poster':
+        return sorted.sort((a, b) => (a.poster_path ? 1 : 0) - (b.poster_path ? 1 : 0));
+      default:
+        return sorted;
+    }
+  };
+
+  const filteredMovies = sortMovies(
+    movies.filter(movie => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return movie.title?.toLowerCase().includes(query) || 
+             movie.file_name?.toLowerCase().includes(query);
+    })
+  );
 
   if (!isElectron()) {
     return (
@@ -369,6 +491,64 @@ export default function LocalLibraryPage() {
         </div>
         <div className="flex items-center gap-2">
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
+          {/* Sort Options */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5" data-testid="sort-dropdown">
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-xs">{SORT_OPTIONS[sortBy]?.label}</span>
+                <ChevronDown className="w-3 h-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSortBy('title-asc')} className={sortBy === 'title-asc' ? 'bg-accent' : ''}>
+                Title A → Z
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('title-desc')} className={sortBy === 'title-desc' ? 'bg-accent' : ''}>
+                Title Z → A
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSortBy('year-desc')} className={sortBy === 'year-desc' ? 'bg-accent' : ''}>
+                Year (Newest)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('year-asc')} className={sortBy === 'year-asc' ? 'bg-accent' : ''}>
+                Year (Oldest)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSortBy('rating-desc')} className={sortBy === 'rating-desc' ? 'bg-accent' : ''}>
+                Rating (Highest)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('rating-asc')} className={sortBy === 'rating-asc' ? 'bg-accent' : ''}>
+                Rating (Lowest)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSortBy('added-desc')} className={sortBy === 'added-desc' ? 'bg-accent' : ''}>
+                Recently Added
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('added-asc')} className={sortBy === 'added-asc' ? 'bg-accent' : ''}>
+                First Added
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSortBy('directory')} className={sortBy === 'directory' ? 'bg-accent' : ''}>
+                By Directory
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('filename-asc')} className={sortBy === 'filename-asc' ? 'bg-accent' : ''}>
+                Filename A → Z
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('filename-desc')} className={sortBy === 'filename-desc' ? 'bg-accent' : ''}>
+                Filename Z → A
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSortBy('has-poster')} className={sortBy === 'has-poster' ? 'bg-accent' : ''}>
+                Has Poster First
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('no-poster')} className={sortBy === 'no-poster' ? 'bg-accent' : ''}>
+                Missing Poster First
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {/* Grid Size Toggle */}
           <div className="flex items-center border rounded-lg overflow-hidden" data-testid="grid-size-toggle">
             {Object.entries(GRID_SIZES).map(([key, { label }]) => (
@@ -571,51 +751,38 @@ export default function LocalLibraryPage() {
           </div>
         </Card>
       ) : (
+        sortBy === 'directory' ? (
+          /* Grouped by directory view */
+          <div className="space-y-6">
+            {Object.entries(
+              filteredMovies.reduce((groups, movie) => {
+                const dir = getDirectory(movie.file_path) || 'Unknown';
+                if (!groups[dir]) groups[dir] = [];
+                groups[dir].push(movie);
+                return groups;
+              }, {})
+            ).map(([dir, dirMovies]) => (
+              <div key={dir}>
+                <div className="flex items-center gap-2 mb-3">
+                  <FolderOpen className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-medium text-muted-foreground truncate">{dir}</h3>
+                  <Badge variant="secondary" className="text-xs">{dirMovies.length}</Badge>
+                </div>
+                <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
+                  {dirMovies.map((movie) => (
+                    <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => setSelectedMovie(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
           {filteredMovies.map((movie) => (
-            <motion.div
-              key={movie.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="group"
-            >
-              <Card className="overflow-hidden hover:border-primary/50 transition-colors cursor-pointer"
-                    onClick={() => setSelectedMovie(movie)}>
-                <div className="aspect-[2/3] bg-gradient-to-br from-primary/20 to-secondary relative flex items-center justify-center overflow-hidden">
-                  {movie.poster_path ? (
-                    <img 
-                      src={movie.poster_path} 
-                      alt={movie.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <Film className="w-12 h-12 text-primary/50" />
-                  )}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Button size="sm" onClick={(e) => { e.stopPropagation(); playMovie(movie); }}>
-                      <Play className="w-4 h-4 mr-1" />
-                      Play
-                    </Button>
-                  </div>
-                </div>
-                <CardContent className={gridSize === 'small' ? 'p-2' : 'p-3'}>
-                  <h3 className={`font-medium truncate ${gridSize === 'small' ? 'text-xs' : 'text-sm'}`}>{movie.title}</h3>
-                  {gridSize !== 'small' && (
-                    <div className="flex items-center justify-between">
-                      {movie.year && (
-                        <p className="text-xs text-muted-foreground">{movie.year}</p>
-                      )}
-                      {movie.rating && (
-                        <p className="text-xs text-amber-400">★ {movie.rating.toFixed(1)}</p>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
+            <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => setSelectedMovie(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} />
           ))}
         </div>
+        )
       )}
 
       {/* Movie Detail Modal */}
