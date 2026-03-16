@@ -282,6 +282,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
               <div className="p-3 bg-secondary/50 rounded-lg">
                 <p className="text-sm text-muted-foreground">Selected folder:</p>
                 <p className="font-mono text-sm truncate">{currentPath}</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">All subdirectories will be included in this scan.</p>
               </div>
             )}
           </div>
