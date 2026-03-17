@@ -100,7 +100,7 @@ export default function AccountDashboard() {
                 <Button
                   size="lg"
                   className="w-full md:w-auto bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white gap-2"
-                  onClick={() => navigate('/upgrade')}
+                  onClick={() => window.open("https://github.com/Behonkus/obsidian-cinema/releases/latest", "_blank")}
                   data-testid="download-desktop-btn"
                 >
                   <Download className="w-5 h-5" />

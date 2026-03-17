@@ -149,7 +149,7 @@ function LicenseKeyCard({ user }) {
                 variant="outline" 
                 size="sm"
                 className="gap-2"
-                onClick={() => toast.info("Desktop app download coming soon! Check back after we release the installer.")}
+                onClick={() => window.open("https://github.com/Behonkus/obsidian-cinema/releases/latest", "_blank")}
                 data-testid="download-windows-btn"
               >
                 <Download className="w-4 h-4" />
