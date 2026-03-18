@@ -29,17 +29,19 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 
 ## What's Been Implemented
 
-### Web App (Deployed to Production)
+### Web App (Deployed to Production — cinema-hub-402.emergent.host)
 - Google OAuth authentication (Emergent-managed)
 - Stripe payment flow for $20 Pro tier
 - License key generation and management
 - Account Dashboard (post-login)
 - Upgrade/pricing page
-- **Public Landing Page** (for non-authenticated users) — Mar 2026
-- **SEO meta tags** (Open Graph, Twitter Card, keywords) — Mar 2026
-- **Marketing materials** (blog post, press kit, social snippets) — Mar 2026
+- Public Landing Page with hero, features, pricing, CTA sections
+- SEO meta tags (Open Graph, Twitter Card, keywords)
+- Marketing materials (blog post, press kit, 6 subreddit-specific posts)
+- Auto-redirect download endpoint (/api/download/windows) — serves latest GitHub release
+- Settings page cleaned up — desktop-only sections hidden for web users
 
-### Desktop App (Electron)
+### Desktop App (Electron — v1.0.6)
 - Local/network drive scanning with progress indicators
 - TMDB poster/metadata auto-fetch with abort/continue
 - One-click playback via default media player
@@ -47,34 +49,55 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - Poster size toggle (S/M/L)
 - Library statistics page (Recharts)
 - 18 color themes (solid, pastel, rainbow)
-- Recently Deleted (30-day trash)
-- Manual poster editor (TMDB search, URL, local file)
+- Recently Deleted (30-day trash) — moved to Settings > Library Management
+- Manual poster editor (TMDB search, URL, local file) with larger poster previews
+- Local collections — create, toggle movies, filter by collection
+- Directory filter tabs — browse one directory at a time for performance
+- Pagination — 100 movies at a time with "Load More"
+- Add individual files (not just directories)
+- Update Library / rescan directories for changes
+- Inline year editing in movie detail modal
+- Synopsis on poster hover (slides up from bottom)
+- Scroll-to-top button
+- Remove confirmation with "don't show again" option
+- Poster storage tip for local files
 - License activation for Pro features
-- Auto-update via electron-updater
-- Settings page (appearance, library management)
+- Auto-update via electron-updater (latest.yml now included in releases)
+- Settings page: Library Stats, Poster Cache management, Collection management
+- "Remove" renamed to "Remove from Database"
+- Browse Local Drives dialog — fixed overflow, responsive footer buttons
 
 ## Pricing
 - **Free**: 50 movies, 3 collections
 - **Pro**: $20 one-time — unlimited movies, collections, priority support, early access
 
+## Current App Version
+- Desktop: 1.0.6
+- Production URL: https://cinema-hub-402.emergent.host/
+- GitHub: https://github.com/Behonkus/obsidian-cinema
+
 ## Key Files
 - `/app/frontend/src/pages/LandingPage.jsx` — Public landing page
 - `/app/frontend/src/pages/AccountDashboard.jsx` — Post-login dashboard
-- `/app/frontend/src/pages/LocalLibraryPage.jsx` — Desktop library (1000+ lines)
+- `/app/frontend/src/pages/LocalLibraryPage.jsx` — Desktop library (main feature)
+- `/app/frontend/src/pages/SettingsPage.jsx` — Settings with library management
+- `/app/frontend/src/pages/CollectionsPage.jsx` — Collections (local storage in Electron)
+- `/app/frontend/src/components/LocalDirectoryBrowser.jsx` — Directory browser dialog
 - `/app/frontend/src/App.js` — Routing logic
 - `/app/frontend/public/index.html` — SEO meta tags
 - `/app/backend/server.py` — FastAPI backend
-- `/app/.github/workflows/build-windows.yml` — CI/CD
-- `/app/marketing_materials.md` — Blog post, press kit, social snippets
+- `/app/.github/workflows/build-windows.yml` — CI/CD (builds + creates releases)
+- `/app/marketing_materials.md` — Blog, press kit, subreddit posts, posting tips
 
 ## Backlog (Prioritized)
 
 ### P0
-- User testing of new desktop build (trigger GitHub Actions, test .exe)
-- Public announcement (use marketing materials)
+- Custom domain setup (user purchasing domain from GoDaddy)
+- Update REACT_APP_BACKEND_URL with custom domain and redeploy
 
 ### P1
 - Refactor `LocalLibraryPage.jsx` into smaller components/hooks
+- Add demo video/screenshots to landing page
 - Watch party feature
 
 ### P2
