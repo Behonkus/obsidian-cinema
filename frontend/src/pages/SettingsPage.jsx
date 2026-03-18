@@ -184,9 +184,16 @@ export default function SettingsPage() {
     setUpdateStatus(null);
     
     try {
-      await window.electronAPI.checkForUpdates();
+      const result = await window.electronAPI.checkForUpdates();
+      if (result?.status === 'dev-mode') {
+        toast.info("Update checks are not available in development mode");
+        setIsCheckingUpdate(false);
+      } else if (result?.status === 'error') {
+        toast.error(result.message || "Could not reach update server. Make sure a GitHub release exists.");
+        setIsCheckingUpdate(false);
+      }
     } catch (err) {
-      toast.error("Failed to check for updates");
+      toast.error("Could not check for updates. Ensure a release has been published on GitHub.");
       setIsCheckingUpdate(false);
     }
   };
