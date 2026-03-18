@@ -20,7 +20,10 @@ import {
   Grid3X3,
   Grid2X2,
   ArrowUpDown,
-  ChevronDown
+  ChevronDown,
+  FolderHeart,
+  Plus,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,6 +75,7 @@ const TMDB_KEY = 'obsidian_cinema_tmdb_key';
 const TRASH_KEY = 'obsidian_cinema_trash';
 const GRID_SIZE_KEY = 'obsidian_cinema_grid_size';
 const SORT_KEY = 'obsidian_cinema_sort';
+const COLLECTIONS_KEY = 'obsidian_cinema_collections';
 
 // 30 days in milliseconds
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -162,6 +166,10 @@ export default function LocalLibraryPage() {
   const [posterResults, setPosterResults] = useState([]);
   const [posterSearching, setPosterSearching] = useState(false);
   const [posterUrl, setPosterUrl] = useState('');
+  const [collections, setCollections] = useState([]);
+  const [activeCollection, setActiveCollection] = useState(null);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [showNewCollectionInput, setShowNewCollectionInput] = useState(false);
   const fetchAbortRef = useRef(false);
   const fetchCountRef = useRef({ fetched: 0, found: 0, total: 0 });
 
@@ -190,6 +198,10 @@ export default function LocalLibraryPage() {
       );
       setTrashedMovies(filtered);
     }
+    const savedCollections = localStorage.getItem(COLLECTIONS_KEY);
+    if (savedCollections) {
+      setCollections(JSON.parse(savedCollections));
+    }
   }, []);
 
   // Save to localStorage when movies change
@@ -206,6 +218,11 @@ export default function LocalLibraryPage() {
     localStorage.setItem(TRASH_KEY, JSON.stringify(trashedMovies));
   }, [trashedMovies]);
 
+  // Save collections to localStorage
+  useEffect(() => {
+    localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collections));
+  }, [collections]);
+
   // Save grid size preference
   useEffect(() => {
     localStorage.setItem(GRID_SIZE_KEY, gridSize);
@@ -221,6 +238,30 @@ export default function LocalLibraryPage() {
     setTmdbApiKey(tempApiKey);
     setShowSettings(false);
     toast.success('TMDB API key saved!');
+  };
+
+  // Collection helpers
+  const createCollection = (name) => {
+    if (!name.trim()) return;
+    const col = { id: Date.now().toString(), name: name.trim(), movie_ids: [], created_at: Date.now() };
+    setCollections(prev => [...prev, col]);
+    setNewCollectionName('');
+    setShowNewCollectionInput(false);
+    toast.success(`Collection "${col.name}" created`);
+  };
+
+  const toggleMovieInCollection = (collectionId, movieId) => {
+    setCollections(prev => prev.map(c => {
+      if (c.id !== collectionId) return c;
+      const has = c.movie_ids.includes(movieId);
+      return { ...c, movie_ids: has ? c.movie_ids.filter(id => id !== movieId) : [...c.movie_ids, movieId] };
+    }));
+  };
+
+  const deleteCollection = (collectionId) => {
+    setCollections(prev => prev.filter(c => c.id !== collectionId));
+    if (activeCollection === collectionId) setActiveCollection(null);
+    toast.success('Collection deleted');
   };
 
   // Fetch poster from TMDB
@@ -572,6 +613,11 @@ export default function LocalLibraryPage() {
 
   const filteredMovies = sortMovies(
     movies.filter(movie => {
+      // Collection filter
+      if (activeCollection) {
+        const col = collections.find(c => c.id === activeCollection);
+        if (col && !col.movie_ids.includes(movie.id)) return false;
+      }
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
       return movie.title?.toLowerCase().includes(query) || 
@@ -755,6 +801,35 @@ export default function LocalLibraryPage() {
           className="pl-10"
         />
       </div>
+
+      {/* Collections Filter */}
+      {collections.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2" data-testid="collections-filter">
+          <FolderHeart className="w-4 h-4 text-muted-foreground" />
+          <Button
+            variant={activeCollection === null ? "default" : "outline"}
+            size="sm"
+            className="h-7 text-xs rounded-full px-3"
+            onClick={() => setActiveCollection(null)}
+            data-testid="collection-filter-all"
+          >
+            All Movies
+          </Button>
+          {collections.map(col => (
+            <Button
+              key={col.id}
+              variant={activeCollection === col.id ? "default" : "outline"}
+              size="sm"
+              className="h-7 text-xs rounded-full px-3 gap-1.5"
+              onClick={() => setActiveCollection(activeCollection === col.id ? null : col.id)}
+              data-testid={`collection-filter-${col.id}`}
+            >
+              {col.name}
+              <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{col.movie_ids.length}</Badge>
+            </Button>
+          ))}
+        </div>
+      )}
 
       {/* Scanned Directories */}
       {directories.length > 0 && (
@@ -1040,6 +1115,60 @@ export default function LocalLibraryPage() {
               <div className="p-3 bg-secondary/50 rounded-lg">
                 <p className="text-xs text-muted-foreground mb-1">File path:</p>
                 <p className="font-mono text-sm break-all">{selectedMovie.file_path}</p>
+              </div>
+
+              {/* Add to Collection */}
+              <div className="space-y-2" data-testid="add-to-collection-section">
+                <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <FolderHeart className="w-3.5 h-3.5" /> Collections
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {collections.map(col => {
+                    const isIn = col.movie_ids.includes(selectedMovie.id);
+                    return (
+                      <Button
+                        key={col.id}
+                        variant={isIn ? "default" : "outline"}
+                        size="sm"
+                        className="h-7 text-xs rounded-full gap-1"
+                        onClick={() => {
+                          toggleMovieInCollection(col.id, selectedMovie.id);
+                          toast.success(isIn ? `Removed from "${col.name}"` : `Added to "${col.name}"`);
+                        }}
+                        data-testid={`toggle-collection-${col.id}`}
+                      >
+                        {isIn && <Check className="w-3 h-3" />}
+                        {col.name}
+                      </Button>
+                    );
+                  })}
+                  {showNewCollectionInput ? (
+                    <div className="flex gap-1">
+                      <Input
+                        placeholder="Collection name"
+                        value={newCollectionName}
+                        onChange={(e) => setNewCollectionName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && createCollection(newCollectionName)}
+                        className="h-7 text-xs w-36"
+                        autoFocus
+                        data-testid="new-collection-input"
+                      />
+                      <Button size="sm" className="h-7 text-xs px-2" onClick={() => createCollection(newCollectionName)} data-testid="confirm-new-collection-btn">
+                        <Check className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs rounded-full gap-1 border border-dashed border-border"
+                      onClick={() => setShowNewCollectionInput(true)}
+                      data-testid="new-collection-btn"
+                    >
+                      <Plus className="w-3 h-3" /> New
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-2">

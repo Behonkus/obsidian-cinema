@@ -54,6 +54,14 @@ import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+const COLLECTIONS_KEY = 'obsidian_cinema_collections';
+const STORAGE_KEY = 'obsidian_cinema_local_movies';
+
+// Check if running in Electron
+const isElectron = () => {
+  return typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
+};
+
 // Preset colors for collections
 const COLORS = [
   { name: "Red", value: "#e11d48" },
@@ -85,14 +93,24 @@ export default function CollectionsPage() {
   const loadCollections = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API}/collections`);
-      setCollections(response.data);
+      if (isElectron()) {
+        const saved = localStorage.getItem(COLLECTIONS_KEY);
+        setCollections(saved ? JSON.parse(saved) : []);
+      } else {
+        const response = await axios.get(`${API}/collections`);
+        setCollections(response.data);
+      }
     } catch (err) {
       console.error("Failed to load collections:", err);
       toast.error("Failed to load collections");
     } finally {
       setLoading(false);
     }
+  };
+
+  const saveLocalCollections = (cols) => {
+    setCollections(cols);
+    localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(cols));
   };
 
   const handleCreateCollection = async () => {
@@ -103,17 +121,23 @@ export default function CollectionsPage() {
 
     setIsSaving(true);
     try {
-      await axios.post(`${API}/collections`, {
-        name: newName.trim(),
-        description: newDescription.trim() || null,
-        color: newColor,
-      }, { withCredentials: true });
-      toast.success("Collection created!");
+      if (isElectron()) {
+        const col = { id: Date.now().toString(), name: newName.trim(), description: newDescription.trim() || null, color: newColor, movie_ids: [], created_at: Date.now() };
+        saveLocalCollections([...collections, col]);
+        toast.success("Collection created!");
+      } else {
+        await axios.post(`${API}/collections`, {
+          name: newName.trim(),
+          description: newDescription.trim() || null,
+          color: newColor,
+        }, { withCredentials: true });
+        toast.success("Collection created!");
+        loadCollections();
+      }
       setNewName("");
       setNewDescription("");
       setNewColor("#e11d48");
       setIsAddDialogOpen(false);
-      loadCollections();
     } catch (err) {
       if (err.response?.status === 403) {
         toast.error(err.response.data.detail, {
@@ -136,15 +160,20 @@ export default function CollectionsPage() {
 
     setIsSaving(true);
     try {
-      await axios.put(`${API}/collections/${editingCollection.id}`, {
-        name: newName.trim(),
-        description: newDescription.trim() || null,
-        color: newColor,
-      });
-      toast.success("Collection updated!");
+      if (isElectron()) {
+        saveLocalCollections(collections.map(c => c.id === editingCollection.id ? { ...c, name: newName.trim(), description: newDescription.trim() || null, color: newColor } : c));
+        toast.success("Collection updated!");
+      } else {
+        await axios.put(`${API}/collections/${editingCollection.id}`, {
+          name: newName.trim(),
+          description: newDescription.trim() || null,
+          color: newColor,
+        });
+        toast.success("Collection updated!");
+        loadCollections();
+      }
       setIsEditDialogOpen(false);
       setEditingCollection(null);
-      loadCollections();
     } catch (err) {
       toast.error("Failed to update collection");
     } finally {
@@ -154,9 +183,14 @@ export default function CollectionsPage() {
 
   const handleDeleteCollection = async (id) => {
     try {
-      await axios.delete(`${API}/collections/${id}`);
-      toast.success("Collection deleted");
-      loadCollections();
+      if (isElectron()) {
+        saveLocalCollections(collections.filter(c => c.id !== id));
+        toast.success("Collection deleted");
+      } else {
+        await axios.delete(`${API}/collections/${id}`);
+        toast.success("Collection deleted");
+        loadCollections();
+      }
     } catch (err) {
       toast.error("Failed to delete collection");
     }
