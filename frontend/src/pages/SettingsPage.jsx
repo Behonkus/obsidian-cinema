@@ -138,15 +138,20 @@ export default function SettingsPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [settingsRes, statsRes] = await Promise.all([
-        axios.get(`${API}/settings`),
-        axios.get(`${API}/stats`),
-      ]);
-      setSettings(settingsRes.data);
-      setStats(statsRes.data);
+      if (isElectron()) {
+        // Desktop: only load settings from API, stats come from localStorage
+        const settingsRes = await axios.get(`${API}/settings`);
+        setSettings(settingsRes.data);
+      } else {
+        const [settingsRes, statsRes] = await Promise.all([
+          axios.get(`${API}/settings`),
+          axios.get(`${API}/stats`),
+        ]);
+        setSettings(settingsRes.data);
+        setStats(statsRes.data);
+      }
     } catch (err) {
       console.error("Failed to load settings:", err);
-      toast.error("Failed to load settings");
     } finally {
       setLoading(false);
     }
