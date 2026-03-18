@@ -124,11 +124,18 @@ function MovieCard({ movie, gridSize, onClick, onPlay }) {
           ) : (
             <Film className="w-12 h-12 text-primary/50" />
           )}
+          {/* Play button - center */}
           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <Button size="sm" onClick={onPlay}>
               <Play className="w-4 h-4 mr-1" /> Play
             </Button>
           </div>
+          {/* Synopsis - bottom, only on hover */}
+          {movie.overview && (
+            <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 bg-black/85 backdrop-blur-sm p-2 pointer-events-none">
+              <p className="text-[10px] leading-snug text-gray-200 line-clamp-4">{movie.overview}</p>
+            </div>
+          )}
         </div>
         <CardContent className={gridSize === 'small' ? 'p-2' : 'p-3'}>
           <h3 className={`font-medium truncate ${gridSize === 'small' ? 'text-xs' : 'text-sm'}`}>{movie.title}</h3>
