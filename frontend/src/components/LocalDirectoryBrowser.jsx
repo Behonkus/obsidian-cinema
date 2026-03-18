@@ -206,17 +206,17 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
       <button
         key={item.path}
         onClick={function() { if (item.isDirectory) navigateTo(item.path); }}
-        className={'w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors ' + (item.isDirectory ? 'hover:bg-secondary cursor-pointer' : 'opacity-50 cursor-default')}
+        className={'w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors min-w-0 ' + (item.isDirectory ? 'hover:bg-secondary cursor-pointer' : 'opacity-50 cursor-default')}
         disabled={!item.isDirectory}
       >
         {item.isDirectory ? (
-          <Folder className="w-5 h-5 text-amber-400" />
+          <Folder className="w-5 h-5 text-amber-400 shrink-0" />
         ) : (
-          <Film className="w-5 h-5 text-muted-foreground" />
+          <Film className="w-5 h-5 text-muted-foreground shrink-0" />
         )}
-        <span className="truncate">{item.name}</span>
+        <span className="truncate min-w-0">{item.name}</span>
         {item.isDirectory && (
-          <ChevronRight className="w-4 h-4 ml-auto text-muted-foreground" />
+          <ChevronRight className="w-4 h-4 ml-auto text-muted-foreground shrink-0" />
         )}
       </button>
     );
@@ -230,7 +230,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
       </Button>
 
       <Dialog open={isOpen} onOpenChange={function(open) { if (!scanning) setIsOpen(open); }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <HardDrive className="w-5 h-5" />
@@ -244,12 +244,12 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
           <div className="space-y-4 relative">
             {scanning && <ScanningOverlay path={currentPath} elapsed={scanElapsed} />}
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <Input 
                 value={currentPath} 
                 onChange={function(e) { setCurrentPath(e.target.value); }}
                 placeholder="Path..."
-                className="flex-1 font-mono text-sm"
+                className="flex-1 font-mono text-sm min-w-0"
                 disabled={scanning}
               />
               <Button variant="outline" size="sm" onClick={goUp} disabled={!currentPath || scanning}>
@@ -279,9 +279,9 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
             </ScrollArea>
 
             {currentPath && !scanning && (
-              <div className="p-3 bg-secondary/50 rounded-lg">
+              <div className="p-3 bg-secondary/50 rounded-lg overflow-hidden">
                 <p className="text-sm text-muted-foreground">Selected folder:</p>
-                <p className="font-mono text-sm truncate">{currentPath}</p>
+                <p className="font-mono text-sm truncate" title={currentPath}>{currentPath}</p>
                 <p className="text-xs text-muted-foreground/70 mt-1">All subdirectories will be included in this scan.</p>
               </div>
             )}
