@@ -24,7 +24,8 @@ import {
   FolderHeart,
   Plus,
   Check,
-  ArrowUp
+  ArrowUp,
+  FilePlus2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -468,6 +469,47 @@ export default function LocalLibraryPage() {
     toast.success(`Added ${uniqueNewMovies.length} new movies to library`);
   };
 
+  const addIndividualFiles = async () => {
+    if (!isElectron() || !window.electronAPI?.openFileDialog) return;
+    try {
+      const result = await window.electronAPI.openFileDialog({
+        properties: ['openFile', 'multiSelections'],
+        filters: [{ name: 'Video Files', extensions: ['mp4','mkv','avi','mov','wmv','flv','webm','m4v','mpg','mpeg','3gp','ts'] }],
+        title: 'Select movie files to add'
+      });
+      if (result.canceled || !result.filePaths?.length) return;
+
+      const existingPaths = new Set(movies.map(m => m.file_path));
+      const now = Date.now();
+      const newMovies = result.filePaths
+        .filter(fp => !existingPaths.has(fp))
+        .map(fp => {
+          const fileName = fp.split(/[\\/]/).pop();
+          const ext = '.' + fileName.split('.').pop().toLowerCase();
+          const nameWithoutExt = fileName.replace(new RegExp(ext.replace('.', '\\.') + '$', 'i'), '');
+          const yearMatch = nameWithoutExt.match(/[\(\[\s]*(19|20)\d{2}[\)\]\s]*/);
+          const year = yearMatch ? parseInt(yearMatch[0].replace(/[\(\[\]\)\s]/g, '')) : null;
+          const title = nameWithoutExt
+            .replace(/[\(\[\s]*(19|20)\d{2}[\)\]\s]*/g, '')
+            .replace(/\./g, ' ')
+            .replace(/[_-]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          return { id: Date.now().toString() + Math.random().toString(36).slice(2, 8), file_path: fp, file_name: fileName, title, year, added_at: now };
+        });
+
+      if (newMovies.length > 0) {
+        setMovies(prev => [...prev, ...newMovies]);
+        toast.success(`Added ${newMovies.length} movie${newMovies.length > 1 ? 's' : ''} to library`);
+      } else {
+        toast.info('Selected files are already in your library');
+      }
+    } catch (err) {
+      console.error('File selection failed:', err);
+      toast.error('Failed to add files');
+    }
+  };
+
   const playMovie = (movie) => {
     if (isElectron()) {
       // Open with system default player
@@ -663,6 +705,10 @@ export default function LocalLibraryPage() {
         </div>
         <div className="flex items-center gap-2">
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
+          <Button variant="outline" size="sm" onClick={addIndividualFiles} data-testid="add-files-btn" title="Add individual movie files">
+            <FilePlus2 className="w-4 h-4 mr-1" />
+            <span className="hidden sm:inline text-xs">Add Files</span>
+          </Button>
           {/* Sort Options */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
