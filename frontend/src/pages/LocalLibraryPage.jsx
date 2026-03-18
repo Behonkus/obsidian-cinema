@@ -177,6 +177,8 @@ export default function LocalLibraryPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [skipRemoveConfirm, setSkipRemoveConfirm] = useState(() => localStorage.getItem(SKIP_REMOVE_CONFIRM_KEY) === 'true');
   const [dontShowAgainChecked, setDontShowAgainChecked] = useState(false);
+  const [activeDirectory, setActiveDirectory] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(100);
   const fetchAbortRef = useRef(false);
   const fetchCountRef = useRef({ fetched: 0, found: 0, total: 0 });
 
@@ -769,6 +771,10 @@ export default function LocalLibraryPage() {
 
   const filteredMovies = sortMovies(
     movies.filter(movie => {
+      // Directory filter
+      if (activeDirectory) {
+        if (!movie.file_path?.startsWith(activeDirectory)) return false;
+      }
       // Collection filter
       if (activeCollection) {
         const col = collections.find(c => c.id === activeCollection);
@@ -780,6 +786,14 @@ export default function LocalLibraryPage() {
              movie.file_name?.toLowerCase().includes(query);
     })
   );
+
+  const displayedMovies = filteredMovies.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredMovies.length;
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(100);
+  }, [activeDirectory, activeCollection, searchQuery, sortBy]);
 
   if (!isElectron()) {
     return (
@@ -968,6 +982,41 @@ export default function LocalLibraryPage() {
         />
       </div>
 
+      {/* Directory Filter */}
+      {directories.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2" data-testid="directory-filter">
+          <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
+          <Button
+            variant={activeDirectory === null ? "default" : "outline"}
+            size="sm"
+            className="h-7 text-xs rounded-full px-3"
+            onClick={() => setActiveDirectory(null)}
+            data-testid="dir-filter-all"
+          >
+            All Directories
+            <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-1">{movies.length}</Badge>
+          </Button>
+          {directories.map((dir, i) => {
+            const count = movies.filter(m => m.file_path?.startsWith(dir)).length;
+            const label = dir.split(/[\\/]/).pop() || dir;
+            return (
+              <Button
+                key={i}
+                variant={activeDirectory === dir ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs rounded-full px-3 gap-1"
+                onClick={() => setActiveDirectory(activeDirectory === dir ? null : dir)}
+                title={dir}
+                data-testid={`dir-filter-${i}`}
+              >
+                {label}
+                <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{count}</Badge>
+              </Button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Collections Filter */}
       {collections.length > 0 && (
         <div className="flex flex-wrap items-center gap-2" data-testid="collections-filter">
@@ -1120,7 +1169,7 @@ export default function LocalLibraryPage() {
           /* Grouped by directory view */
           <div className="space-y-6">
             {Object.entries(
-              filteredMovies.reduce((groups, movie) => {
+              displayedMovies.reduce((groups, movie) => {
                 const dir = getDirectory(movie.file_path) || 'Unknown';
                 if (!groups[dir]) groups[dir] = [];
                 groups[dir].push(movie);
@@ -1143,11 +1192,27 @@ export default function LocalLibraryPage() {
           </div>
         ) : (
         <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
-          {filteredMovies.map((movie) => (
+          {displayedMovies.map((movie) => (
             <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => setSelectedMovie(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} />
           ))}
         </div>
         )
+      )}
+
+      {/* Load More */}
+      {hasMore && !showTrash && (
+        <div className="flex flex-col items-center gap-2 py-4">
+          <p className="text-xs text-muted-foreground">
+            Showing {displayedMovies.length} of {filteredMovies.length} movies
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => setVisibleCount(prev => prev + 100)}
+            data-testid="load-more-btn"
+          >
+            Load More
+          </Button>
+        </div>
       )}
 
       {/* Scroll to Top */}
