@@ -25,7 +25,8 @@ import {
   Plus,
   Check,
   ArrowUp,
-  FilePlus2
+  FilePlus2,
+  Edit2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1073,9 +1074,27 @@ export default function LocalLibraryPage() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-xl font-bold">{selectedMovie.title}</h2>
-                  {selectedMovie.year && (
-                    <p className="text-muted-foreground">{selectedMovie.year}</p>
-                  )}
+                  <div
+                    className="group flex items-center gap-1.5 cursor-pointer"
+                    onClick={() => {
+                      const input = prompt('Enter correct year:', selectedMovie.year || '');
+                      if (input === null) return;
+                      const parsed = input.trim() === '' ? null : parseInt(input.trim(), 10);
+                      if (input.trim() !== '' && (isNaN(parsed) || parsed < 1888 || parsed > 2099)) {
+                        toast.error('Please enter a valid year (1888–2099)');
+                        return;
+                      }
+                      setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, year: parsed } : m));
+                      setSelectedMovie(prev => ({ ...prev, year: parsed }));
+                      toast.success(parsed ? `Year updated to ${parsed}` : 'Year removed');
+                    }}
+                    data-testid="edit-year-btn"
+                  >
+                    <p className="text-muted-foreground">
+                      {selectedMovie.year || 'No year'}
+                    </p>
+                    <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
                   {selectedMovie.rating && (
                     <p className="text-amber-400">★ {selectedMovie.rating.toFixed(1)}</p>
                   )}
