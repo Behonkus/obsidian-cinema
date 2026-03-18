@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Film, 
@@ -149,13 +150,12 @@ const TMDB_API = 'https://api.themoviedb.org/3';
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 
 export default function LocalLibraryPage() {
+  const navigate = useNavigate();
   const [movies, setMovies] = useState([]);
   const [directories, setDirectories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [tmdbApiKey, setTmdbApiKey] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [tempApiKey, setTempApiKey] = useState('');
   const [fetchingPosters, setFetchingPosters] = useState(false);
   const [fetchProgress, setFetchProgress] = useState(0);
   const [movieToDelete, setMovieToDelete] = useState(null);
@@ -197,7 +197,6 @@ export default function LocalLibraryPage() {
     }
     if (savedTmdbKey) {
       setTmdbApiKey(savedTmdbKey);
-      setTempApiKey(savedTmdbKey);
     }
     if (savedTrash) {
       // Auto-purge items older than 30 days
@@ -248,13 +247,6 @@ export default function LocalLibraryPage() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  const saveTmdbKey = () => {
-    localStorage.setItem(TMDB_KEY, tempApiKey);
-    setTmdbApiKey(tempApiKey);
-    setShowSettings(false);
-    toast.success('TMDB API key saved!');
-  };
 
   // Collection helpers
   const createCollection = (name) => {
@@ -924,9 +916,6 @@ export default function LocalLibraryPage() {
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{trashedMovies.length}</Badge>
             )}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => { setTempApiKey(tmdbApiKey); setShowSettings(true); }} data-testid="settings-btn">
-            <Settings className="w-4 h-4" />
-          </Button>
         </div>
       </div>
 
@@ -957,7 +946,7 @@ export default function LocalLibraryPage() {
             <Key className="w-5 h-5 text-amber-400" />
             <span className="text-sm">Add your TMDB API key to fetch movie posters</span>
           </div>
-          <Button size="sm" variant="outline" onClick={() => setShowSettings(true)}>
+          <Button size="sm" variant="outline" onClick={() => navigate('/settings')}>
             Add Key
           </Button>
         </div>
@@ -1492,56 +1481,6 @@ export default function LocalLibraryPage() {
           </Card>
         </div>
       )}
-
-      {/* Settings Dialog */}
-      <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Settings</DialogTitle>
-            <DialogDescription>
-              Configure your TMDB API key to fetch movie posters
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">TMDB API Key</label>
-              <Input
-                type="password"
-                placeholder="Enter your TMDB API key"
-                value={tempApiKey}
-                onChange={(e) => setTempApiKey(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Get a free API key at{' '}
-                <a 
-                  href="https://www.themoviedb.org/settings/api" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (isElectron() && window.electronAPI?.openExternal) {
-                      window.electronAPI.openExternal('https://www.themoviedb.org/settings/api');
-                    }
-                  }}
-                >
-                  themoviedb.org
-                </a>
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSettings(false)}>
-              Cancel
-            </Button>
-            <Button onClick={saveTmdbKey} disabled={!tempApiKey}>
-              Save Key
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Remove Movie Confirmation */}
       <AlertDialog open={!!movieToDelete} onOpenChange={(open) => { if (!open) { setMovieToDelete(null); setDontShowAgainChecked(false); } }}>
