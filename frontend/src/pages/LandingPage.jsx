@@ -180,7 +180,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Free tier includes 50 movies. No credit card required.
+            Free tier supports up to 50 movies in your library. No credit card required.
           </p>
         </motion.div>
 

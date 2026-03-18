@@ -187,7 +187,7 @@ function LicenseKeyCard({ user }) {
                 <ul className="space-y-1 text-muted-foreground">
                   <li>• Launch Obsidian Cinema</li>
                   <li>• Click "Continue with Free" to start</li>
-                  <li>• Free tier: 50 movies, 3 collections</li>
+                  <li>• Free tier supports up to 50 movies and 3 collections</li>
                 </ul>
               </div>
 
