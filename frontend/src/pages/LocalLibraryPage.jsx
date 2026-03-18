@@ -77,6 +77,7 @@ const TRASH_KEY = 'obsidian_cinema_trash';
 const GRID_SIZE_KEY = 'obsidian_cinema_grid_size';
 const SORT_KEY = 'obsidian_cinema_sort';
 const COLLECTIONS_KEY = 'obsidian_cinema_collections';
+const SKIP_REMOVE_CONFIRM_KEY = 'obsidian_cinema_skip_remove_confirm';
 
 // 30 days in milliseconds
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -172,6 +173,8 @@ export default function LocalLibraryPage() {
   const [newCollectionName, setNewCollectionName] = useState('');
   const [showNewCollectionInput, setShowNewCollectionInput] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [skipRemoveConfirm, setSkipRemoveConfirm] = useState(() => localStorage.getItem(SKIP_REMOVE_CONFIRM_KEY) === 'true');
+  const [dontShowAgainChecked, setDontShowAgainChecked] = useState(false);
   const fetchAbortRef = useRef(false);
   const fetchCountRef = useRef({ fetched: 0, found: 0, total: 0 });
 
@@ -1227,7 +1230,13 @@ export default function LocalLibraryPage() {
                 </Button>
                 <Button 
                   variant="destructive"
-                  onClick={() => setMovieToDelete(selectedMovie)}
+                  onClick={() => {
+                    if (skipRemoveConfirm) {
+                      removeMovie(selectedMovie.id);
+                    } else {
+                      setMovieToDelete(selectedMovie);
+                    }
+                  }}
                   data-testid="remove-movie-btn"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
@@ -1290,22 +1299,39 @@ export default function LocalLibraryPage() {
       </Dialog>
 
       {/* Remove Movie Confirmation */}
-      <AlertDialog open={!!movieToDelete} onOpenChange={(open) => !open && setMovieToDelete(null)}>
+      <AlertDialog open={!!movieToDelete} onOpenChange={(open) => { if (!open) { setMovieToDelete(null); setDontShowAgainChecked(false); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove "{movieToDelete?.title}" from library?</AlertDialogTitle>
             <AlertDialogDescription>
-              This movie will be moved to Recently Deleted where you can restore it within 30 days.
-              <span className="block mt-2 font-medium text-foreground">
-                No files will be deleted from your system. Your actual movie file will remain untouched.
+              This action will only affect the movie database. Your physical movie files will remain unchanged.
+              <span className="block mt-2 text-muted-foreground">
+                The movie will be moved to Recently Deleted where you can restore it within 30 days.
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <label className="flex items-center gap-2 cursor-pointer select-none" data-testid="dont-show-again-label">
+            <input
+              type="checkbox"
+              checked={dontShowAgainChecked}
+              onChange={(e) => setDontShowAgainChecked(e.target.checked)}
+              className="w-4 h-4 rounded border-border accent-primary"
+              data-testid="dont-show-again-checkbox"
+            />
+            <span className="text-xs text-muted-foreground">Don't show this message again</span>
+          </label>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => removeMovie(movieToDelete?.id)}
+              onClick={() => {
+                if (dontShowAgainChecked) {
+                  setSkipRemoveConfirm(true);
+                  localStorage.setItem(SKIP_REMOVE_CONFIRM_KEY, 'true');
+                }
+                setDontShowAgainChecked(false);
+                removeMovie(movieToDelete?.id);
+              }}
               data-testid="confirm-remove-movie-btn"
             >
               Remove from Library
