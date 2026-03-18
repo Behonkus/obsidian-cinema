@@ -45,7 +45,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         { path: "/", icon: Film, label: "Library" },
         { path: "/stats", icon: BarChart3, label: "Stats" },
         { path: "/collections", icon: FolderHeart, label: "Collections" },
-        { path: "/directories", icon: FolderOpen, label: "Directories" },
         { path: "/settings", icon: Settings, label: "Settings" },
       ]
     : [
