@@ -23,7 +23,8 @@ import {
   ChevronDown,
   FolderHeart,
   Plus,
-  Check
+  Check,
+  ArrowUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -170,6 +171,7 @@ export default function LocalLibraryPage() {
   const [activeCollection, setActiveCollection] = useState(null);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [showNewCollectionInput, setShowNewCollectionInput] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const fetchAbortRef = useRef(false);
   const fetchCountRef = useRef({ fetched: 0, found: 0, total: 0 });
 
@@ -232,6 +234,13 @@ export default function LocalLibraryPage() {
   useEffect(() => {
     localStorage.setItem(SORT_KEY, sortBy);
   }, [sortBy]);
+
+  // Show scroll-to-top button after scrolling down
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 600);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const saveTmdbKey = () => {
     localStorage.setItem(TMDB_KEY, tempApiKey);
@@ -974,6 +983,17 @@ export default function LocalLibraryPage() {
           ))}
         </div>
         )
+      )}
+
+      {/* Scroll to Top */}
+      {showScrollTop && (
+        <Button
+          className="fixed bottom-6 right-6 z-40 rounded-full w-10 h-10 p-0 shadow-lg bg-primary hover:bg-primary/90"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          data-testid="scroll-to-top-btn"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </Button>
       )}
 
       {/* Movie Detail Modal */}
