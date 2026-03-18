@@ -552,6 +552,20 @@ async def get_settings():
         "cached_posters": poster_count
     }
 
+@api_router.delete("/posters/cache")
+async def clear_poster_cache():
+    """Delete all cached poster files from the local repository."""
+    import shutil
+    deleted = 0
+    if POSTER_REPO_DIR.exists():
+        for item in POSTER_REPO_DIR.iterdir():
+            if item.is_dir():
+                count = len(list(item.glob('*.jpg')))
+                deleted += count
+                shutil.rmtree(item)
+        POSTER_REPO_DIR.mkdir(parents=True, exist_ok=True)
+    return {"deleted": deleted, "message": f"Cleared {deleted} cached poster files"}
+
 # Poster serving endpoint
 @api_router.get("/posters/{size}/{filename}")
 async def get_poster(size: str, filename: str):

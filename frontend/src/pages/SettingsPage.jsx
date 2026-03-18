@@ -449,11 +449,31 @@ export default function SettingsPage() {
               {/* Poster cache stats */}
               {settings?.cached_posters > 0 && (
                 <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                  <div className="flex items-center gap-2">
-                    <HardDrive className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm text-blue-300">
-                      {settings.cached_posters} movie posters cached in local repository
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <HardDrive className="w-4 h-4 text-blue-400" />
+                      <span className="text-sm text-blue-300">
+                        {settings.cached_posters} movie posters cached in local repository
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7 text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={async () => {
+                        try {
+                          await axios.delete(`${API}/posters/cache`);
+                          setSettings(prev => ({ ...prev, cached_posters: 0 }));
+                          toast.success('Poster cache cleared');
+                        } catch (e) {
+                          toast.error('Failed to clear poster cache');
+                        }
+                      }}
+                      data-testid="clear-server-poster-cache-btn"
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Clear
+                    </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 ml-6">
                     Posters are stored separately from movie files
