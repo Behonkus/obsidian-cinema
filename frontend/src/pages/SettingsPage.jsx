@@ -367,7 +367,8 @@ export default function SettingsPage() {
           </Card>
         </motion.div>
         
-        {/* Library Stats Card */}
+        {/* Library Stats Card - Desktop Only */}
+        {isElectron() && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -424,6 +425,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </motion.div>
+        )}
         
         {/* App Updates Card - Desktop Only */}
         {isElectron() && (
@@ -519,7 +521,8 @@ export default function SettingsPage() {
           </motion.div>
         )}
         
-        {/* Appearance Card */}
+        {/* Appearance Card - Desktop Only */}
+        {isElectron() && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -650,8 +653,10 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </motion.div>
+        )}
 
-        {/* Library Management Card */}
+        {/* Library Management Card - Desktop Only */}
+        {isElectron() && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -692,8 +697,10 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </motion.div>
+        )}
 
-        {/* About Card */}
+        {/* About Card - Desktop Only */}
+        {isElectron() && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -741,6 +748,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </motion.div>
+        )}
       </div>
 
       {/* Reset Library Confirmation */}
