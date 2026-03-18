@@ -1109,6 +1109,11 @@ export default function LocalLibraryPage() {
                       Remove current poster
                     </Button>
                   )}
+
+                  {/* Local file tip */}
+                  <p className="text-[10px] text-muted-foreground leading-snug">
+                    Store local poster images in a dedicated folder like <code className="px-1 py-0.5 bg-secondary rounded font-mono">C:\Users\YourName\Pictures\MoviePosters</code> so they aren't accidentally moved or deleted.
+                  </p>
                 </div>
               )}
               
