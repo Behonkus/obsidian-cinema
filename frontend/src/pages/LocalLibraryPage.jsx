@@ -511,6 +511,107 @@ export default function LocalLibraryPage() {
     }
   };
 
+  const [isRescanning, setIsRescanning] = useState(false);
+
+  const rescanDirectory = async (dirPath) => {
+    if (!isElectron() || !window.electronAPI?.scanForVideos) return;
+    setIsRescanning(true);
+    try {
+      const scannedFiles = await window.electronAPI.scanForVideos(dirPath, true);
+      const scannedPaths = new Set(scannedFiles.map(f => f.file_path));
+      const existingPaths = new Set(movies.filter(m => m.file_path.startsWith(dirPath)).map(m => m.file_path));
+
+      // Find new files (in scan but not in library)
+      const now = Date.now();
+      const newMovies = scannedFiles
+        .filter(f => !existingPaths.has(f.file_path))
+        .map(f => ({ ...f, added_at: now }));
+
+      // Find removed files (in library but no longer on disk)
+      const removedPaths = [...existingPaths].filter(p => !scannedPaths.has(p));
+
+      let updated = movies;
+      if (removedPaths.length > 0) {
+        const removedSet = new Set(removedPaths);
+        updated = updated.filter(m => !removedSet.has(m.file_path));
+      }
+      if (newMovies.length > 0) {
+        updated = [...updated, ...newMovies];
+      }
+
+      setMovies(updated);
+
+      const parts = [];
+      if (newMovies.length > 0) parts.push(`${newMovies.length} added`);
+      if (removedPaths.length > 0) parts.push(`${removedPaths.length} removed`);
+      if (parts.length === 0) {
+        toast.info('Directory is up to date — no changes found');
+      } else {
+        toast.success(`Directory updated: ${parts.join(', ')}`);
+      }
+    } catch (err) {
+      console.error('Rescan failed:', err);
+      toast.error('Failed to rescan directory');
+    } finally {
+      setIsRescanning(false);
+    }
+  };
+
+  const rescanAllDirectories = async () => {
+    if (!isElectron() || !window.electronAPI?.scanForVideos || directories.length === 0) return;
+    setIsRescanning(true);
+    try {
+      let allScanned = [];
+      for (const dir of directories) {
+        try {
+          const files = await window.electronAPI.scanForVideos(dir, true);
+          allScanned = allScanned.concat(files);
+        } catch (e) {
+          console.error('Failed to scan:', dir, e);
+        }
+      }
+
+      const scannedPaths = new Set(allScanned.map(f => f.file_path));
+      const dirSet = new Set(directories);
+      const existingInDirs = movies.filter(m => {
+        return directories.some(d => m.file_path.startsWith(d));
+      });
+      const existingPaths = new Set(existingInDirs.map(m => m.file_path));
+
+      const now = Date.now();
+      const newMovies = allScanned
+        .filter(f => !existingPaths.has(f.file_path))
+        .map(f => ({ ...f, added_at: now }));
+
+      const removedPaths = [...existingPaths].filter(p => !scannedPaths.has(p));
+
+      let updated = movies;
+      if (removedPaths.length > 0) {
+        const removedSet = new Set(removedPaths);
+        updated = updated.filter(m => !removedSet.has(m.file_path));
+      }
+      if (newMovies.length > 0) {
+        updated = [...updated, ...newMovies];
+      }
+
+      setMovies(updated);
+
+      const parts = [];
+      if (newMovies.length > 0) parts.push(`${newMovies.length} added`);
+      if (removedPaths.length > 0) parts.push(`${removedPaths.length} removed`);
+      if (parts.length === 0) {
+        toast.info('All directories are up to date — no changes found');
+      } else {
+        toast.success(`Library updated: ${parts.join(', ')}`);
+      }
+    } catch (err) {
+      console.error('Rescan all failed:', err);
+      toast.error('Failed to update library');
+    } finally {
+      setIsRescanning(false);
+    }
+  };
+
   const playMovie = (movie) => {
     if (isElectron()) {
       // Open with system default player
@@ -710,6 +811,12 @@ export default function LocalLibraryPage() {
             <FilePlus2 className="w-4 h-4 mr-1" />
             <span className="hidden sm:inline text-xs">Add Files</span>
           </Button>
+          {directories.length > 0 && (
+            <Button variant="outline" size="sm" onClick={rescanAllDirectories} disabled={isRescanning} data-testid="update-library-btn" title="Rescan all directories for changes">
+              <RefreshCw className={`w-4 h-4 mr-1 ${isRescanning ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline text-xs">{isRescanning ? 'Scanning...' : 'Update Library'}</span>
+            </Button>
+          )}
           {/* Sort Options */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -894,9 +1001,17 @@ export default function LocalLibraryPage() {
       {directories.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {directories.map((dir, i) => (
-            <Badge key={i} variant="secondary" className="gap-1">
+            <Badge
+              key={i}
+              variant="secondary"
+              className="gap-1 cursor-pointer hover:bg-primary/20 transition-colors"
+              onClick={() => rescanDirectory(dir)}
+              title={`Click to rescan: ${dir}`}
+              data-testid={`rescan-dir-${i}`}
+            >
               <HardDrive className="w-3 h-3" />
               {dir.length > 40 ? '...' + dir.slice(-40) : dir}
+              <RefreshCw className={`w-3 h-3 ml-0.5 ${isRescanning ? 'animate-spin' : 'opacity-50'}`} />
             </Badge>
           ))}
         </div>
