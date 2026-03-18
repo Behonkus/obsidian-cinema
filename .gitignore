@@ -191,3 +191,7 @@ frontend/node_modules/.cache/default-development/21.pack
 # Environment files
 *.env
 *.env.*
+-e 
+# Environment files
+*.env
+*.env.*
