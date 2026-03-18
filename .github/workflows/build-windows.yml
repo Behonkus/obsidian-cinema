@@ -93,3 +93,14 @@ jobs:
           files: frontend/dist/Obsidian-Cinema-Setup.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release (manual trigger)
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: Obsidian Cinema v${{ github.event.inputs.version }}
+          files: frontend/dist/Obsidian-Cinema-Setup.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
