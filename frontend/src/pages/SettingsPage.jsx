@@ -548,6 +548,14 @@ export default function SettingsPage() {
                         </span>
                       </div>
                     )}
+                    {updateStatus.status === 'error' && (
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-orange-400" />
+                        <span className="text-sm text-orange-300">
+                          Could not check for updates. Ensure a release has been published on GitHub.
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
                 

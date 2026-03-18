@@ -90,7 +90,9 @@ jobs:
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v1
         with:
-          files: frontend/dist/Obsidian-Cinema-Setup.zip
+          files: |
+            frontend/dist/Obsidian-Cinema-Setup.zip
+            frontend/dist/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -100,7 +102,9 @@ jobs:
         with:
           tag_name: v${{ github.event.inputs.version }}
           name: Obsidian Cinema v${{ github.event.inputs.version }}
-          files: frontend/dist/Obsidian-Cinema-Setup.zip
+          files: |
+            frontend/dist/Obsidian-Cinema-Setup.zip
+            frontend/dist/latest.yml
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
