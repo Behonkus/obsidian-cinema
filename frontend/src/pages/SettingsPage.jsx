@@ -446,8 +446,8 @@ export default function SettingsPage() {
                 </div>
               </div>
               
-              {/* Poster cache stats */}
-              {settings?.cached_posters > 0 && (
+              {/* Poster cache stats - web only, not relevant in desktop */}
+              {!isElectron() && settings?.cached_posters > 0 && (
                 <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
