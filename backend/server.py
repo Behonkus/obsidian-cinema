@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, Cookie, BackgroundTasks
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse, RedirectResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -2606,6 +2606,26 @@ async def deactivate_license(request: Request, session_token: Optional[str] = Co
         "success": True,
         "message": "License deactivated. You can now activate it on another device."
     }
+
+GITHUB_REPO = "Behonkus/obsidian-cinema"
+
+@api_router.get("/download/windows")
+async def download_windows():
+    """Redirect to the latest Windows installer from GitHub releases."""
+    try:
+        async with httpx.AsyncClient(follow_redirects=True) as client_http:
+            resp = await client_http.get(
+                f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest",
+                headers={"Accept": "application/vnd.github.v3+json"}
+            )
+            if resp.status_code == 200:
+                assets = resp.json().get("assets", [])
+                for asset in assets:
+                    if asset["name"].endswith(".exe"):
+                        return RedirectResponse(url=asset["browser_download_url"])
+        return RedirectResponse(url=f"https://github.com/{GITHUB_REPO}/releases/latest")
+    except Exception:
+        return RedirectResponse(url=f"https://github.com/{GITHUB_REPO}/releases/latest")
 
 # Include the router
 app.include_router(api_router)

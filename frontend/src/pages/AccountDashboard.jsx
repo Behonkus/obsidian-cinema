@@ -102,8 +102,7 @@ export default function AccountDashboard() {
                   className="w-full md:w-auto bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white gap-2"
                   onClick={() => {
                     const link = document.createElement('a');
-                    link.href = 'https://github.com/Behonkus/obsidian-cinema/releases/latest/download/Obsidian.Cinema.Setup.1.0.0.exe';
-                    link.download = 'Obsidian.Cinema.Setup.1.0.0.exe';
+                    link.href = `${API}/download/windows`;
                     link.click();
                   }}
                   data-testid="download-desktop-btn"
