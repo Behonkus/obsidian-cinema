@@ -18,7 +18,8 @@ import {
   Palette,
   LayoutGrid,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -675,7 +676,28 @@ export default function SettingsPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {/* Recently Deleted */}
+              <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
+                <div>
+                  <p className="font-medium text-foreground text-sm">Recently Deleted</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Movies removed from the database are kept here for 30 days before being permanently cleared. No files on disk are affected.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={function() { window.location.href = '/#/?view=trash'; }}
+                  data-testid="settings-recently-deleted-btn"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  View Recently Deleted
+                </Button>
+              </div>
+
+              <Separator />
+
+              {/* Reset Library */}
               <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5 space-y-3">
                 <div>
                   <p className="font-medium text-destructive text-sm">Reset Entire Library</p>

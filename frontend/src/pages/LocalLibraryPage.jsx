@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Film, 
@@ -151,6 +151,7 @@ const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 
 export default function LocalLibraryPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [movies, setMovies] = useState([]);
   const [directories, setDirectories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -161,7 +162,7 @@ export default function LocalLibraryPage() {
   const [movieToDelete, setMovieToDelete] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [trashedMovies, setTrashedMovies] = useState([]);
-  const [showTrash, setShowTrash] = useState(false);
+  const [showTrash, setShowTrash] = useState(() => searchParams.get('view') === 'trash');
   const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false);
   const [gridSize, setGridSize] = useState(() => localStorage.getItem(GRID_SIZE_KEY) || 'medium');
   const [sortBy, setSortBy] = useState(() => localStorage.getItem(SORT_KEY) || 'added-desc');
@@ -903,19 +904,6 @@ export default function LocalLibraryPage() {
               }
             </Button>
           )}
-          <Button 
-            variant={showTrash ? "default" : "outline"} 
-            size="sm" 
-            onClick={() => setShowTrash(!showTrash)}
-            data-testid="toggle-trash-btn"
-            className={showTrash ? "bg-destructive hover:bg-destructive/90" : ""}
-          >
-            <Trash2 className="w-4 h-4 mr-1" />
-            <span className="text-xs">Deleted</span>
-            {trashedMovies.length > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{trashedMovies.length}</Badge>
-            )}
-          </Button>
         </div>
       </div>
 
@@ -1474,7 +1462,7 @@ export default function LocalLibraryPage() {
                   data-testid="remove-movie-btn"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Remove
+                  Remove from Database
                 </Button>
               </div>
             </CardContent>
