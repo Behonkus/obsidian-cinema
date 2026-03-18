@@ -149,7 +149,12 @@ function LicenseKeyCard({ user }) {
                 variant="outline" 
                 size="sm"
                 className="gap-2"
-                onClick={() => window.open("https://github.com/Behonkus/obsidian-cinema/releases/latest", "_blank")}
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = 'https://github.com/Behonkus/obsidian-cinema/releases/latest/download/Obsidian.Cinema.Setup.1.0.0.exe';
+                  link.download = 'Obsidian.Cinema.Setup.1.0.0.exe';
+                  link.click();
+                }}
                 data-testid="download-windows-btn"
               >
                 <Download className="w-4 h-4" />
