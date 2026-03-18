@@ -287,14 +287,14 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
             )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={function() { setIsOpen(false); }} disabled={scanning}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={function() { setIsOpen(false); }} disabled={scanning} className="w-full sm:w-auto">
               Cancel
             </Button>
             <Button 
               onClick={scanCurrentFolder}
               disabled={!currentPath || scanning}
-              className="gap-2"
+              className="gap-2 w-full sm:w-auto"
             >
               {scanning ? (
                 <>
