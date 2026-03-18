@@ -1138,17 +1138,17 @@ export default function LocalLibraryPage() {
                         </Button>
                       </div>
                       {posterResults.length > 0 && (
-                        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                        <div className="grid grid-cols-3 gap-3 max-h-80 overflow-y-auto">
                           {posterResults.map(function(result) {
                             return (
                               <div
                                 key={result.id}
-                                className="cursor-pointer rounded overflow-hidden border border-transparent hover:border-primary transition-colors"
+                                className="cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors"
                                 onClick={() => updateMoviePoster(selectedMovie.id, result.poster)}
                                 data-testid={'poster-result-' + result.id}
                               >
                                 <img src={result.poster} alt={result.title} className="w-full aspect-[2/3] object-cover" />
-                                <p className="text-[10px] p-1 truncate">{result.title} {result.year && ('(' + result.year + ')')}</p>
+                                <p className="text-xs p-1.5 truncate font-medium">{result.title} {result.year && ('(' + result.year + ')')}</p>
                               </div>
                             );
                           })}
