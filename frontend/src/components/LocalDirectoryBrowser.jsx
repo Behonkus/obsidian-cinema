@@ -230,7 +230,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
       </Button>
 
       <Dialog open={isOpen} onOpenChange={function(open) { if (!scanning) setIsOpen(open); }}>
-        <DialogContent className="max-w-2xl overflow-hidden">
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <HardDrive className="w-5 h-5" />
@@ -241,7 +241,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 relative">
+          <div className="space-y-4 relative flex-1 min-h-0">
             {scanning && <ScanningOverlay path={currentPath} elapsed={scanElapsed} />}
 
             <div className="flex items-center gap-2 min-w-0">
@@ -257,7 +257,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
               </Button>
             </div>
 
-            <ScrollArea className="h-[300px] border rounded-lg p-2">
+            <ScrollArea className="h-[250px] border rounded-lg p-2">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -279,15 +279,15 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
             </ScrollArea>
 
             {currentPath && !scanning && (
-              <div className="p-3 bg-secondary/50 rounded-lg overflow-hidden">
-                <p className="text-sm text-muted-foreground">Selected folder:</p>
-                <p className="font-mono text-sm truncate" title={currentPath}>{currentPath}</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">All subdirectories will be included in this scan.</p>
+              <div className="p-2 bg-secondary/50 rounded-lg overflow-hidden">
+                <p className="text-xs text-muted-foreground">Selected folder:</p>
+                <p className="font-mono text-xs truncate" title={currentPath}>{currentPath}</p>
+                <p className="text-[10px] text-muted-foreground/70 mt-0.5">All subdirectories will be included in this scan.</p>
               </div>
             )}
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+          <DialogFooter className="flex-col sm:flex-row gap-2 shrink-0">
             <Button variant="outline" onClick={function() { setIsOpen(false); }} disabled={scanning} className="w-full sm:w-auto">
               Cancel
             </Button>
