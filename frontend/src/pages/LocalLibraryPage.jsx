@@ -178,6 +178,8 @@ export default function LocalLibraryPage() {
   const [posterResults, setPosterResults] = useState([]);
   const [posterSearching, setPosterSearching] = useState(false);
   const [posterUrl, setPosterUrl] = useState('');
+  const [editingYear, setEditingYear] = useState(false);
+  const [yearInput, setYearInput] = useState('');
   const [collections, setCollections] = useState([]);
   const [activeCollection, setActiveCollection] = useState(null);
   const [newCollectionName, setNewCollectionName] = useState('');
@@ -397,6 +399,7 @@ export default function LocalLibraryPage() {
     setPosterSearch('');
     setPosterResults([]);
     setPosterUrl('');
+    setEditingYear(false);
   };
 
   // Fetch posters for all movies without posters
@@ -1238,27 +1241,69 @@ export default function LocalLibraryPage() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-xl font-bold">{selectedMovie.title}</h2>
-                  <div
-                    className="group flex items-center gap-1.5 cursor-pointer"
-                    onClick={() => {
-                      const input = prompt('Enter correct year:', selectedMovie.year || '');
-                      if (input === null) return;
-                      const parsed = input.trim() === '' ? null : parseInt(input.trim(), 10);
-                      if (input.trim() !== '' && (isNaN(parsed) || parsed < 1888 || parsed > 2099)) {
-                        toast.error('Please enter a valid year (1888–2099)');
-                        return;
-                      }
-                      setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, year: parsed } : m));
-                      setSelectedMovie(prev => ({ ...prev, year: parsed }));
-                      toast.success(parsed ? `Year updated to ${parsed}` : 'Year removed');
-                    }}
-                    data-testid="edit-year-btn"
-                  >
-                    <p className="text-muted-foreground">
-                      {selectedMovie.year || 'No year'}
-                    </p>
-                    <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
+                  {editingYear ? (
+                    <div className="flex items-center gap-1.5" data-testid="edit-year-input-wrapper">
+                      <Input
+                        type="number"
+                        min="1888"
+                        max="2099"
+                        value={yearInput}
+                        onChange={(e) => setYearInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const val = yearInput.trim();
+                            const parsed = val === '' ? null : parseInt(val, 10);
+                            if (val !== '' && (isNaN(parsed) || parsed < 1888 || parsed > 2099)) {
+                              toast.error('Please enter a valid year (1888–2099)');
+                              return;
+                            }
+                            setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, year: parsed } : m));
+                            setSelectedMovie(prev => ({ ...prev, year: parsed }));
+                            setEditingYear(false);
+                            toast.success(parsed ? `Year updated to ${parsed}` : 'Year removed');
+                          }
+                          if (e.key === 'Escape') setEditingYear(false);
+                        }}
+                        className="h-7 w-24 text-sm"
+                        autoFocus
+                        placeholder="Year"
+                        data-testid="edit-year-input"
+                      />
+                      <Button
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => {
+                          const val = yearInput.trim();
+                          const parsed = val === '' ? null : parseInt(val, 10);
+                          if (val !== '' && (isNaN(parsed) || parsed < 1888 || parsed > 2099)) {
+                            toast.error('Please enter a valid year (1888–2099)');
+                            return;
+                          }
+                          setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, year: parsed } : m));
+                          setSelectedMovie(prev => ({ ...prev, year: parsed }));
+                          setEditingYear(false);
+                          toast.success(parsed ? `Year updated to ${parsed}` : 'Year removed');
+                        }}
+                        data-testid="confirm-year-btn"
+                      >
+                        <Check className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div
+                      className="group flex items-center gap-1.5 cursor-pointer"
+                      onClick={() => {
+                        setYearInput(selectedMovie.year ? String(selectedMovie.year) : '');
+                        setEditingYear(true);
+                      }}
+                      data-testid="edit-year-btn"
+                    >
+                      <p className="text-muted-foreground">
+                        {selectedMovie.year || 'No year'}
+                      </p>
+                      <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  )}
                   {selectedMovie.rating && (
                     <p className="text-amber-400">★ {selectedMovie.rating.toFixed(1)}</p>
                   )}
