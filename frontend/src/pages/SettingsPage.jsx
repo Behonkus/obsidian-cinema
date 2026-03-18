@@ -72,12 +72,29 @@ export default function SettingsPage() {
     return localStorage.getItem('obsidian_cinema_grid_size') || 'medium';
   });
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showClearPostersConfirm, setShowClearPostersConfirm] = useState(false);
+  const [showClearCollectionsConfirm, setShowClearCollectionsConfirm] = useState(false);
+  const [posterCount, setPosterCount] = useState(0);
+  const [collectionsList, setCollectionsList] = useState([]);
   const [appVersion, setAppVersion] = useState(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
 
   useEffect(() => {
     loadData();
+    
+    // Load local poster count and collections
+    try {
+      const savedMovies = localStorage.getItem('obsidian_cinema_local_movies');
+      if (savedMovies) {
+        const movies = JSON.parse(savedMovies);
+        setPosterCount(movies.filter(m => m.poster_path).length);
+      }
+      const savedCols = localStorage.getItem('obsidian_cinema_collections');
+      if (savedCols) {
+        setCollectionsList(JSON.parse(savedCols));
+      }
+    } catch (e) {}
     
     // Get app version if in Electron
     if (isElectron()) {
@@ -704,6 +721,82 @@ export default function SettingsPage() {
 
               <Separator />
 
+              {/* Poster Management */}
+              <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
+                <div>
+                  <p className="font-medium text-foreground text-sm">Poster Cache</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {posterCount > 0
+                      ? `${posterCount} movies have cached poster data. Clearing will remove all poster URLs from your library — movies and metadata will remain.`
+                      : 'No poster data cached.'}
+                  </p>
+                </div>
+                {posterCount > 0 && (
+                  <Button
+                    variant="outline"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={function() { setShowClearPostersConfirm(true); }}
+                    data-testid="settings-clear-posters-btn"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Clear All Posters ({posterCount})
+                  </Button>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Collection Management */}
+              <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
+                <div>
+                  <p className="font-medium text-foreground text-sm">Collections</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {collectionsList.length > 0
+                      ? `${collectionsList.length} collection${collectionsList.length > 1 ? 's' : ''} in your library.`
+                      : 'No collections created.'}
+                  </p>
+                </div>
+                {collectionsList.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      {collectionsList.map(function(col) {
+                        return (
+                          <div key={col.id} className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary border border-border text-xs">
+                            <span>{col.name}</span>
+                            <span className="text-muted-foreground">({col.movie_ids?.length || 0})</span>
+                            <button
+                              onClick={function() {
+                                var updated = collectionsList.filter(function(c) { return c.id !== col.id; });
+                                setCollectionsList(updated);
+                                localStorage.setItem('obsidian_cinema_collections', JSON.stringify(updated));
+                                toast.success('Collection "' + col.name + '" deleted');
+                              }}
+                              className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                              title={'Delete ' + col.name}
+                              data-testid={'settings-delete-col-' + col.id}
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={function() { setShowClearCollectionsConfirm(true); }}
+                      data-testid="settings-clear-collections-btn"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete All Collections
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
               {/* Reset Library */}
               <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5 space-y-3">
                 <div>
@@ -804,6 +897,69 @@ export default function SettingsPage() {
               data-testid="confirm-reset-library-btn"
             >
               Yes, Reset Everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear Posters Confirmation */}
+      <AlertDialog open={showClearPostersConfirm} onOpenChange={setShowClearPostersConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all poster data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove poster URLs from all {posterCount} movies. Movie titles, metadata, and files on disk are not affected. You can re-fetch posters afterwards.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={function() {
+                try {
+                  var saved = localStorage.getItem('obsidian_cinema_local_movies');
+                  if (saved) {
+                    var movies = JSON.parse(saved);
+                    var cleared = movies.map(function(m) { var copy = Object.assign({}, m); delete copy.poster_path; return copy; });
+                    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(cleared));
+                  }
+                  setPosterCount(0);
+                  setShowClearPostersConfirm(false);
+                  toast.success('All poster data cleared');
+                } catch (e) {
+                  toast.error('Failed to clear posters');
+                }
+              }}
+              data-testid="confirm-clear-posters-btn"
+            >
+              Clear Posters
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear Collections Confirmation */}
+      <AlertDialog open={showClearCollectionsConfirm} onOpenChange={setShowClearCollectionsConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete all collections?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete all {collectionsList.length} collections. Movies themselves will not be removed from your library.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={function() {
+                localStorage.setItem('obsidian_cinema_collections', JSON.stringify([]));
+                setCollectionsList([]);
+                setShowClearCollectionsConfirm(false);
+                toast.success('All collections deleted');
+              }}
+              data-testid="confirm-clear-collections-btn"
+            >
+              Delete All
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
