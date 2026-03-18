@@ -2620,9 +2620,11 @@ async def download_windows():
             )
             if resp.status_code == 200:
                 assets = resp.json().get("assets", [])
-                for asset in assets:
-                    if asset["name"].endswith(".exe"):
-                        return RedirectResponse(url=asset["browser_download_url"])
+                # Prefer .zip, fall back to .exe
+                for ext in [".zip", ".exe"]:
+                    for asset in assets:
+                        if asset["name"].endswith(ext):
+                            return RedirectResponse(url=asset["browser_download_url"])
         return RedirectResponse(url=f"https://github.com/{GITHUB_REPO}/releases/latest")
     except Exception:
         return RedirectResponse(url=f"https://github.com/{GITHUB_REPO}/releases/latest")
