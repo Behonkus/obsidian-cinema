@@ -89,6 +89,19 @@ export default function SettingsPage() {
       if (savedMovies) {
         const movies = JSON.parse(savedMovies);
         setPosterCount(movies.filter(m => m.poster_path).length);
+        
+        // Build local stats for desktop mode
+        if (isElectron()) {
+          const dirs = localStorage.getItem('obsidian_cinema_local_dirs');
+          const dirCount = dirs ? JSON.parse(dirs).length : 0;
+          const withMeta = movies.filter(m => m.overview || m.rating || m.genres?.length).length;
+          setStats({
+            total_movies: movies.length,
+            total_directories: dirCount,
+            with_metadata: withMeta,
+            without_metadata: movies.length - withMeta,
+          });
+        }
       }
       const savedCols = localStorage.getItem('obsidian_cinema_collections');
       if (savedCols) {
