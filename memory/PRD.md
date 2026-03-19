@@ -20,7 +20,7 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - License key generation and activation
 - Auto-update mechanism
 - GitHub Actions CI/CD for Windows .exe builds
-- AI-powered movie suggestions ("If you liked this, you might also enjoy...")
+- AI-powered movie suggestions (per-movie in detail modal + "Suggested For You" sidebar)
 
 ## Architecture
 - **Web App**: React + FastAPI + MongoDB (account portal, payments, license keys)
@@ -62,7 +62,9 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - Remove confirmation with "don't show again"
 - License activation for Pro features
 - Auto-update via electron-updater
-- **AI Movie Suggestions** — GPT-4.1-mini powered "If you liked this..." feature in movie detail modal (NEW)
+- **AI Movie Suggestions in Detail Modal** — "If you liked this, you might also enjoy..." button
+- **"Suggest For Me" Sidebar Panel** — Collapsible sidebar with AI-powered personalized picks based on top genres (NEW)
+- **Poster Fetch Tip Popup** — Naming convention tip moved from inline banner to popup dialog with "Don't show again" checkbox (NEW)
 
 ### Backend API Endpoints
 - `POST /api/auth/google_login`
@@ -71,14 +73,14 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - `POST /api/license/activate`
 - `GET /api/download/windows`
 - `DELETE /api/posters/cache`
-- `POST /api/ai/suggestions` (NEW — AI movie recommendations)
+- `POST /api/ai/suggestions` — AI movie recommendations
 
 ## Pricing
 - **Free**: 50 movies, 3 collections
 - **Pro**: $20 one-time — unlimited movies, collections, priority support, early access
 
 ## Key Files
-- `/app/frontend/src/pages/LocalLibraryPage.jsx` — Desktop library (main feature + AI suggestions)
+- `/app/frontend/src/pages/LocalLibraryPage.jsx` — Desktop library (main feature + AI suggestions + sidebar)
 - `/app/frontend/src/pages/StatsPage.jsx` — Statistics page with charts
 - `/app/frontend/src/pages/SettingsPage.jsx` — Settings with library management
 - `/app/frontend/src/pages/LandingPage.jsx` — Public landing page
@@ -97,7 +99,8 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 
 ### P1
 - Landing page demo video/screenshots
-- Refactor `LocalLibraryPage.jsx` into smaller components/hooks
+- Refactor `LocalLibraryPage.jsx` into smaller components/hooks (~2040 lines)
+- Version bump to 1.0.8 for new AI features
 
 ### P2
 - Watch party feature
