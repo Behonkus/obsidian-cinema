@@ -1371,12 +1371,17 @@ export default function LocalLibraryPage() {
                             return (
                               <div
                                 key={result.id}
-                                className="cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors"
+                                className="relative cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors"
                                 onClick={() => updateMoviePoster(selectedMovie.id, result.poster)}
                                 data-testid={'poster-result-' + result.id}
                               >
                                 <img src={result.poster} alt={result.title} className="w-full aspect-[2/3] object-cover" />
-                                <p className="text-xs p-1.5 truncate font-medium">{result.title} {result.year && ('(' + result.year + ')')}</p>
+                                {result.year && (
+                                  <span className="absolute top-1.5 right-1.5 bg-black/80 text-white text-xs font-bold px-1.5 py-0.5 rounded">
+                                    {result.year}
+                                  </span>
+                                )}
+                                <p className="text-xs p-1.5 truncate font-medium">{result.title}</p>
                               </div>
                             );
                           })}
