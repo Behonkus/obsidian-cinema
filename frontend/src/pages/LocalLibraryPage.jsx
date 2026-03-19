@@ -311,10 +311,27 @@ export default function LocalLibraryPage() {
   };
 
   // Update a single movie's poster
-  const updateMoviePoster = (movieId, posterPath) => {
-    setMovies(prev => prev.map(m => m.id === movieId ? { ...m, poster_path: posterPath } : m));
+  const updateMoviePoster = (movieId, posterPath, metadata) => {
+    setMovies(prev => prev.map(m => {
+      if (m.id !== movieId) return m;
+      const updated = { ...m, poster_path: posterPath };
+      if (metadata) {
+        if (metadata.overview) updated.overview = metadata.overview;
+        if (metadata.rating) updated.rating = metadata.rating;
+        if (metadata.year) updated.year = parseInt(metadata.year, 10) || m.year;
+        if (metadata.genres) updated.genres = metadata.genres;
+      }
+      return updated;
+    }));
     if (selectedMovie && selectedMovie.id === movieId) {
-      setSelectedMovie(prev => ({ ...prev, poster_path: posterPath }));
+      const updated = { ...selectedMovie, poster_path: posterPath };
+      if (metadata) {
+        if (metadata.overview) updated.overview = metadata.overview;
+        if (metadata.rating) updated.rating = metadata.rating;
+        if (metadata.year) updated.year = parseInt(metadata.year, 10) || selectedMovie.year;
+        if (metadata.genres) updated.genres = metadata.genres;
+      }
+      setSelectedMovie(updated);
     }
     setPosterMode(null);
     setPosterSearch('');
@@ -1319,10 +1336,43 @@ export default function LocalLibraryPage() {
                 </div>
               </div>
 
-              {selectedMovie.overview && (
+              {selectedMovie.overview ? (
                 <p className="text-sm text-muted-foreground line-clamp-3">
                   {selectedMovie.overview}
                 </p>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={async () => {
+                    if (!tmdbApiKey) { toast.error('Add your TMDB API key in Settings first'); return; }
+                    try {
+                      const query = encodeURIComponent(selectedMovie.title);
+                      const resp = await fetch(TMDB_API + '/search/movie?api_key=' + tmdbApiKey + '&query=' + query);
+                      const data = await resp.json();
+                      if (data.results && data.results.length > 0) {
+                        const best = data.results[0];
+                        const meta = {};
+                        if (best.overview) meta.overview = best.overview;
+                        if (best.vote_average) meta.rating = best.vote_average;
+                        if (best.release_date) meta.year = best.release_date.substring(0, 4);
+                        if (best.poster_path && !selectedMovie.poster_path) meta.poster_path = TMDB_IMG + best.poster_path;
+                        setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, ...meta } : m));
+                        setSelectedMovie(prev => ({ ...prev, ...meta }));
+                        toast.success('Metadata updated from TMDB');
+                      } else {
+                        toast.info('No results found on TMDB for "' + selectedMovie.title + '"');
+                      }
+                    } catch (e) {
+                      toast.error('Failed to fetch metadata');
+                    }
+                  }}
+                  data-testid="fetch-metadata-btn"
+                >
+                  <Search className="w-3 h-3 mr-1.5" />
+                  Fetch synopsis from TMDB
+                </Button>
               )}
 
               {/* Poster Management */}
@@ -1381,7 +1431,7 @@ export default function LocalLibraryPage() {
                               <div
                                 key={result.id}
                                 className="relative cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors"
-                                onClick={() => updateMoviePoster(selectedMovie.id, result.poster)}
+                                onClick={() => updateMoviePoster(selectedMovie.id, result.poster, { overview: result.overview, rating: result.rating, year: result.year })}
                                 data-testid={'poster-result-' + result.id}
                               >
                                 <img src={result.poster} alt={result.title} className="w-full aspect-[2/3] object-cover" />
