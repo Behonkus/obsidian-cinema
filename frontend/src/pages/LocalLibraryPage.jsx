@@ -83,6 +83,7 @@ const GRID_SIZE_KEY = 'obsidian_cinema_grid_size';
 const SORT_KEY = 'obsidian_cinema_sort';
 const COLLECTIONS_KEY = 'obsidian_cinema_collections';
 const SKIP_REMOVE_CONFIRM_KEY = 'obsidian_cinema_skip_remove_confirm';
+const SKIP_POSTER_TIP_KEY = 'obsidian_cinema_skip_poster_tip';
 
 // 30 days in milliseconds
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -197,6 +198,13 @@ export default function LocalLibraryPage() {
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
+  const [showPosterTip, setShowPosterTip] = useState(false);
+  const [skipPosterTip, setSkipPosterTip] = useState(() => localStorage.getItem(SKIP_POSTER_TIP_KEY) === 'true');
+  const [posterTipDontShow, setPosterTipDontShow] = useState(false);
+  const [showSuggestSidebar, setShowSuggestSidebar] = useState(false);
+  const [sidebarSuggestions, setSidebarSuggestions] = useState([]);
+  const [sidebarLoading, setSidebarLoading] = useState(false);
+  const [sidebarError, setSidebarError] = useState(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -472,7 +480,100 @@ export default function LocalLibraryPage() {
     }
   };
 
+  // Sidebar "Suggested For You" — picks a seed movie from top genre
+  const fetchSidebarSuggestions = async () => {
+    setSidebarLoading(true);
+    setSidebarError(null);
+    setSidebarSuggestions([]);
+    try {
+      // Find the most popular genre
+      const genreCount = {};
+      movies.forEach(m => {
+        if (m.genres && Array.isArray(m.genres)) {
+          m.genres.forEach(g => {
+            const name = typeof g === 'object' && g.name ? g.name : g;
+            if (typeof name === 'string') genreCount[name] = (genreCount[name] || 0) + 1;
+          });
+        }
+      });
+      const topGenre = Object.entries(genreCount).sort((a, b) => b[1] - a[1])[0];
+      // Pick a random highly-rated movie from top genre as the seed
+      const topGenreMovies = topGenre
+        ? movies.filter(m => m.genres && m.genres.some(g => (typeof g === 'object' ? g.name : g) === topGenre[0]))
+        : movies;
+      const rated = topGenreMovies.filter(m => m.rating).sort((a, b) => b.rating - a.rating);
+      const pool = rated.length > 0 ? rated.slice(0, Math.min(10, rated.length)) : topGenreMovies;
+      const seed = pool[Math.floor(Math.random() * pool.length)];
+      if (!seed) { setSidebarError('Not enough movies to generate suggestions'); setSidebarLoading(false); return; }
+
+      const libraryMovies = movies.map(m => ({
+        id: m.id,
+        title: m.title || m.file_name,
+        year: m.year || null,
+        genres: m.genres || [],
+        overview: m.overview ? m.overview.substring(0, 100) : null,
+        rating: m.rating || null,
+      }));
+      const resp = await fetch(BACKEND_API + '/ai/suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selected_movie: {
+            id: seed.id,
+            title: seed.title || seed.file_name,
+            year: seed.year || null,
+            genres: seed.genres || [],
+            overview: seed.overview || null,
+            rating: seed.rating || null,
+          },
+          library_movies: libraryMovies,
+        }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || 'Failed to get suggestions');
+      }
+      const data = await resp.json();
+      setSidebarSuggestions(data.suggestions || []);
+      if (!data.suggestions || data.suggestions.length === 0) {
+        setSidebarError('No suggestions found — try adding more movies to your library');
+      }
+    } catch (e) {
+      setSidebarError(e.message || 'Failed to get suggestions');
+    } finally {
+      setSidebarLoading(false);
+    }
+  };
+
   // Fetch posters for all movies without posters
+  const startFetchPosters = () => {
+    if (!tmdbApiKey) {
+      toast.error('Please add your TMDB API key in settings first');
+      setShowSettings(true);
+      return;
+    }
+    const moviesNeedingPosters = movies.filter(m => !m.poster_path);
+    if (moviesNeedingPosters.length === 0) {
+      toast.info('All movies already have posters');
+      return;
+    }
+    if (!skipPosterTip) {
+      setShowPosterTip(true);
+      return;
+    }
+    fetchAllPosters();
+  };
+
+  const confirmPosterTip = () => {
+    if (posterTipDontShow) {
+      setSkipPosterTip(true);
+      localStorage.setItem(SKIP_POSTER_TIP_KEY, 'true');
+    }
+    setShowPosterTip(false);
+    setPosterTipDontShow(false);
+    fetchAllPosters();
+  };
+
   const fetchAllPosters = async () => {
     if (!tmdbApiKey) {
       toast.error('Please add your TMDB API key in settings first');
@@ -966,7 +1067,7 @@ export default function LocalLibraryPage() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={fetchAllPosters}
+              onClick={startFetchPosters}
               disabled={fetchingPosters}
               data-testid="fetch-posters-btn"
             >
@@ -982,6 +1083,17 @@ export default function LocalLibraryPage() {
                     return missing > 0 ? 'Fetch Posters (' + missing + ')' : 'Fetch Posters';
                   })()
               }
+            </Button>
+          )}
+          {movies.length > 1 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSuggestSidebar(true)}
+              data-testid="suggest-for-me-btn"
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline text-xs">Suggest For Me</span>
             </Button>
           )}
         </div>
@@ -1017,14 +1129,6 @@ export default function LocalLibraryPage() {
           <Button size="sm" variant="outline" onClick={() => navigate('/settings')}>
             Add Key
           </Button>
-        </div>
-      )}
-
-      {/* Naming Convention Tip */}
-      {movies.length > 0 && movies.some(m => !m.poster_path) && tmdbApiKey && (
-        <div className="p-3 bg-secondary/50 border border-border/50 rounded-lg text-sm text-muted-foreground flex items-start gap-2">
-          <Film className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
-          <span>For best poster fetch results, name your files as: <code className="px-1.5 py-0.5 bg-secondary rounded text-xs font-mono text-foreground">Movie Title (Year).mp4</code> — for example <code className="px-1.5 py-0.5 bg-secondary rounded text-xs font-mono text-foreground">The Dark Knight (2008).mkv</code></span>
         </div>
       )}
 
@@ -1807,6 +1911,130 @@ export default function LocalLibraryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Poster Fetch Tip Popup */}
+      <AlertDialog open={showPosterTip} onOpenChange={(open) => { if (!open) { setShowPosterTip(false); setPosterTipDontShow(false); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Poster Fetch Tip</AlertDialogTitle>
+            <AlertDialogDescription>
+              For best results, name your movie files as:
+              <code className="block mt-2 mb-1 px-3 py-2 bg-secondary rounded text-sm font-mono text-foreground">
+                Movie Title (Year).mp4
+              </code>
+              For example: <code className="px-1.5 py-0.5 bg-secondary rounded text-xs font-mono text-foreground">The Dark Knight (2008).mkv</code>
+              <span className="block mt-2 text-muted-foreground">
+                This helps TMDB find the correct poster and metadata for each movie.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center gap-2 px-6 pb-2">
+            <input
+              type="checkbox"
+              id="skip-poster-tip"
+              checked={posterTipDontShow}
+              onChange={(e) => setPosterTipDontShow(e.target.checked)}
+              className="rounded border-border"
+              data-testid="skip-poster-tip-checkbox"
+            />
+            <label htmlFor="skip-poster-tip" className="text-sm text-muted-foreground cursor-pointer">
+              Don't show this again
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setShowPosterTip(false); setPosterTipDontShow(false); }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPosterTip} data-testid="poster-tip-continue-btn">
+              Continue Fetching
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Suggested For You Sidebar */}
+      {showSuggestSidebar && (
+        <div className="fixed inset-0 z-50 flex justify-end" data-testid="suggest-sidebar-overlay">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowSuggestSidebar(false)} />
+          <div className="relative w-full max-w-sm bg-background border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wand2 className="w-5 h-5 text-primary" />
+                <h2 className="font-semibold text-lg">Suggested For You</h2>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setShowSuggestSidebar(false)} data-testid="close-suggest-sidebar">
+                <span className="text-lg">&times;</span>
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {sidebarLoading && (
+                <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground" data-testid="sidebar-loading">
+                  <RefreshCw className="w-6 h-6 animate-spin" />
+                  <p className="text-sm">Analyzing your library...</p>
+                </div>
+              )}
+              {sidebarError && !sidebarLoading && (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">{sidebarError}</p>
+                  <Button variant="outline" size="sm" className="mt-3" onClick={fetchSidebarSuggestions} data-testid="sidebar-retry-btn">
+                    Try Again
+                  </Button>
+                </div>
+              )}
+              {!sidebarLoading && !sidebarError && sidebarSuggestions.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Sparkles className="w-8 h-8 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">Click below to get personalized picks</p>
+                  <Button variant="outline" size="sm" className="mt-3 gap-2" onClick={fetchSidebarSuggestions} data-testid="sidebar-suggest-btn">
+                    <Sparkles className="w-3.5 h-3.5" /> Suggest For Me
+                  </Button>
+                </div>
+              )}
+              {!sidebarLoading && sidebarSuggestions.length > 0 && (
+                <>
+                  <p className="text-xs text-muted-foreground">Based on your most popular genres</p>
+                  {sidebarSuggestions.map(function(suggestion) {
+                    const match = movies.find(m => m.id === suggestion.id);
+                    return (
+                      <div
+                        key={suggestion.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-secondary/40 hover:bg-secondary cursor-pointer transition-colors"
+                        onClick={() => {
+                          if (match) {
+                            setShowSuggestSidebar(false);
+                            setSelectedMovie(match);
+                          }
+                        }}
+                        data-testid={'sidebar-suggestion-' + suggestion.id}
+                      >
+                        {match?.poster_path ? (
+                          <img src={match.poster_path} alt="" className="w-12 h-[72px] rounded-md object-cover shrink-0" />
+                        ) : (
+                          <div className="w-12 h-[72px] rounded-md bg-secondary flex items-center justify-center shrink-0">
+                            <Film className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate">{suggestion.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{match?.year || ''}{match?.rating ? ' · ★ ' + match.rating.toFixed(1) : ''}</p>
+                          <p className="text-[11px] text-muted-foreground/80 mt-1 line-clamp-2">{suggestion.reason}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs text-muted-foreground mt-2"
+                    onClick={fetchSidebarSuggestions}
+                    data-testid="sidebar-refresh-btn"
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1.5" /> Get new suggestions
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
