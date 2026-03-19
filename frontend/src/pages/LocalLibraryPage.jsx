@@ -27,7 +27,9 @@ import {
   Check,
   ArrowUp,
   FilePlus2,
-  Edit2
+  Edit2,
+  Sparkles,
+  Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,6 +157,7 @@ function MovieCard({ movie, gridSize, onClick, onPlay }) {
 // TMDB API base URL
 const TMDB_API = 'https://api.themoviedb.org/3';
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
+const BACKEND_API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 export default function LocalLibraryPage() {
   const navigate = useNavigate();
@@ -191,6 +194,9 @@ export default function LocalLibraryPage() {
   const [visibleCount, setVisibleCount] = useState(100);
   const fetchAbortRef = useRef(false);
   const fetchCountRef = useRef({ fetched: 0, found: 0, total: 0 });
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -417,6 +423,53 @@ export default function LocalLibraryPage() {
     setPosterResults([]);
     setPosterUrl('');
     setEditingYear(false);
+    setAiSuggestions([]);
+    setAiError(null);
+  };
+
+  // AI Movie Suggestions
+  const fetchAiSuggestions = async (movie) => {
+    setAiLoading(true);
+    setAiError(null);
+    setAiSuggestions([]);
+    try {
+      const libraryMovies = movies.map(m => ({
+        id: m.id,
+        title: m.title || m.file_name,
+        year: m.year || null,
+        genres: m.genres || [],
+        overview: m.overview ? m.overview.substring(0, 100) : null,
+        rating: m.rating || null,
+      }));
+      const resp = await fetch(BACKEND_API + '/ai/suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selected_movie: {
+            id: movie.id,
+            title: movie.title || movie.file_name,
+            year: movie.year || null,
+            genres: movie.genres || [],
+            overview: movie.overview || null,
+            rating: movie.rating || null,
+          },
+          library_movies: libraryMovies,
+        }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || 'Failed to get suggestions');
+      }
+      const data = await resp.json();
+      setAiSuggestions(data.suggestions || []);
+      if (!data.suggestions || data.suggestions.length === 0) {
+        setAiError('No similar movies found in your library');
+      }
+    } catch (e) {
+      setAiError(e.message || 'Failed to get AI suggestions');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   // Fetch posters for all movies without posters
@@ -1536,6 +1589,83 @@ export default function LocalLibraryPage() {
                   )}
                 </div>
               </div>
+
+              {/* AI Movie Suggestions */}
+              {movies.length > 1 && (
+                <div className="space-y-2" data-testid="ai-suggestions-section">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Wand2 className="w-3.5 h-3.5" /> AI Suggestions
+                    </p>
+                  </div>
+                  {aiSuggestions.length === 0 && !aiLoading && !aiError && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2 text-xs"
+                      onClick={() => fetchAiSuggestions(selectedMovie)}
+                      data-testid="get-ai-suggestions-btn"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      If you liked this, you might also enjoy...
+                    </Button>
+                  )}
+                  {aiLoading && (
+                    <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground" data-testid="ai-loading">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span className="text-xs">Finding similar movies...</span>
+                    </div>
+                  )}
+                  {aiError && !aiLoading && (
+                    <p className="text-xs text-muted-foreground text-center py-2" data-testid="ai-error">{aiError}</p>
+                  )}
+                  {aiSuggestions.length > 0 && (
+                    <div className="space-y-1.5" data-testid="ai-suggestions-list">
+                      {aiSuggestions.map(function(suggestion) {
+                        const match = movies.find(m => m.id === suggestion.id);
+                        return (
+                          <div
+                            key={suggestion.id}
+                            className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+                            onClick={() => {
+                              if (match) {
+                                setAiSuggestions([]);
+                                setAiError(null);
+                                setSelectedMovie(match);
+                              }
+                            }}
+                            data-testid={'ai-suggestion-' + suggestion.id}
+                          >
+                            {match?.poster_path ? (
+                              <img src={match.poster_path} alt="" className="w-8 h-12 rounded object-cover shrink-0" />
+                            ) : (
+                              <div className="w-8 h-12 rounded bg-secondary flex items-center justify-center shrink-0">
+                                <Film className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{suggestion.title}</p>
+                              <p className="text-[11px] text-muted-foreground line-clamp-2">{suggestion.reason}</p>
+                            </div>
+                            {match?.rating && (
+                              <span className="text-xs text-amber-400 shrink-0">★ {match.rating.toFixed(1)}</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs text-muted-foreground"
+                        onClick={() => fetchAiSuggestions(selectedMovie)}
+                        data-testid="refresh-ai-suggestions-btn"
+                      >
+                        <RefreshCw className="w-3 h-3 mr-1.5" /> Get new suggestions
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex gap-2">
                 <Button className="flex-1" onClick={() => playMovie(selectedMovie)}>

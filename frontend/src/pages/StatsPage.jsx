@@ -11,10 +11,16 @@ import {
   Trash2,
   AlertCircle,
   Trophy,
-  Calendar
+  Calendar,
+  Dice5,
+  ThumbsDown,
+  FolderHeart,
+  Hourglass,
+  Sparkles
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   BarChart,
   Bar,
@@ -31,8 +37,9 @@ import {
 const STORAGE_KEY = 'obsidian_cinema_local_movies';
 const DIRS_KEY = 'obsidian_cinema_local_dirs';
 const TRASH_KEY = 'obsidian_cinema_trash';
+const COLLECTIONS_KEY = 'obsidian_cinema_collections';
 
-const COLORS = ['hsl(var(--primary))', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#10b981', '#ec4899', '#6366f1'];
+const COLORS = ['hsl(var(--primary))', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#10b981', '#ec4899', '#6366f1', '#f97316', '#14b8a6'];
 
 function StatCard({ icon: Icon, label, value, sub, color, delay }) {
   return (
@@ -212,6 +219,143 @@ function RecentList({ movies }) {
   );
 }
 
+function LowestRatedList({ movies }) {
+  if (!movies || movies.length === 0) return null;
+  const rows = movies.map(function(movie, i) {
+    const poster = movie.poster_path
+      ? <img src={movie.poster_path} alt="" className="w-8 h-12 rounded object-cover" />
+      : <div className="w-8 h-12 rounded bg-secondary flex items-center justify-center"><Film className="w-4 h-4 text-muted-foreground" /></div>;
+    return (
+      <div key={movie.id} className="flex items-center gap-3">
+        <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
+        {poster}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{movie.title}</p>
+          <p className="text-xs text-muted-foreground">{movie.year || 'Unknown year'}</p>
+        </div>
+        <Badge variant="secondary" className="text-red-400 bg-red-400/10">
+          {'★ ' + movie.rating.toFixed(1)}
+        </Badge>
+      </div>
+    );
+  });
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+          <ThumbsDown className="w-4 h-4 text-red-400" /> Lowest Rated
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">{rows}</CardContent>
+    </Card>
+  );
+}
+
+function GenreChart({ data }) {
+  if (!data || data.length === 0) return null;
+  const legend = data.slice(0, 8).map(function(item, i) {
+    return (
+      <div key={item.name} className="flex items-center gap-2">
+        <div className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+        <span className="text-xs text-muted-foreground flex-1 truncate">{item.name}</span>
+        <span className="text-xs font-medium text-foreground">{item.value}</span>
+      </div>
+    );
+  });
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">Genre Distribution</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-4">
+          <ResponsiveContainer width="50%" height={180}>
+            <PieChart>
+              <Pie data={data.slice(0, 8)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={35} paddingAngle={2}>
+                {data.slice(0, 8).map(function(_, i) { return <Cell key={i} fill={COLORS[i % COLORS.length]} />; })}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex-1 space-y-1.5">{legend}</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function GrowthChart({ data }) {
+  if (!data || data.length < 2) return null;
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">Library Growth</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+            <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+            <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
+            <Tooltip />
+            <Bar dataKey="added" fill="#10b981" radius={[4, 4, 0, 0]} name="Movies Added" />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RandomPicker({ movies }) {
+  const [pick, setPick] = useState(null);
+  const [spinning, setSpinning] = useState(false);
+  if (!movies || movies.length === 0) return null;
+
+  function rollRandom() {
+    setSpinning(true);
+    setPick(null);
+    let count = 0;
+    const interval = setInterval(function() {
+      setPick(movies[Math.floor(Math.random() * movies.length)]);
+      count++;
+      if (count > 8) {
+        clearInterval(interval);
+        setSpinning(false);
+      }
+    }, 120);
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+          <Dice5 className="w-4 h-4 text-purple-400" /> What Should I Watch?
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Button variant="outline" className="w-full gap-2" onClick={rollRandom} disabled={spinning} data-testid="random-picker-btn">
+          <Sparkles className={"w-4 h-4 " + (spinning ? 'animate-spin' : '')} />
+          {spinning ? 'Picking...' : 'Pick a Random Movie'}
+        </Button>
+        {pick && (
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
+            {pick.poster_path ? (
+              <img src={pick.poster_path} alt="" className="w-12 h-[72px] rounded object-cover" />
+            ) : (
+              <div className="w-12 h-[72px] rounded bg-secondary flex items-center justify-center"><Film className="w-5 h-5 text-muted-foreground" /></div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate">{pick.title}</p>
+              <p className="text-xs text-muted-foreground">{pick.year || ''} {pick.rating ? '★ ' + pick.rating.toFixed(1) : ''}</p>
+              {pick.overview && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{pick.overview}</p>}
+            </div>
+          </motion.div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function computeStats(movies, directories, trashedMovies) {
   var withPosters = [];
   var withRatings = [];
@@ -304,6 +448,57 @@ function computeStats(movies, directories, trashedMovies) {
   var filled = (total * 3) - missingPosters - missingYear - missingRating;
   var completeness = total ? Math.round((filled / (total * 3)) * 100) : 0;
 
+  // Lowest rated
+  var lowestRated = sortedByRating.slice().reverse().slice(0, 5);
+
+  // Genre distribution
+  var genreMap = {};
+  for (i = 0; i < movies.length; i++) {
+    var genres = movies[i].genres;
+    if (genres && Array.isArray(genres)) {
+      for (var g = 0; g < genres.length; g++) {
+        var genre = genres[g];
+        if (typeof genre === 'object' && genre.name) genre = genre.name;
+        if (typeof genre === 'string') genreMap[genre] = (genreMap[genre] || 0) + 1;
+      }
+    }
+  }
+  var genreKeys = Object.keys(genreMap);
+  genreKeys.sort(function(a, b) { return genreMap[b] - genreMap[a]; });
+  var genreData = [];
+  for (i = 0; i < genreKeys.length; i++) genreData.push({ name: genreKeys[i], value: genreMap[genreKeys[i]] });
+
+  // Growth timeline (movies added per month)
+  var growthMap = {};
+  for (i = 0; i < movies.length; i++) {
+    if (movies[i].added_at) {
+      var d = new Date(movies[i].added_at);
+      var monthKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      growthMap[monthKey] = (growthMap[monthKey] || 0) + 1;
+    }
+  }
+  var growthKeys = Object.keys(growthMap);
+  growthKeys.sort();
+  var growthData = [];
+  for (i = 0; i < growthKeys.length; i++) {
+    var parts2 = growthKeys[i].split('-');
+    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    growthData.push({ name: monthNames[parseInt(parts2[1], 10) - 1] + ' ' + parts2[0].slice(2), added: growthMap[growthKeys[i]] });
+  }
+
+  // Total estimated watch time (assume 2hr per movie)
+  var totalHours = total * 2;
+  var watchDays = Math.floor(totalHours / 24);
+  var watchHours = totalHours % 24;
+
+  // Collections stats
+  var colsSaved = localStorage.getItem('obsidian_cinema_collections');
+  var collections = colsSaved ? JSON.parse(colsSaved) : [];
+  var totalInCollections = 0;
+  for (i = 0; i < collections.length; i++) {
+    totalInCollections += (collections[i].movie_ids || []).length;
+  }
+
   return {
     total: total,
     dirCount: directories.length,
@@ -311,18 +506,26 @@ function computeStats(movies, directories, trashedMovies) {
     posterPct: total ? Math.round((withPosters.length / total) * 100) : 0,
     avgRating: avgRating,
     topRated: sortedByRating.slice(0, 5),
+    lowestRated: lowestRated,
     newest: sortedByYear[0] || null,
     oldest: sortedByYear.length > 0 ? sortedByYear[sortedByYear.length - 1] : null,
     decadeData: decadeData,
     ratingData: ratingData,
     formatData: formatData,
     dirData: dirData,
+    genreData: genreData,
+    growthData: growthData,
     recentlyAdded: withAdded.slice(0, 5),
     missingPosters: missingPosters,
     missingYear: missingYear,
     missingRating: missingRating,
     trashCount: trashedMovies.length,
     completeness: completeness,
+    watchDays: watchDays,
+    watchHours: watchHours,
+    totalHours: totalHours,
+    collectionCount: collections.length,
+    totalInCollections: totalInCollections,
   };
 }
 
@@ -373,12 +576,13 @@ export default function StatsPage() {
         <p className="text-muted-foreground">Your collection at a glance</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard icon={Film} label="Total Movies" value={stats.total} delay={0} />
         <StatCard icon={FolderOpen} label="Directories" value={stats.dirCount} delay={0.03} color="text-amber-400" />
         <StatCard icon={Image} label="Poster Coverage" value={stats.posterPct + '%'} sub={posterSub} delay={0.06} color="text-green-400" />
         <StatCard icon={Star} label="Avg Rating" value={stats.avgRating ? stats.avgRating.toFixed(1) : '\u2014'} sub={ratingSub} delay={0.09} color="text-amber-400" />
-        <StatCard icon={Trash2} label="In Trash" value={stats.trashCount} delay={0.12} color="text-destructive" />
+        <StatCard icon={Hourglass} label="Watch Time" value={stats.watchDays > 0 ? stats.watchDays + 'd ' + stats.watchHours + 'h' : stats.totalHours + 'h'} sub={'~' + stats.totalHours + ' hours total'} delay={0.12} color="text-cyan-400" />
+        <StatCard icon={FolderHeart} label="Collections" value={stats.collectionCount} sub={stats.totalInCollections + ' movies organized'} delay={0.15} color="text-purple-400" />
       </div>
 
       {(stats.newest || stats.oldest) && (
@@ -418,18 +622,33 @@ export default function StatsPage() {
           <RatingChart data={stats.ratingData} />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <FormatChart data={stats.formatData} />
+          <GenreChart data={stats.genreData} />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+          <GrowthChart data={stats.growthData} />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <FormatChart data={stats.formatData} />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
           <DirectoryChart data={stats.dirData} />
         </motion.div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
           <TopRatedList movies={stats.topRated} />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
+          <LowestRatedList movies={stats.lowestRated} />
+        </motion.div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+          <RandomPicker movies={movies} />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}>
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">

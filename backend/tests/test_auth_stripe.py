@@ -163,7 +163,7 @@ class TestStripeEndpoints:
         """Test POST /api/stripe/create-checkout-session creates session for authenticated user"""
         response = requests.post(
             f"{BASE_URL}/api/stripe/create-checkout-session",
-            json={"origin_url": "https://cinema-preview-662.preview.emergentagent.com"},
+            json={"origin_url": "https://cinema-library-dev.preview.emergentagent.com"},
             headers={"Authorization": f"Bearer {TEST_SESSION_TOKEN}"}
         )
         

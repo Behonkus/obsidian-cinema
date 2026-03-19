@@ -17,6 +17,7 @@ from typing import List, Optional, Dict, AsyncGenerator
 import uuid
 from datetime import datetime, timezone, timedelta
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
@@ -2642,6 +2643,104 @@ async def download_windows():
         return RedirectResponse(url=f"https://github.com/{GITHUB_REPO}/releases/latest")
     except Exception:
         return RedirectResponse(url=f"https://github.com/{GITHUB_REPO}/releases/latest")
+
+# ===================== AI Movie Suggestions =====================
+
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
+
+class MovieSummary(BaseModel):
+    id: str
+    title: str
+    year: Optional[int] = None
+    genres: Optional[List[str]] = None
+    overview: Optional[str] = None
+    rating: Optional[float] = None
+
+class SuggestionRequest(BaseModel):
+    selected_movie: MovieSummary
+    library_movies: List[MovieSummary]
+
+class SuggestionItem(BaseModel):
+    id: str
+    title: str
+    reason: str
+
+class SuggestionResponse(BaseModel):
+    suggestions: List[SuggestionItem]
+
+@api_router.post("/ai/suggestions", response_model=SuggestionResponse)
+async def get_ai_suggestions(req: SuggestionRequest):
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+
+    selected = req.selected_movie
+    # Filter out the selected movie from candidates
+    candidates = [m for m in req.library_movies if m.id != selected.id]
+    if not candidates:
+        return SuggestionResponse(suggestions=[])
+
+    # Build a compact list of library movies for the prompt
+    lib_lines = []
+    for m in candidates[:200]:  # cap to avoid token overflow
+        parts = [f"ID:{m.id}", f"Title:{m.title}"]
+        if m.year: parts.append(f"Year:{m.year}")
+        if m.genres: parts.append(f"Genres:{','.join(m.genres[:3])}")
+        if m.rating: parts.append(f"Rating:{m.rating}")
+        if m.overview: parts.append(f"Synopsis:{m.overview[:80]}")
+        lib_lines.append(" | ".join(parts))
+
+    library_text = "\n".join(lib_lines)
+
+    sel_info = f"Title: {selected.title}"
+    if selected.year: sel_info += f"\nYear: {selected.year}"
+    if selected.genres: sel_info += f"\nGenres: {', '.join(selected.genres)}"
+    if selected.rating: sel_info += f"\nRating: {selected.rating}"
+    if selected.overview: sel_info += f"\nSynopsis: {selected.overview[:200]}"
+
+    system_msg = (
+        "You are a movie recommendation engine. The user has selected a movie from their personal library. "
+        "Based on that movie's metadata, suggest up to 5 other movies FROM THEIR LIBRARY that they would enjoy. "
+        "Consider genre overlap, themes, era, tone, director style, and rating similarity. "
+        "ONLY suggest movies that appear in the provided library list. "
+        "Return ONLY valid JSON — an array of objects with keys: id, title, reason. "
+        "The reason should be 1 concise sentence explaining why this movie is similar. "
+        "Example: [{\"id\":\"abc\",\"title\":\"Movie Name\",\"reason\":\"Both are sci-fi thrillers from the 2010s with mind-bending plots.\"}]"
+    )
+
+    user_text = f"SELECTED MOVIE:\n{sel_info}\n\nMY LIBRARY:\n{library_text}\n\nSuggest up to 5 movies from my library that are similar to the selected movie. Return ONLY the JSON array."
+
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"suggest-{uuid.uuid4().hex[:8]}",
+            system_message=system_msg,
+        ).with_model("openai", "gpt-4.1-mini")
+
+        response = await chat.send_message(UserMessage(text=user_text))
+
+        # Parse JSON from response
+        resp_text = response.strip()
+        # Handle markdown code fences
+        if resp_text.startswith("```"):
+            resp_text = resp_text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+
+        suggestions_raw = json.loads(resp_text)
+        valid_ids = {m.id for m in candidates}
+        suggestions = []
+        for s in suggestions_raw:
+            if isinstance(s, dict) and s.get("id") in valid_ids:
+                suggestions.append(SuggestionItem(
+                    id=s["id"],
+                    title=s.get("title", ""),
+                    reason=s.get("reason", "Similar movie from your library")
+                ))
+        return SuggestionResponse(suggestions=suggestions[:5])
+    except json.JSONDecodeError:
+        logging.error(f"AI returned non-JSON response: {response[:200] if response else 'empty'}")
+        raise HTTPException(status_code=500, detail="AI returned invalid response")
+    except Exception as e:
+        logging.error(f"AI suggestion error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
 
 # Include the router
 app.include_router(api_router)
