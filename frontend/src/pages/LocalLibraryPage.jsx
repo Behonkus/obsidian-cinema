@@ -1059,6 +1059,15 @@ export default function LocalLibraryPage() {
         <div className="space-y-4" data-testid="trash-view">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setShowTrash(false); navigate('/'); }}
+                data-testid="trash-back-btn"
+              >
+                <ChevronDown className="w-4 h-4 rotate-90" />
+                Back
+              </Button>
               <Trash2 className="w-5 h-5 text-destructive" />
               <h2 className="text-lg font-semibold">Recently Deleted</h2>
               <Badge variant="secondary">{trashedMovies.length}</Badge>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Settings as SettingsIcon,
@@ -55,6 +56,7 @@ const isElectron = () => {
 };
 
 export default function SettingsPage() {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -757,7 +759,7 @@ export default function SettingsPage() {
                 </div>
                 <Button
                   variant="outline"
-                  onClick={function() { window.location.href = '/#/?view=trash'; }}
+                  onClick={function() { navigate('/?view=trash'); }}
                   data-testid="settings-recently-deleted-btn"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
