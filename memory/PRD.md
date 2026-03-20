@@ -10,17 +10,17 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 
 ## Core Requirements
 - Scan local and shared network directories for movie files (Desktop)
-- Fetch movie metadata and posters from TMDB
+- Fetch movie metadata, posters, and cast from TMDB
 - Display library with posters, sorting (13 options), and size toggles (S/M/L)
 - Play movies using system default player
 - "Recently Deleted" trash with 30-day auto-purge
-- Statistics page with charts (decade, rating, genre, growth, format, directory, random picker)
+- Statistics page with charts + cast insights
 - Manual poster management (search TMDB, URL, local file)
 - Pro tier ($20 one-time) via Stripe, managed through web app
 - License key generation and activation
 - Auto-update mechanism
 - GitHub Actions CI/CD for Windows .exe builds
-- AI-powered movie suggestions (per-movie in detail modal + "Suggested For You" sidebar)
+- AI-powered movie suggestions
 
 ## Architecture
 - **Web App**: React + FastAPI + MongoDB (account portal, payments, license keys)
@@ -34,21 +34,20 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - Google OAuth authentication (Emergent-managed)
 - Stripe payment flow for $20 Pro tier
 - License key generation and management
-- Account Dashboard (post-login)
-- Upgrade/pricing page
+- Account Dashboard, Upgrade/pricing page
 - Public Landing Page with hero, features, pricing, CTA sections
-- SEO meta tags (Open Graph, Twitter Card, keywords)
-- Marketing materials (blog post, press kit, 6 subreddit-specific posts)
+- SEO meta tags
+- Marketing materials
 - Auto-redirect download endpoint (/api/download/windows)
-- Settings page (desktop-only sections hidden for web users)
+- Settings page (desktop-only sections hidden)
 
-### Desktop App (Electron)
+### Desktop App (Electron — v1.0.8)
 - Local/network drive scanning with progress indicators
-- TMDB poster/metadata auto-fetch with abort/continue
+- TMDB poster/metadata/cast auto-fetch
 - One-click playback via default media player
 - Advanced sorting (13 options, saved locally)
 - Poster size toggle (S/M/L)
-- Library statistics page (decade, rating, genre, growth, format, directory, top/lowest rated, random picker, collection health)
+- Library statistics page with charts + **Cast Insights** (NEW)
 - 18 color themes
 - Recently Deleted (30-day trash)
 - Manual poster editor (TMDB search, URL, local file)
@@ -56,15 +55,24 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - Directory filter tabs & pagination
 - Add individual files
 - Update Library / rescan directories
-- Inline year editing
-- Synopsis on poster hover
-- Scroll-to-top button
-- Remove confirmation with "don't show again"
-- License activation for Pro features
-- Auto-update via electron-updater
-- **AI Movie Suggestions in Detail Modal** — "If you liked this, you might also enjoy..." button
-- **"Suggest For Me" Sidebar Panel** — Collapsible sidebar with AI-powered personalized picks based on top genres (NEW)
-- **Poster Fetch Tip Popup** — Naming convention tip moved from inline banner to popup dialog with "Don't show again" checkbox (NEW)
+- Inline year editing, synopsis on poster hover
+- **Cast display in movie detail modal** — top 5 actors with photos, names, characters (NEW)
+- **"Fetch Cast" bulk button** — backfill cast data for existing movies (NEW)
+- **"Load cast from TMDB" per-movie button** — fetch cast for individual movies (NEW)
+- AI Movie Suggestions in detail modal
+- "Suggest For Me" sidebar panel
+- Poster Fetch Tip popup with "Don't show again"
+- License activation, auto-update
+
+### Stats Page Features
+- Decade distribution, Rating distribution, Genre distribution
+- Library growth timeline, File formats, Directory breakdown
+- Top Rated / Lowest Rated lists, Random Movie Picker
+- Collection Health & Data Completeness
+- **Cast Insights section** (NEW):
+  - Most Appearing Actors (top 10)
+  - Top-Rated Actors (min 2 films, by avg rating)
+  - Genre Chameleons (actors in most different genres)
 
 ### Backend API Endpoints
 - `POST /api/auth/google_login`
@@ -73,34 +81,24 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - `POST /api/license/activate`
 - `GET /api/download/windows`
 - `DELETE /api/posters/cache`
-- `POST /api/ai/suggestions` — AI movie recommendations
-
-## Pricing
-- **Free**: 50 movies, 3 collections
-- **Pro**: $20 one-time — unlimited movies, collections, priority support, early access
+- `POST /api/ai/suggestions`
 
 ## Key Files
-- `/app/frontend/src/pages/LocalLibraryPage.jsx` — Desktop library (main feature + AI suggestions + sidebar)
-- `/app/frontend/src/pages/StatsPage.jsx` — Statistics page with charts
-- `/app/frontend/src/pages/SettingsPage.jsx` — Settings with library management
+- `/app/frontend/src/pages/LocalLibraryPage.jsx` — Desktop library (main feature)
+- `/app/frontend/src/pages/StatsPage.jsx` — Statistics + cast insights
+- `/app/frontend/src/pages/SettingsPage.jsx` — Settings
 - `/app/frontend/src/pages/LandingPage.jsx` — Public landing page
-- `/app/frontend/src/pages/AccountDashboard.jsx` — Post-login dashboard
-- `/app/frontend/src/pages/CollectionsPage.jsx` — Collections
-- `/app/frontend/src/components/LocalDirectoryBrowser.jsx` — Directory browser dialog
-- `/app/frontend/src/App.js` — Routing logic
-- `/app/backend/server.py` — FastAPI backend (includes AI suggestions endpoint)
-- `/app/.github/workflows/build-windows.yml` — CI/CD
+- `/app/backend/server.py` — FastAPI backend
 
 ## Backlog (Prioritized)
 
 ### P0
 - Custom domain setup (user purchasing from GoDaddy — pending)
-- Update REACT_APP_BACKEND_URL with custom domain and redeploy
+- Deploy latest changes to production
 
 ### P1
 - Landing page demo video/screenshots
-- Refactor `LocalLibraryPage.jsx` into smaller components/hooks (~2040 lines)
-- Version bump to 1.0.8 for new AI features
+- Refactor `LocalLibraryPage.jsx` (~2180 lines — critical)
 
 ### P2
 - Watch party feature
@@ -108,4 +106,4 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - Auto-fetch movie trailers
 - Parental controls and multi-user profiles
 - Re-enable referral incentive program
-- Marketing campaign (subreddit posts)
+- Marketing campaign
