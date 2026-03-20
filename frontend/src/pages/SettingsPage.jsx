@@ -20,7 +20,8 @@ import {
   LayoutGrid,
   Check,
   AlertTriangle,
-  Trash2
+  Trash2,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -788,6 +789,68 @@ export default function SettingsPage() {
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Clear All Posters ({posterCount})
+                  </Button>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Fetch Cast Data */}
+              <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
+                <div>
+                  <p className="font-medium text-foreground text-sm">Cast Data</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {(function() {
+                      var saved = localStorage.getItem('obsidian_cinema_local_movies');
+                      var all = saved ? JSON.parse(saved) : [];
+                      var withCast = all.filter(function(m) { return m.cast && m.cast.length > 0; }).length;
+                      var needCast = all.filter(function(m) { return m.tmdb_id && (!m.cast || m.cast.length === 0); }).length;
+                      if (needCast > 0) return withCast + ' movies have cast data. ' + needCast + ' can be fetched from TMDB.';
+                      if (withCast > 0) return 'All ' + withCast + ' movies with TMDB data have cast info.';
+                      return 'No cast data available. Fetch posters first to get TMDB IDs.';
+                    })()}
+                  </p>
+                </div>
+                {(function() {
+                  var saved = localStorage.getItem('obsidian_cinema_local_movies');
+                  var all = saved ? JSON.parse(saved) : [];
+                  var needCast = all.filter(function(m) { return m.tmdb_id && (!m.cast || m.cast.length === 0); }).length;
+                  return needCast > 0;
+                })() && (
+                  <Button
+                    variant="outline"
+                    onClick={async function() {
+                      var tmdbKey = localStorage.getItem('obsidian_cinema_tmdb_key');
+                      if (!tmdbKey) { toast.error('Add your TMDB API key first'); return; }
+                      var saved = localStorage.getItem('obsidian_cinema_local_movies');
+                      var all = saved ? JSON.parse(saved) : [];
+                      var need = all.filter(function(m) { return m.tmdb_id && (!m.cast || m.cast.length === 0); });
+                      toast.info('Fetching cast for ' + need.length + ' movies...');
+                      var fetched = 0;
+                      for (var i = 0; i < need.length; i++) {
+                        try {
+                          var resp = await fetch('https://api.themoviedb.org/3/movie/' + need[i].tmdb_id + '/credits?api_key=' + tmdbKey);
+                          var data = await resp.json();
+                          if (data.cast) {
+                            need[i].cast = data.cast.slice(0, 5).map(function(c) {
+                              return { name: c.name, character: c.character, profile_path: c.profile_path ? 'https://image.tmdb.org/t/p/w185' + c.profile_path : null };
+                            });
+                            fetched++;
+                          }
+                        } catch (e) {}
+                        if (i < need.length - 1) await new Promise(function(r) { setTimeout(r, 250); });
+                      }
+                      var updated = all.map(function(m) {
+                        var match = need.find(function(n) { return n.id === m.id; });
+                        return match ? match : m;
+                      });
+                      localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated));
+                      toast.success('Cast fetched for ' + fetched + ' movies');
+                    }}
+                    data-testid="settings-fetch-cast-btn"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Fetch Cast Data
                   </Button>
                 )}
               </div>

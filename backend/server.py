@@ -2635,8 +2635,8 @@ async def download_windows():
             )
             if resp.status_code == 200:
                 assets = resp.json().get("assets", [])
-                # Prefer .exe for direct install, fall back to .zip
-                for ext in [".exe", ".zip"]:
+                # Prefer .zip to avoid SmartScreen, fall back to .exe
+                for ext in [".zip", ".exe"]:
                     for asset in assets:
                         if asset["name"].endswith(ext):
                             return RedirectResponse(url=asset["browser_download_url"])

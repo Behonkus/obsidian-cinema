@@ -40,9 +40,9 @@ export function DownloadGuideModal({ open, onClose, onDownload }) {
                 <Download className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">Direct .exe Installer</p>
+                <p className="text-sm font-medium">Windows Installer (.zip)</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  No extraction needed — just download, double-click, and follow the setup wizard.
+                  Downloads a small zip file containing the installer. Just extract and run!
                 </p>
               </div>
             </div>
@@ -53,7 +53,7 @@ export function DownloadGuideModal({ open, onClose, onDownload }) {
               data-testid="download-start-btn"
             >
               <Download className="w-5 h-5" />
-              Download Installer (.exe)
+              Download Installer
             </Button>
             <p className="text-[11px] text-center text-muted-foreground">
               Windows 10/11 required · ~85 MB
@@ -65,20 +65,20 @@ export function DownloadGuideModal({ open, onClose, onDownload }) {
               number="1"
               icon={FolderOpen}
               title="Find the downloaded file"
-              desc="Check your Downloads folder (usually C:\Users\You\Downloads). The file is named Obsidian-Cinema-Setup.exe"
+              desc="Check your Downloads folder. The file is named Obsidian-Cinema-Setup.zip"
               active
             />
             <Step
               number="2"
               icon={MousePointer}
-              title="Double-click to install"
-              desc="Double-click the .exe file. If Windows shows a SmartScreen warning, click 'More info' then 'Run anyway' — the app is safe."
+              title="Extract the zip file"
+              desc="Right-click the .zip file and select 'Extract All...' then click 'Extract'. This opens a folder with the installer inside."
             />
             <Step
               number="3"
               icon={Shield}
-              title="Follow the setup wizard"
-              desc="Click 'Install' and wait a few seconds. The app will launch automatically when done."
+              title="Run the installer"
+              desc="Double-click the .exe file inside the extracted folder. Follow the setup wizard — click 'Install' and wait a few seconds."
             />
             <Step
               number="4"

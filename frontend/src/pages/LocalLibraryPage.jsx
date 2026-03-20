@@ -1175,25 +1175,6 @@ export default function LocalLibraryPage() {
               }
             </Button>
           )}
-          {movies.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchAllCast}
-              disabled={fetchingCast}
-              data-testid="fetch-cast-btn"
-            >
-              {fetchingCast ? (
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Users className="w-4 h-4 mr-2" />
-              )}
-              {fetchingCast
-                ? 'Fetching... (' + castFetchProgress + '%)'
-                : 'Fetch Cast'
-              }
-            </Button>
-          )}
           {movies.length > 1 && (
             <Button
               variant="outline"
