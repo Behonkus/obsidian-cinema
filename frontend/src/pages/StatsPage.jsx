@@ -16,7 +16,8 @@ import {
   ThumbsDown,
   FolderHeart,
   Hourglass,
-  Sparkles
+  Sparkles,
+  Users
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -356,6 +357,101 @@ function RandomPicker({ movies }) {
   );
 }
 
+function MostAppearingActors({ actors }) {
+  if (!actors || actors.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+          <Users className="w-4 h-4 text-blue-400" /> Most Appearing Actors
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {actors.map(function(actor, i) {
+          return (
+            <div key={actor.name} className="flex items-center gap-3" data-testid={'top-actor-' + i}>
+              <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
+              {actor.photo ? (
+                <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{actor.name}</p>
+              </div>
+              <Badge variant="secondary" className="text-blue-400 bg-blue-400/10">{actor.count} films</Badge>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+function TopRatedActors({ actors }) {
+  if (!actors || actors.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+          <Star className="w-4 h-4 text-amber-400" /> Top-Rated Actors
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {actors.map(function(actor, i) {
+          return (
+            <div key={actor.name} className="flex items-center gap-3" data-testid={'rated-actor-' + i}>
+              <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
+              {actor.photo ? (
+                <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{actor.name}</p>
+                <p className="text-xs text-muted-foreground">{actor.movieCount} films</p>
+              </div>
+              <Badge variant="secondary" className="text-amber-400 bg-amber-400/10">{'★ ' + actor.avgRating.toFixed(1)}</Badge>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+function GenreChameleons({ actors }) {
+  if (!actors || actors.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+          <Sparkles className="w-4 h-4 text-emerald-400" /> Genre Chameleons
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {actors.map(function(actor, i) {
+          return (
+            <div key={actor.name} className="flex items-center gap-3" data-testid={'chameleon-actor-' + i}>
+              <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
+              {actor.photo ? (
+                <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{actor.name}</p>
+                <p className="text-xs text-muted-foreground truncate">{actor.genres.join(', ')}</p>
+              </div>
+              <Badge variant="secondary" className="text-emerald-400 bg-emerald-400/10">{actor.genreCount} genres</Badge>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
 function computeStats(movies, directories, trashedMovies) {
   var withPosters = [];
   var withRatings = [];
@@ -499,6 +595,67 @@ function computeStats(movies, directories, trashedMovies) {
     totalInCollections += (collections[i].movie_ids || []).length;
   }
 
+  // Cast stats
+  var actorAppearances = {}; // name -> count
+  var actorRatings = {};     // name -> { sum, count }
+  var actorGenres = {};      // name -> Set of genres
+  var actorPhotos = {};      // name -> profile_path
+  for (i = 0; i < movies.length; i++) {
+    var cast = movies[i].cast;
+    if (cast && Array.isArray(cast)) {
+      for (var c = 0; c < cast.length; c++) {
+        var actorName = cast[c].name;
+        if (!actorName) continue;
+        actorAppearances[actorName] = (actorAppearances[actorName] || 0) + 1;
+        if (cast[c].profile_path && !actorPhotos[actorName]) actorPhotos[actorName] = cast[c].profile_path;
+        if (movies[i].rating) {
+          if (!actorRatings[actorName]) actorRatings[actorName] = { sum: 0, count: 0 };
+          actorRatings[actorName].sum += movies[i].rating;
+          actorRatings[actorName].count += 1;
+        }
+        if (movies[i].genres && Array.isArray(movies[i].genres)) {
+          if (!actorGenres[actorName]) actorGenres[actorName] = {};
+          for (var ag = 0; ag < movies[i].genres.length; ag++) {
+            var gn = movies[i].genres[ag];
+            if (typeof gn === 'object' && gn.name) gn = gn.name;
+            if (typeof gn === 'string') actorGenres[actorName][gn] = true;
+          }
+        }
+      }
+    }
+  }
+  // Most appearing actors (top 10)
+  var actorKeys = Object.keys(actorAppearances);
+  actorKeys.sort(function(a, b) { return actorAppearances[b] - actorAppearances[a]; });
+  var topActors = [];
+  for (i = 0; i < Math.min(actorKeys.length, 10); i++) {
+    topActors.push({ name: actorKeys[i], count: actorAppearances[actorKeys[i]], photo: actorPhotos[actorKeys[i]] || null });
+  }
+  // Top-rated actors (min 2 movies, sorted by avg rating)
+  var ratedActors = [];
+  for (i = 0; i < actorKeys.length; i++) {
+    var ar = actorRatings[actorKeys[i]];
+    if (ar && ar.count >= 2) {
+      ratedActors.push({ name: actorKeys[i], avgRating: ar.sum / ar.count, movieCount: ar.count, photo: actorPhotos[actorKeys[i]] || null });
+    }
+  }
+  ratedActors.sort(function(a, b) { return b.avgRating - a.avgRating; });
+  var topRatedActors = ratedActors.slice(0, 5);
+  // Genre chameleon (most genres, min 2 movies)
+  var chameleonActors = [];
+  for (i = 0; i < actorKeys.length; i++) {
+    if (actorAppearances[actorKeys[i]] >= 2 && actorGenres[actorKeys[i]]) {
+      var genreList = Object.keys(actorGenres[actorKeys[i]]);
+      chameleonActors.push({ name: actorKeys[i], genreCount: genreList.length, genres: genreList.slice(0, 4), photo: actorPhotos[actorKeys[i]] || null });
+    }
+  }
+  chameleonActors.sort(function(a, b) { return b.genreCount - a.genreCount; });
+  var topChameleons = chameleonActors.slice(0, 5);
+  var moviesWithCast = 0;
+  for (i = 0; i < movies.length; i++) {
+    if (movies[i].cast && movies[i].cast.length > 0) moviesWithCast++;
+  }
+
   return {
     total: total,
     dirCount: directories.length,
@@ -526,6 +683,11 @@ function computeStats(movies, directories, trashedMovies) {
     totalHours: totalHours,
     collectionCount: collections.length,
     totalInCollections: totalInCollections,
+    topActors: topActors,
+    topRatedActors: topRatedActors,
+    topChameleons: topChameleons,
+    moviesWithCast: moviesWithCast,
+    uniqueActors: actorKeys.length,
   };
 }
 
@@ -673,6 +835,30 @@ export default function StatsPage() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Cast Stats */}
+      {stats.moviesWithCast > 0 && (
+        <>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+            <div className="flex items-center gap-2 pt-2">
+              <Users className="w-5 h-5 text-blue-400" />
+              <h2 className="text-lg font-semibold">Cast Insights</h2>
+              <span className="text-xs text-muted-foreground">({stats.uniqueActors} actors across {stats.moviesWithCast} movies)</span>
+            </div>
+          </motion.div>
+          <div className="grid md:grid-cols-3 gap-4">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}>
+              <MostAppearingActors actors={stats.topActors} />
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
+              <TopRatedActors actors={stats.topRatedActors} />
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85 }}>
+              <GenreChameleons actors={stats.topChameleons} />
+            </motion.div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -29,7 +29,8 @@ import {
   FilePlus2,
   Edit2,
   Sparkles,
-  Wand2
+  Wand2,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,10 +155,38 @@ function MovieCard({ movie, gridSize, onClick, onPlay }) {
   );
 }
 
+function CastRow({ cast }) {
+  return (
+    <div className="space-y-2" data-testid="cast-section">
+      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+        <Users className="w-3.5 h-3.5" /> Cast
+      </p>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {cast.map(function(actor, idx) {
+          return (
+            <div key={idx} className="flex flex-col items-center shrink-0 w-14" data-testid={'cast-member-' + idx}>
+              {actor.profile_path ? (
+                <img src={actor.profile_path} alt={actor.name} className="w-10 h-10 rounded-full object-cover" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                  <Users className="w-4 h-4 text-muted-foreground/50" />
+                </div>
+              )}
+              <p className="text-[10px] font-medium text-center mt-1 leading-tight truncate w-full">{actor.name}</p>
+              <p className="text-[9px] text-muted-foreground text-center leading-tight truncate w-full">{actor.character}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 // TMDB API base URL
 const TMDB_API = 'https://api.themoviedb.org/3';
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
+const TMDB_PROFILE = 'https://image.tmdb.org/t/p/w185';
 const BACKEND_API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 export default function LocalLibraryPage() {
@@ -205,6 +234,8 @@ export default function LocalLibraryPage() {
   const [sidebarSuggestions, setSidebarSuggestions] = useState([]);
   const [sidebarLoading, setSidebarLoading] = useState(false);
   const [sidebarError, setSidebarError] = useState(null);
+  const [fetchingCast, setFetchingCast] = useState(false);
+  const [castFetchProgress, setCastFetchProgress] = useState(0);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -310,17 +341,47 @@ export default function LocalLibraryPage() {
       
       if (data.results && data.results.length > 0) {
         const result = data.results[0];
-        return {
+        const movieData = {
           poster_path: result.poster_path ? `${TMDB_IMG}${result.poster_path}` : null,
           tmdb_id: result.id,
           overview: result.overview,
           rating: result.vote_average,
           release_date: result.release_date
         };
+        // Also fetch cast
+        try {
+          const credResp = await fetch(`${TMDB_API}/movie/${result.id}/credits?api_key=${tmdbApiKey}`);
+          const credData = await credResp.json();
+          if (credData.cast) {
+            movieData.cast = credData.cast.slice(0, 5).map(c => ({
+              name: c.name,
+              character: c.character,
+              profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null,
+            }));
+          }
+        } catch (_) { /* cast fetch is optional */ }
+        return movieData;
       }
     } catch (err) {
       console.error('TMDB fetch error:', err);
     }
+    return null;
+  };
+
+  // Fetch cast only for a movie that already has tmdb_id
+  const fetchCastForMovie = async (movie) => {
+    if (!tmdbApiKey || !movie.tmdb_id) return null;
+    try {
+      const resp = await fetch(`${TMDB_API}/movie/${movie.tmdb_id}/credits?api_key=${tmdbApiKey}`);
+      const data = await resp.json();
+      if (data.cast) {
+        return data.cast.slice(0, 5).map(c => ({
+          name: c.name,
+          character: c.character,
+          profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null,
+        }));
+      }
+    } catch (_) {}
     return null;
   };
 
@@ -543,6 +604,35 @@ export default function LocalLibraryPage() {
     } finally {
       setSidebarLoading(false);
     }
+  };
+
+  // Bulk fetch cast for movies that have tmdb_id but no cast data
+  const fetchAllCast = async () => {
+    if (!tmdbApiKey) {
+      toast.error('Please add your TMDB API key in Settings first');
+      return;
+    }
+    const needCast = movies.filter(m => m.tmdb_id && (!m.cast || m.cast.length === 0));
+    if (needCast.length === 0) {
+      toast.info('All movies with TMDB data already have cast info');
+      return;
+    }
+    setFetchingCast(true);
+    setCastFetchProgress(0);
+    let fetched = 0;
+    for (let i = 0; i < needCast.length; i++) {
+      const movie = needCast[i];
+      const cast = await fetchCastForMovie(movie);
+      if (cast) {
+        setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, cast } : m));
+      }
+      fetched++;
+      setCastFetchProgress(Math.round((fetched / needCast.length) * 100));
+      // Small delay to avoid rate limiting
+      if (i < needCast.length - 1) await new Promise(r => setTimeout(r, 250));
+    }
+    setFetchingCast(false);
+    toast.success('Cast data fetched for ' + fetched + ' movies');
   };
 
   // Fetch posters for all movies without posters
@@ -1085,6 +1175,25 @@ export default function LocalLibraryPage() {
               }
             </Button>
           )}
+          {movies.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchAllCast}
+              disabled={fetchingCast}
+              data-testid="fetch-cast-btn"
+            >
+              {fetchingCast ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Users className="w-4 h-4 mr-2" />
+              )}
+              {fetchingCast
+                ? 'Fetching... (' + castFetchProgress + '%)'
+                : 'Fetch Cast'
+              }
+            </Button>
+          )}
           {movies.length > 1 && (
             <Button
               variant="outline"
@@ -1515,6 +1624,17 @@ export default function LocalLibraryPage() {
                         if (best.vote_average) meta.rating = best.vote_average;
                         if (best.release_date) meta.year = best.release_date.substring(0, 4);
                         if (best.poster_path && !selectedMovie.poster_path) meta.poster_path = TMDB_IMG + best.poster_path;
+                        meta.tmdb_id = best.id;
+                        // Also fetch cast
+                        try {
+                          const credResp = await fetch(TMDB_API + '/movie/' + best.id + '/credits?api_key=' + tmdbApiKey);
+                          const credData = await credResp.json();
+                          if (credData.cast) {
+                            meta.cast = credData.cast.slice(0, 5).map(function(c) {
+                              return { name: c.name, character: c.character, profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null };
+                            });
+                          }
+                        } catch (_) {}
                         setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, ...meta } : m));
                         setSelectedMovie(prev => ({ ...prev, ...meta }));
                         toast.success('Metadata updated from TMDB');
@@ -1531,6 +1651,30 @@ export default function LocalLibraryPage() {
                   Fetch synopsis from TMDB
                 </Button>
               )}
+
+              {/* Cast Section */}
+              {selectedMovie.cast && selectedMovie.cast.length > 0 ? (
+                <CastRow cast={selectedMovie.cast} />
+              ) : selectedMovie.tmdb_id && tmdbApiKey ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground w-full"
+                  onClick={async () => {
+                    var castData = await fetchCastForMovie(selectedMovie);
+                    if (castData) {
+                      setMovies(function(prev) { return prev.map(function(m) { return m.id === selectedMovie.id ? Object.assign({}, m, { cast: castData }) : m; }); });
+                      setSelectedMovie(function(prev) { return Object.assign({}, prev, { cast: castData }); });
+                      toast.success('Cast loaded');
+                    } else {
+                      toast.info('No cast data found');
+                    }
+                  }}
+                  data-testid="fetch-cast-single-btn"
+                >
+                  <Users className="w-3 h-3 mr-1.5" /> Load cast from TMDB
+                </Button>
+              ) : null}
 
               {/* Poster Management */}
               {posterMode && (
