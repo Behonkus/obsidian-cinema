@@ -73,12 +73,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Zip installer for release
-        run: |
-          cd frontend/dist
-          powershell Compress-Archive -Path *.exe -DestinationPath Obsidian-Cinema-Setup.zip
-        shell: cmd
-
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
@@ -91,7 +85,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            frontend/dist/Obsidian-Cinema-Setup.zip
+            frontend/dist/*.exe
             frontend/dist/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -103,7 +97,7 @@ jobs:
           tag_name: v${{ github.event.inputs.version }}
           name: Obsidian Cinema v${{ github.event.inputs.version }}
           files: |
-            frontend/dist/Obsidian-Cinema-Setup.zip
+            frontend/dist/*.exe
             frontend/dist/latest.yml
           generate_release_notes: true
         env:

@@ -18,6 +18,7 @@ import {
   CheckCircle,
   ExternalLink
 } from "lucide-react";
+import { DownloadGuideModal } from "../components/DownloadGuideModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,8 @@ export default function AccountDashboard() {
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard!");
   };
+
+  const [showDownloadGuide, setShowDownloadGuide] = useState(false);
 
   return (
     <div className="p-6 md:p-8 lg:p-10 max-w-5xl mx-auto space-y-8" data-testid="account-dashboard">
@@ -100,11 +103,7 @@ export default function AccountDashboard() {
                 <Button
                   size="lg"
                   className="w-full md:w-auto bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white gap-2"
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = `${API}/download/windows`;
-                    link.click();
-                  }}
+                  onClick={() => setShowDownloadGuide(true)}
                   data-testid="download-desktop-btn"
                 >
                   <Download className="w-5 h-5" />
@@ -266,6 +265,16 @@ export default function AccountDashboard() {
           To scan and manage your movie library, download and use the <strong className="text-foreground">desktop app</strong>.
         </span>
       </motion.div>
+
+      <DownloadGuideModal
+        open={showDownloadGuide}
+        onClose={() => setShowDownloadGuide(false)}
+        onDownload={() => {
+          const link = document.createElement('a');
+          link.href = `${API}/download/windows`;
+          link.click();
+        }}
+      />
     </div>
   );
 }
