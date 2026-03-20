@@ -82,6 +82,10 @@ export default function SettingsPage() {
   const [appVersion, setAppVersion] = useState(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
+  const [castFetching, setCastFetching] = useState(false);
+  const [castProgress, setCastProgress] = useState(0);
+  const [castTotal, setCastTotal] = useState(0);
+  const [castStatusText, setCastStatusText] = useState('');
 
   useEffect(() => {
     loadData();
@@ -800,59 +804,75 @@ export default function SettingsPage() {
                 <div>
                   <p className="font-medium text-foreground text-sm">Cast Data</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {(function() {
-                      var saved = localStorage.getItem('obsidian_cinema_local_movies');
-                      var all = saved ? JSON.parse(saved) : [];
-                      var withCast = all.filter(function(m) { return m.cast && m.cast.length > 0; }).length;
-                      var needCast = all.filter(function(m) { return m.tmdb_id && (!m.cast || m.cast.length === 0); }).length;
-                      if (needCast > 0) return withCast + ' movies have cast data. ' + needCast + ' can be fetched from TMDB.';
-                      if (withCast > 0) return 'All ' + withCast + ' movies with TMDB data have cast info.';
-                      return 'No cast data available. Fetch posters first to get TMDB IDs.';
-                    })()}
+                    {castFetching
+                      ? 'Fetching cast... ' + castProgress + ' of ' + castTotal + ' movies'
+                      : castStatusText || (function() {
+                        var saved = localStorage.getItem('obsidian_cinema_local_movies');
+                        var all = saved ? JSON.parse(saved) : [];
+                        var withCast = all.filter(function(m) { return m.cast && m.cast.length > 0; }).length;
+                        var needCast = all.filter(function(m) { return m.tmdb_id && (!m.cast || m.cast.length === 0); }).length;
+                        if (needCast > 0) return withCast + ' movies have cast data. ' + needCast + ' can be fetched from TMDB.';
+                        if (withCast > 0) return 'All ' + withCast + ' movies with TMDB data have cast info.';
+                        return 'No cast data available. Fetch posters first to get TMDB IDs.';
+                      })()
+                    }
                   </p>
+                  {castFetching && castTotal > 0 && (
+                    <div className="mt-2 w-full bg-secondary rounded-full h-2 overflow-hidden" data-testid="cast-progress-bar">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all duration-300"
+                        style={{ width: Math.round((castProgress / castTotal) * 100) + '%' }}
+                      />
+                    </div>
+                  )}
                 </div>
-                {(function() {
-                  var saved = localStorage.getItem('obsidian_cinema_local_movies');
-                  var all = saved ? JSON.parse(saved) : [];
-                  var needCast = all.filter(function(m) { return m.tmdb_id && (!m.cast || m.cast.length === 0); }).length;
-                  return needCast > 0;
-                })() && (
-                  <Button
-                    variant="outline"
-                    onClick={async function() {
-                      var tmdbKey = localStorage.getItem('obsidian_cinema_tmdb_key');
-                      if (!tmdbKey) { toast.error('Add your TMDB API key first'); return; }
-                      var saved = localStorage.getItem('obsidian_cinema_local_movies');
-                      var all = saved ? JSON.parse(saved) : [];
-                      var need = all.filter(function(m) { return m.tmdb_id && (!m.cast || m.cast.length === 0); });
-                      toast.info('Fetching cast for ' + need.length + ' movies...');
-                      var fetched = 0;
-                      for (var i = 0; i < need.length; i++) {
-                        try {
-                          var resp = await fetch('https://api.themoviedb.org/3/movie/' + need[i].tmdb_id + '/credits?api_key=' + tmdbKey);
-                          var data = await resp.json();
-                          if (data.cast) {
-                            need[i].cast = data.cast.slice(0, 5).map(function(c) {
-                              return { name: c.name, character: c.character, profile_path: c.profile_path ? 'https://image.tmdb.org/t/p/w185' + c.profile_path : null };
-                            });
-                            fetched++;
-                          }
-                        } catch (e) {}
-                        if (i < need.length - 1) await new Promise(function(r) { setTimeout(r, 250); });
-                      }
-                      var updated = all.map(function(m) {
-                        var match = need.find(function(n) { return n.id === m.id; });
-                        return match ? match : m;
-                      });
-                      localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated));
-                      toast.success('Cast fetched for ' + fetched + ' movies');
-                    }}
-                    data-testid="settings-fetch-cast-btn"
-                  >
+                <Button
+                  variant="outline"
+                  disabled={castFetching}
+                  onClick={async function() {
+                    var tmdbKey = localStorage.getItem('obsidian_cinema_tmdb_key');
+                    if (!tmdbKey) { toast.error('Add your TMDB API key first'); return; }
+                    var saved = localStorage.getItem('obsidian_cinema_local_movies');
+                    var all = saved ? JSON.parse(saved) : [];
+                    var need = all.filter(function(m) { return m.tmdb_id && (!m.cast || m.cast.length === 0); });
+                    if (need.length === 0) { toast.info('All movies with TMDB data already have cast info'); return; }
+                    setCastFetching(true);
+                    setCastProgress(0);
+                    setCastTotal(need.length);
+                    setCastStatusText('');
+                    var fetched = 0;
+                    for (var i = 0; i < need.length; i++) {
+                      try {
+                        var resp = await fetch('https://api.themoviedb.org/3/movie/' + need[i].tmdb_id + '/credits?api_key=' + tmdbKey);
+                        var data = await resp.json();
+                        if (data.cast) {
+                          need[i].cast = data.cast.slice(0, 5).map(function(c) {
+                            return { name: c.name, character: c.character, profile_path: c.profile_path ? 'https://image.tmdb.org/t/p/w185' + c.profile_path : null };
+                          });
+                          fetched++;
+                        }
+                      } catch (e) {}
+                      setCastProgress(i + 1);
+                      if (i < need.length - 1) await new Promise(function(r) { setTimeout(r, 250); });
+                    }
+                    var updated = all.map(function(m) {
+                      var match = need.find(function(n) { return n.id === m.id; });
+                      return match ? match : m;
+                    });
+                    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated));
+                    setCastFetching(false);
+                    setCastStatusText('Done! Cast fetched for ' + fetched + ' of ' + need.length + ' movies.');
+                    toast.success('Cast fetched for ' + fetched + ' movies');
+                  }}
+                  data-testid="settings-fetch-cast-btn"
+                >
+                  {castFetching ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
                     <Users className="w-4 h-4 mr-2" />
-                    Fetch Cast Data
-                  </Button>
-                )}
+                  )}
+                  {castFetching ? 'Fetching... (' + castProgress + '/' + castTotal + ')' : 'Fetch Cast Data'}
+                </Button>
               </div>
 
               <Separator />
