@@ -112,32 +112,43 @@ export default function SettingsPage() {
 
   // Create a backup snapshot
   const createBackup = () => {
-    var movies = localStorage.getItem('obsidian_cinema_local_movies') || '[]';
-    var dirs = localStorage.getItem('obsidian_cinema_local_dirs') || '[]';
-    var collections = localStorage.getItem('obsidian_cinema_collections') || '[]';
-    var trash = localStorage.getItem('obsidian_cinema_trash') || '[]';
-    var tmdb = localStorage.getItem('obsidian_cinema_tmdb_key') || '';
-    var theme = localStorage.getItem('obsidian_cinema_theme') || '';
-    var gridSize = localStorage.getItem('obsidian_cinema_grid_size') || '';
-    var sortBy = localStorage.getItem('obsidian_cinema_sort_by') || '';
-    var parsedMovies = [];
-    try { parsedMovies = JSON.parse(movies); } catch (e) {}
-    var parsedCols = [];
-    try { parsedCols = JSON.parse(collections); } catch (e) {}
+    try {
+      var movies = localStorage.getItem('obsidian_cinema_local_movies') || '[]';
+      var dirs = localStorage.getItem('obsidian_cinema_local_dirs') || '[]';
+      var collections = localStorage.getItem('obsidian_cinema_collections') || '[]';
+      var trash = localStorage.getItem('obsidian_cinema_trash') || '[]';
+      var tmdb = localStorage.getItem('obsidian_cinema_tmdb_key') || '';
+      var theme = localStorage.getItem('obsidian_cinema_theme') || '';
+      var gridSize = localStorage.getItem('obsidian_cinema_grid_size') || '';
+      var sortBy = localStorage.getItem('obsidian_cinema_sort_by') || '';
+      var parsedMovies = [];
+      try { parsedMovies = JSON.parse(movies); } catch (e) {}
+      var parsedCols = [];
+      try { parsedCols = JSON.parse(collections); } catch (e) {}
 
-    var snapshot = {
-      date: new Date().toISOString(),
-      movieCount: parsedMovies.length,
-      collectionCount: parsedCols.length,
-      data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSize, sortBy: sortBy }
-    };
-    // Shift existing backups down (5 -> discard, 4 -> 5, etc.)
-    for (var i = 4; i >= 1; i--) {
-      var prev = localStorage.getItem('obsidian_cinema_backup_' + i);
-      if (prev) localStorage.setItem('obsidian_cinema_backup_' + (i + 1), prev);
+      var snapshot = {
+        date: new Date().toISOString(),
+        movieCount: parsedMovies.length,
+        collectionCount: parsedCols.length,
+        data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSize, sortBy: sortBy }
+      };
+      // Shift existing backups down (5 -> discard, 4 -> 5, etc.)
+      for (var i = 4; i >= 1; i--) {
+        var prev = localStorage.getItem('obsidian_cinema_backup_' + i);
+        if (prev) {
+          localStorage.setItem('obsidian_cinema_backup_' + (i + 1), prev);
+        } else {
+          localStorage.removeItem('obsidian_cinema_backup_' + (i + 1));
+        }
+      }
+      localStorage.setItem('obsidian_cinema_backup_1', JSON.stringify(snapshot));
+      loadBackups();
+      return true;
+    } catch (e) {
+      console.error('Backup failed:', e);
+      toast.error('Backup failed — storage may be full. Try exporting to file instead.');
+      return false;
     }
-    localStorage.setItem('obsidian_cinema_backup_1', JSON.stringify(snapshot));
-    loadBackups();
   };
 
   // Restore from a backup slot
@@ -1070,7 +1081,7 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={function() { createBackup(); toast.success('Backup created'); }} data-testid="manual-backup-btn">
+                  <Button variant="outline" onClick={function() { var ok = createBackup(); if (ok) toast.success('Backup created'); }} data-testid="manual-backup-btn">
                     <Save className="w-4 h-4 mr-2" /> Backup Now
                   </Button>
                   <Button variant="outline" onClick={exportBackup} data-testid="export-backup-btn">
