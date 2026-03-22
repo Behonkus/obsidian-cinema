@@ -156,12 +156,23 @@ function MovieCard({ movie, gridSize, onClick, onPlay }) {
   );
 }
 
-function CastRow({ cast }) {
+function CastRow({ cast, onClear }) {
   return (
     <div className="space-y-2" data-testid="cast-section">
-      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-        <Users className="w-3.5 h-3.5" /> Cast
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+          <Users className="w-3.5 h-3.5" /> Cast
+        </p>
+        {onClear && (
+          <button
+            className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+            onClick={onClear}
+            data-testid="clear-cast-btn"
+          >
+            Clear
+          </button>
+        )}
+      </div>
       <div className="flex gap-3 overflow-x-auto pb-1">
         {cast.map(function(actor, idx) {
           return (
@@ -1745,7 +1756,11 @@ export default function LocalLibraryPage() {
 
               {/* Cast Section */}
               {selectedMovie.cast && selectedMovie.cast.length > 0 ? (
-                <CastRow cast={selectedMovie.cast} />
+                <CastRow cast={selectedMovie.cast} onClear={() => {
+                  setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, cast: null } : m));
+                  setSelectedMovie(prev => ({ ...prev, cast: null }));
+                  toast.success('Cast cleared');
+                }} />
               ) : selectedMovie.tmdb_id && tmdbApiKey ? (
                 <Button
                   variant="ghost"
