@@ -95,6 +95,8 @@ export default function SettingsPage() {
   const [backups, setBackups] = useState([]);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(null);
   const [lastExportDate, setLastExportDate] = useState(() => localStorage.getItem('obsidian_cinema_last_export') || null);
+  const [importStep, setImportStep] = useState(null); // null, 'select', 'preview', 'done'
+  const [importData, setImportData] = useState(null);
 
   // Load backup list
   const loadBackups = () => {
@@ -204,8 +206,13 @@ export default function SettingsPage() {
     toast.success('Backup saved to your Downloads folder as "' + fileName + '"');
   };
 
-  // Import backup from file
-  const importBackup = () => {
+  // Import backup — guided flow
+  const startImport = () => {
+    setImportStep('select');
+    setImportData(null);
+  };
+
+  const handleFileSelect = () => {
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -217,27 +224,48 @@ export default function SettingsPage() {
         try {
           var snapshot = JSON.parse(ev.target.result);
           if (!snapshot.data || !snapshot.data.movies) {
-            toast.error('Invalid backup file');
+            toast.error('This file is not a valid Obsidian Cinema backup');
             return;
           }
-          var d = snapshot.data;
-          if (d.movies) localStorage.setItem('obsidian_cinema_local_movies', d.movies);
-          if (d.dirs) localStorage.setItem('obsidian_cinema_local_dirs', d.dirs);
-          if (d.collections) localStorage.setItem('obsidian_cinema_collections', d.collections);
-          if (d.trash) localStorage.setItem('obsidian_cinema_trash', d.trash);
-          if (d.tmdb) localStorage.setItem('obsidian_cinema_tmdb_key', d.tmdb);
-          if (d.theme) localStorage.setItem('obsidian_cinema_theme', d.theme);
-          if (d.gridSize) localStorage.setItem('obsidian_cinema_grid_size', d.gridSize);
-          if (d.sortBy) localStorage.setItem('obsidian_cinema_sort_by', d.sortBy);
-          toast.success('Backup imported. Reloading...');
-          setTimeout(function() { window.location.reload(); }, 1000);
+          var movieCount = 0;
+          var colCount = 0;
+          try { movieCount = JSON.parse(snapshot.data.movies).length; } catch (e) {}
+          try { colCount = JSON.parse(snapshot.data.collections).length; } catch (e) {}
+          setImportData({
+            snapshot: snapshot,
+            fileName: file.name,
+            date: snapshot.date ? new Date(snapshot.date).toLocaleDateString() + ' ' + new Date(snapshot.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Unknown',
+            movieCount: movieCount,
+            collectionCount: colCount,
+            hasTrash: snapshot.data.trash && snapshot.data.trash !== '[]',
+            hasTheme: !!snapshot.data.theme,
+          });
+          setImportStep('preview');
         } catch (err) {
-          toast.error('Failed to read backup file');
+          toast.error('Could not read this file. Make sure it is an Obsidian Cinema backup (.json)');
         }
       };
       reader.readAsText(file);
     };
     input.click();
+  };
+
+  const confirmImport = () => {
+    if (!importData || !importData.snapshot) return;
+    try {
+      var d = importData.snapshot.data;
+      if (d.movies) localStorage.setItem('obsidian_cinema_local_movies', d.movies);
+      if (d.dirs) localStorage.setItem('obsidian_cinema_local_dirs', d.dirs);
+      if (d.collections) localStorage.setItem('obsidian_cinema_collections', d.collections);
+      if (d.trash) localStorage.setItem('obsidian_cinema_trash', d.trash);
+      if (d.tmdb) localStorage.setItem('obsidian_cinema_tmdb_key', d.tmdb);
+      if (d.theme) localStorage.setItem('obsidian_cinema_theme', d.theme);
+      if (d.gridSize) localStorage.setItem('obsidian_cinema_grid_size', d.gridSize);
+      if (d.sortBy) localStorage.setItem('obsidian_cinema_sort_by', d.sortBy);
+      setImportStep('done');
+    } catch (e) {
+      toast.error('Failed to restore backup');
+    }
   };
 
   useEffect(() => {
@@ -1093,7 +1121,7 @@ export default function SettingsPage() {
                     <Button variant="outline" onClick={exportBackup} data-testid="export-backup-btn">
                       <Download className="w-4 h-4 mr-2" /> Export to File
                     </Button>
-                    <Button variant="outline" onClick={importBackup} data-testid="import-backup-btn">
+                    <Button variant="outline" onClick={startImport} data-testid="import-backup-btn">
                       <Upload className="w-4 h-4 mr-2" /> Import from File
                     </Button>
                   </div>
@@ -1385,6 +1413,101 @@ export default function SettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Backup Wizard */}
+      {importStep && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" data-testid="import-wizard">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { if (importStep !== 'done') { setImportStep(null); setImportData(null); } }} />
+          <div className="relative bg-background border border-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+
+            {/* Step 1: Select file */}
+            {importStep === 'select' && (
+              <div className="p-6 space-y-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Restore from Backup File</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Follow these steps to restore your library from a previously exported backup.</p>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0">1</div>
+                    <div>
+                      <p className="text-sm font-medium">Find your backup file</p>
+                      <p className="text-xs text-muted-foreground">Look in your <strong className="text-foreground">Downloads folder</strong> for a file named like:<br /><span className="font-mono text-[11px]">obsidian-cinema-backup-2025-03-20.json</span></p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-secondary text-muted-foreground flex items-center justify-center text-xs font-bold shrink-0">2</div>
+                    <div>
+                      <p className="text-sm font-medium">Select the file</p>
+                      <p className="text-xs text-muted-foreground">Click the button below to open a file picker, then choose your backup file.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" className="flex-1" onClick={() => { setImportStep(null); setImportData(null); }}>Cancel</Button>
+                  <Button className="flex-1" onClick={handleFileSelect} data-testid="import-select-file-btn">
+                    <Upload className="w-4 h-4 mr-2" /> Select Backup File
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Preview & confirm */}
+            {importStep === 'preview' && importData && (
+              <div className="p-6 space-y-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Review Backup</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Please confirm this is the correct backup before restoring.</p>
+                </div>
+                <div className="p-3 rounded-lg bg-secondary/50 border border-border space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">File:</span>
+                    <span className="font-mono text-xs">{importData.fileName}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Backup date:</span>
+                    <span>{importData.date}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Movies:</span>
+                    <span className="font-medium">{importData.movieCount}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Collections:</span>
+                    <span className="font-medium">{importData.collectionCount}</span>
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                  <p className="text-sm text-orange-400 font-medium">This will replace your current library</p>
+                  <p className="text-xs text-muted-foreground mt-1">All current movies, collections, and settings will be replaced with this backup. Consider using "Export to File" first to save your current state.</p>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button variant="outline" className="flex-1" onClick={() => { setImportStep('select'); setImportData(null); }}>Back</Button>
+                  <Button className="flex-1" onClick={confirmImport} data-testid="import-confirm-btn">
+                    Restore This Backup
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Done */}
+            {importStep === 'done' && (
+              <div className="p-6 space-y-4 text-center">
+                <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">Backup Restored!</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Your library has been restored successfully. The app needs to reload to apply all changes.</p>
+                </div>
+                <Button className="w-full" onClick={() => window.location.reload()} data-testid="import-reload-btn">
+                  Reload App
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
