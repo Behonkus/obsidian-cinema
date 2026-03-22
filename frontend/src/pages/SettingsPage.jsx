@@ -94,6 +94,7 @@ export default function SettingsPage() {
   const [showAllNoMeta, setShowAllNoMeta] = useState(false);
   const [backups, setBackups] = useState([]);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(null);
+  const [lastExportDate, setLastExportDate] = useState(() => localStorage.getItem('obsidian_cinema_last_export') || null);
 
   // Load backup list
   const loadBackups = () => {
@@ -193,10 +194,14 @@ export default function SettingsPage() {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'obsidian-cinema-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    var fileName = 'obsidian-cinema-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Backup exported to file');
+    var now = new Date().toISOString();
+    localStorage.setItem('obsidian_cinema_last_export', now);
+    setLastExportDate(now);
+    toast.success('Backup saved to your Downloads folder as "' + fileName + '"');
   };
 
   // Import backup from file
@@ -1077,47 +1082,66 @@ export default function SettingsPage() {
                     <FolderArchive className="w-4 h-4" /> Backup & Restore
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Your library is automatically backed up each session. Up to 5 recent backups are kept.
+                    Protect your library data. Export saves a backup file to your <strong className="text-foreground">Downloads folder</strong> — use Import to restore it anytime.
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={function() { var ok = createBackup(); if (ok) toast.success('Backup created'); }} data-testid="manual-backup-btn">
-                    <Save className="w-4 h-4 mr-2" /> Backup Now
-                  </Button>
-                  <Button variant="outline" onClick={exportBackup} data-testid="export-backup-btn">
-                    <Download className="w-4 h-4 mr-2" /> Export to File
-                  </Button>
-                  <Button variant="outline" onClick={importBackup} data-testid="import-backup-btn">
-                    <Upload className="w-4 h-4 mr-2" /> Import from File
-                  </Button>
-                </div>
-                {backups.length > 0 && (
-                  <div className="space-y-1.5 pt-1">
-                    <p className="text-xs font-medium text-muted-foreground">Recent Backups</p>
-                    {backups.map(function(b) {
-                      var d = new Date(b.date);
-                      var label = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                      return (
-                        <div key={b.slot} className="flex items-center justify-between p-2 rounded-md bg-background border border-border/50 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span>{label}</span>
-                            <span className="text-xs text-muted-foreground">{b.movieCount} movies, {b.collectionCount} collections</span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs h-7"
-                            onClick={function() { setShowRestoreConfirm(b.slot); }}
-                            data-testid={'restore-backup-' + b.slot}
-                          >
-                            Restore
-                          </Button>
-                        </div>
-                      );
-                    })}
+
+                {/* Export / Import — primary actions */}
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
+                  <p className="text-xs font-medium text-foreground">Recommended: Save to File</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={exportBackup} data-testid="export-backup-btn">
+                      <Download className="w-4 h-4 mr-2" /> Export to File
+                    </Button>
+                    <Button variant="outline" onClick={importBackup} data-testid="import-backup-btn">
+                      <Upload className="w-4 h-4 mr-2" /> Import from File
+                    </Button>
                   </div>
-                )}
+                  {lastExportDate && (
+                    <p className="text-xs text-muted-foreground" data-testid="last-export-info">
+                      Last exported: {new Date(lastExportDate).toLocaleDateString()} at {new Date(lastExportDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <span className="block mt-0.5">File saved to your Downloads folder as <strong className="text-foreground font-mono text-[11px]">obsidian-cinema-backup-{new Date(lastExportDate).toISOString().slice(0, 10)}.json</strong></span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Quick backups */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-muted-foreground">Quick Backups (stored in app, up to 5)</p>
+                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={function() { var ok = createBackup(); if (ok) toast.success('Backup created'); }} data-testid="manual-backup-btn">
+                      <Save className="w-3.5 h-3.5 mr-1.5" /> Backup Now
+                    </Button>
+                  </div>
+                  {backups.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {backups.map(function(b) {
+                        var d = new Date(b.date);
+                        var label = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        return (
+                          <div key={b.slot} className="flex items-center justify-between p-2 rounded-md bg-background border border-border/50 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                              <span>{label}</span>
+                              <span className="text-xs text-muted-foreground">{b.movieCount} movies, {b.collectionCount} collections</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs h-7"
+                              onClick={function() { setShowRestoreConfirm(b.slot); }}
+                              data-testid={'restore-backup-' + b.slot}
+                            >
+                              Restore
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground py-2">No quick backups yet. Click "Backup Now" to create one.</p>
+                  )}
+                </div>
               </div>
 
               <Separator />
