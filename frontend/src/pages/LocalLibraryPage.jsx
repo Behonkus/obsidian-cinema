@@ -240,6 +240,7 @@ export default function LocalLibraryPage() {
   const [dirToRemove, setDirToRemove] = useState(null);
   const [dirToRename, setDirToRename] = useState(null);
   const [dirNewPath, setDirNewPath] = useState('');
+  const [showDirManager, setShowDirManager] = useState(false);
   const [visibleCount, setVisibleCount] = useState(100);
   const fetchAbortRef = useRef(false);
   const fetchCountRef = useRef({ fetched: 0, found: 0, total: 0 });
@@ -1317,37 +1318,32 @@ export default function LocalLibraryPage() {
             const count = movies.filter(m => m.file_path?.startsWith(dir)).length;
             const label = dir.split(/[\\/]/).pop() || dir;
             return (
-              <div key={i} className="flex items-center gap-0.5 group">
-                <Button
-                  variant={activeDirectory === dir ? "default" : "outline"}
-                  size="sm"
-                  className="h-7 text-xs rounded-full pl-3 pr-1.5 gap-1"
-                  onClick={() => setActiveDirectory(activeDirectory === dir ? null : dir)}
-                  title={dir}
-                  data-testid={`dir-filter-${i}`}
-                >
-                  {label}
-                  <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{count}</Badge>
-                </Button>
-                <button
-                  className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
-                  onClick={(e) => { e.stopPropagation(); setDirToRename(dir); setDirNewPath(dir); }}
-                  title="Rename directory path"
-                  data-testid={'dir-rename-' + i}
-                >
-                  <Edit2 className="w-2.5 h-2.5" />
-                </button>
-                <button
-                  className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-                  onClick={(e) => { e.stopPropagation(); setDirToRemove(dir); }}
-                  title="Remove this directory"
-                  data-testid={'dir-remove-' + i}
-                >
-                  <Trash2 className="w-2.5 h-2.5" />
-                </button>
-              </div>
+              <Button
+                key={i}
+                variant={activeDirectory === dir ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs rounded-full px-3 gap-1"
+                onClick={() => setActiveDirectory(activeDirectory === dir ? null : dir)}
+                title={dir}
+                data-testid={`dir-filter-${i}`}
+              >
+                {label}
+                <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{count}</Badge>
+              </Button>
             );
           })}
+          {directories.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => setShowDirManager(true)}
+              title="Manage directories"
+              data-testid="manage-dirs-btn"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </Button>
+          )}
         </div>
       )}
 
@@ -2208,6 +2204,57 @@ export default function LocalLibraryPage() {
             >
               Empty Trash
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Directory Manager Dialog */}
+      <AlertDialog open={showDirManager} onOpenChange={(open) => { if (!open) setShowDirManager(false); }}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Manage Directories</AlertDialogTitle>
+            <AlertDialogDescription>
+              Rename directory paths or remove directories from your library.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 max-h-64 overflow-y-auto px-1">
+            {directories.map(function(dir, i) {
+              var count = movies.filter(function(m) { return m.file_path && m.file_path.startsWith(dir); }).length;
+              var label = dir.split(/[\\/]/).pop() || dir;
+              return (
+                <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/40 border border-border/50" data-testid={'dir-manage-' + i}>
+                  <HardDrive className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{label}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{dir}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">{count} movies</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 shrink-0"
+                    onClick={() => { setShowDirManager(false); setDirToRename(dir); setDirNewPath(dir); }}
+                    title="Rename"
+                    data-testid={'dir-mgr-rename-' + i}
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => { setShowDirManager(false); setDirToRemove(dir); }}
+                    title="Remove"
+                    data-testid={'dir-mgr-remove-' + i}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
