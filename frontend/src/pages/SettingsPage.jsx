@@ -24,7 +24,8 @@ import {
   Users,
   FolderArchive,
   Upload,
-  Clock
+  Clock,
+  ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,6 +90,8 @@ export default function SettingsPage() {
   const [castProgress, setCastProgress] = useState(0);
   const [castTotal, setCastTotal] = useState(0);
   const [castStatusText, setCastStatusText] = useState('');
+  const [showNoMetaList, setShowNoMetaList] = useState(false);
+  const [showAllNoMeta, setShowAllNoMeta] = useState(false);
   const [backups, setBackups] = useState([]);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(null);
 
@@ -236,11 +239,13 @@ export default function SettingsPage() {
           const dirs = localStorage.getItem('obsidian_cinema_local_dirs');
           const dirCount = dirs ? JSON.parse(dirs).length : 0;
           const withMeta = movies.filter(m => m.overview || m.rating || m.genres?.length).length;
+          const noMetaList = movies.filter(m => !m.overview && !m.rating && (!m.genres || !m.genres.length)).map(m => m.title || m.file_name);
           setStats({
             total_movies: movies.length,
             total_directories: dirCount,
             with_metadata: withMeta,
             without_metadata: movies.length - withMeta,
+            without_metadata_list: noMetaList,
           });
         }
       }
@@ -603,11 +608,37 @@ export default function SettingsPage() {
                   <p className="text-3xl font-bold text-green-400">{stats?.with_metadata || 0}</p>
                   <p className="text-sm text-muted-foreground">With Metadata</p>
                 </div>
-                <div className="p-4 rounded-lg bg-orange-500/10">
+                <div
+                  className={"p-4 rounded-lg bg-orange-500/10" + ((stats?.without_metadata || 0) > 0 ? " cursor-pointer hover:bg-orange-500/15 transition-colors" : "")}
+                  onClick={() => { if ((stats?.without_metadata || 0) > 0) setShowNoMetaList(!showNoMetaList); }}
+                  data-testid="without-metadata-card"
+                >
                   <p className="text-3xl font-bold text-orange-400">{stats?.without_metadata || 0}</p>
-                  <p className="text-sm text-muted-foreground">Without Metadata</p>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    Without Metadata
+                    {(stats?.without_metadata || 0) > 0 && <ChevronDown className={"w-3 h-3 transition-transform " + (showNoMetaList ? "rotate-180" : "")} />}
+                  </p>
                 </div>
               </div>
+              {showNoMetaList && stats?.without_metadata_list && stats.without_metadata_list.length > 0 && (
+                <div className="space-y-0.5 max-h-48 overflow-y-auto p-2 rounded-lg bg-secondary/30 border border-border/50" data-testid="no-meta-list">
+                  {(showAllNoMeta ? stats.without_metadata_list : stats.without_metadata_list.slice(0, 10)).map(function(title, idx) {
+                    return (
+                      <p key={idx} className="text-xs text-muted-foreground truncate pl-2 border-l-2 border-orange-400/30 py-0.5">{title}</p>
+                    );
+                  })}
+                  {stats.without_metadata_list.length > 10 && !showAllNoMeta && (
+                    <button className="text-xs text-primary hover:underline pl-2 pt-1" onClick={function(e) { e.stopPropagation(); setShowAllNoMeta(true); }}>
+                      Show all {stats.without_metadata_list.length} movies
+                    </button>
+                  )}
+                  {stats.without_metadata_list.length > 10 && showAllNoMeta && (
+                    <button className="text-xs text-primary hover:underline pl-2 pt-1" onClick={function(e) { e.stopPropagation(); setShowAllNoMeta(false); }}>
+                      Show less
+                    </button>
+                  )}
+                </div>
+              )}
               
               {/* Poster cache stats - web only, not relevant in desktop */}
               {!isElectron() && settings?.cached_posters > 0 && (

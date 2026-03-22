@@ -17,7 +17,8 @@ import {
   FolderHeart,
   Hourglass,
   Sparkles,
-  Users
+  Users,
+  ChevronDown
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -534,10 +535,13 @@ function computeStats(movies, directories, trashedMovies) {
   var missingPosters = 0;
   var missingYear = 0;
   var missingRating = 0;
+  var missingPosterList = [];
+  var missingYearList = [];
+  var missingRatingList = [];
   for (i = 0; i < movies.length; i++) {
-    if (!movies[i].poster_path) missingPosters++;
-    if (!movies[i].year) missingYear++;
-    if (!movies[i].rating) missingRating++;
+    if (!movies[i].poster_path) { missingPosters++; missingPosterList.push({ id: movies[i].id, title: movies[i].title || movies[i].file_name }); }
+    if (!movies[i].year) { missingYear++; missingYearList.push({ id: movies[i].id, title: movies[i].title || movies[i].file_name }); }
+    if (!movies[i].rating) { missingRating++; missingRatingList.push({ id: movies[i].id, title: movies[i].title || movies[i].file_name }); }
   }
 
   var total = movies.length;
@@ -676,6 +680,9 @@ function computeStats(movies, directories, trashedMovies) {
     missingPosters: missingPosters,
     missingYear: missingYear,
     missingRating: missingRating,
+    missingPosterList: missingPosterList,
+    missingYearList: missingYearList,
+    missingRatingList: missingRatingList,
     trashCount: trashedMovies.length,
     completeness: completeness,
     watchDays: watchDays,
@@ -818,9 +825,9 @@ export default function StatsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <HealthRow label="Missing Posters" count={stats.missingPosters} total={stats.total} color="text-orange-400" />
-              <HealthRow label="Missing Year" count={stats.missingYear} total={stats.total} color="text-yellow-400" />
-              <HealthRow label="Missing Rating" count={stats.missingRating} total={stats.total} color="text-red-400" />
+              <HealthRow label="Missing Posters" count={stats.missingPosters} total={stats.total} color="text-orange-400" movieList={stats.missingPosterList} />
+              <HealthRow label="Missing Year" count={stats.missingYear} total={stats.total} color="text-yellow-400" movieList={stats.missingYearList} />
+              <HealthRow label="Missing Rating" count={stats.missingRating} total={stats.total} color="text-red-400" movieList={stats.missingRatingList} />
               <div className="pt-2 border-t border-border/50">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Data Completeness</span>
@@ -863,15 +870,54 @@ export default function StatsPage() {
   );
 }
 
-function HealthRow({ label, count, total, color }) {
+function HealthRow({ label, count, total, color, movieList }) {
   var pct = total ? Math.round((count / total) * 100) : 0;
+  var [expanded, setExpanded] = React.useState(false);
+  var [showAll, setShowAll] = React.useState(false);
+  var visibleList = showAll ? movieList : (movieList || []).slice(0, 10);
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-foreground">{label}</span>
-      <div className="flex items-center gap-2">
-        <span className={"text-sm font-medium " + (count > 0 ? color : 'text-green-400')}>{count}</span>
-        <span className="text-xs text-muted-foreground">({pct}%)</span>
+    <div>
+      <div
+        className={"flex items-center justify-between" + (count > 0 ? " cursor-pointer hover:bg-secondary/50 -mx-2 px-2 py-0.5 rounded transition-colors" : "")}
+        onClick={() => { if (count > 0) setExpanded(!expanded); }}
+        data-testid={'health-row-' + label.toLowerCase().replace(/\s/g, '-')}
+      >
+        <span className="text-sm text-foreground flex items-center gap-1.5">
+          {label}
+          {count > 0 && <ChevronDown className={"w-3 h-3 text-muted-foreground transition-transform " + (expanded ? "rotate-180" : "")} />}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className={"text-sm font-medium " + (count > 0 ? color : 'text-green-400')}>{count}</span>
+          <span className="text-xs text-muted-foreground">({pct}%)</span>
+        </div>
       </div>
+      {expanded && movieList && movieList.length > 0 && (
+        <div className="mt-1.5 mb-2 ml-2 space-y-0.5 max-h-48 overflow-y-auto" data-testid={'health-list-' + label.toLowerCase().replace(/\s/g, '-')}>
+          {visibleList.map(function(m, idx) {
+            return (
+              <p key={m.id || idx} className="text-xs text-muted-foreground truncate pl-2 border-l-2 border-border py-0.5">
+                {m.title}
+              </p>
+            );
+          })}
+          {!showAll && movieList.length > 10 && (
+            <button
+              className="text-xs text-primary hover:underline pl-2 pt-1"
+              onClick={function(e) { e.stopPropagation(); setShowAll(true); }}
+            >
+              Show all {movieList.length} movies
+            </button>
+          )}
+          {showAll && movieList.length > 10 && (
+            <button
+              className="text-xs text-primary hover:underline pl-2 pt-1"
+              onClick={function(e) { e.stopPropagation(); setShowAll(false); }}
+            >
+              Show less
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
