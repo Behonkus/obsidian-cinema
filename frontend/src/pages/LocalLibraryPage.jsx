@@ -214,6 +214,8 @@ export default function LocalLibraryPage() {
   const [posterUrl, setPosterUrl] = useState('');
   const [editingYear, setEditingYear] = useState(false);
   const [yearInput, setYearInput] = useState('');
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState('');
   const [collections, setCollections] = useState([]);
   const [activeCollection, setActiveCollection] = useState(null);
   const [newCollectionName, setNewCollectionName] = useState('');
@@ -496,6 +498,7 @@ export default function LocalLibraryPage() {
     setPosterResults([]);
     setPosterUrl('');
     setEditingYear(false);
+    setEditingTitle(false);
     setAiSuggestions([]);
     setAiError(null);
   };
@@ -1579,7 +1582,48 @@ export default function LocalLibraryPage() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold">{selectedMovie.title}</h2>
+                  {editingTitle ? (
+                    <div className="flex items-center gap-1.5" data-testid="edit-title-input-wrapper">
+                      <Input
+                        className="text-lg font-bold h-8"
+                        value={titleInput}
+                        onChange={(e) => setTitleInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const val = titleInput.trim();
+                            if (val) {
+                              setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, title: val } : m));
+                              setSelectedMovie(prev => ({ ...prev, title: val }));
+                              toast.success('Title updated');
+                            }
+                            setEditingTitle(false);
+                          }
+                          if (e.key === 'Escape') setEditingTitle(false);
+                        }}
+                        onBlur={() => {
+                          const val = titleInput.trim();
+                          if (val && val !== selectedMovie.title) {
+                            setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, title: val } : m));
+                            setSelectedMovie(prev => ({ ...prev, title: val }));
+                            toast.success('Title updated');
+                          }
+                          setEditingTitle(false);
+                        }}
+                        autoFocus
+                        data-testid="edit-title-input"
+                      />
+                    </div>
+                  ) : (
+                    <h2
+                      className="text-xl font-bold cursor-pointer hover:text-primary transition-colors group flex items-center gap-1.5"
+                      onClick={() => { setEditingTitle(true); setTitleInput(selectedMovie.title || selectedMovie.file_name || ''); }}
+                      title="Click to edit title"
+                      data-testid="movie-title-editable"
+                    >
+                      {selectedMovie.title}
+                      <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-50 text-muted-foreground" />
+                    </h2>
+                  )}
                   {editingYear ? (
                     <div className="flex items-center gap-1.5" data-testid="edit-year-input-wrapper">
                       <Input
