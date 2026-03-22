@@ -30,7 +30,8 @@ import {
   Edit2,
   Sparkles,
   Wand2,
-  Users
+  Users,
+  RotateCcw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -494,6 +495,22 @@ export default function LocalLibraryPage() {
     setEditingYear(false);
     setAiSuggestions([]);
     setAiError(null);
+  };
+
+  // Reset movie metadata (poster, cast, synopsis, rating, tmdb_id)
+  const resetMetadata = (movie) => {
+    const cleaned = {
+      ...movie,
+      poster_path: null,
+      cast: null,
+      overview: null,
+      rating: null,
+      tmdb_id: null,
+      genres: null,
+    };
+    setMovies(prev => prev.map(m => m.id === movie.id ? cleaned : m));
+    setSelectedMovie(cleaned);
+    toast.success('Metadata cleared for "' + (movie.title || movie.file_name) + '". You can now re-fetch from TMDB.');
   };
 
   // AI Movie Suggestions
@@ -1914,6 +1931,15 @@ export default function LocalLibraryPage() {
                 >
                   <FolderOpen className="w-4 h-4 mr-2" />
                   Open Folder
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => resetMetadata(selectedMovie)}
+                  data-testid="reset-metadata-btn"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Reset Metadata
                 </Button>
               </div>
 
