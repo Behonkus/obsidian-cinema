@@ -222,6 +222,9 @@ export default function LocalLibraryPage() {
   const [skipRemoveConfirm, setSkipRemoveConfirm] = useState(() => localStorage.getItem(SKIP_REMOVE_CONFIRM_KEY) === 'true');
   const [dontShowAgainChecked, setDontShowAgainChecked] = useState(false);
   const [activeDirectory, setActiveDirectory] = useState(null);
+  const [dirToRemove, setDirToRemove] = useState(null);
+  const [dirToRename, setDirToRename] = useState(null);
+  const [dirNewPath, setDirNewPath] = useState('');
   const [visibleCount, setVisibleCount] = useState(100);
   const fetchAbortRef = useRef(false);
   const fetchCountRef = useRef({ fetched: 0, found: 0, total: 0 });
@@ -511,6 +514,35 @@ export default function LocalLibraryPage() {
     setMovies(prev => prev.map(m => m.id === movie.id ? cleaned : m));
     setSelectedMovie(cleaned);
     toast.success('Metadata cleared for "' + (movie.title || movie.file_name) + '". You can now re-fetch from TMDB.');
+  };
+
+  // Remove a directory and all its movies
+  const removeDirectory = (dirPath) => {
+    const count = movies.filter(m => m.file_path && m.file_path.startsWith(dirPath)).length;
+    setMovies(prev => prev.filter(m => !m.file_path || !m.file_path.startsWith(dirPath)));
+    setDirectories(prev => prev.filter(d => d !== dirPath));
+    if (activeDirectory === dirPath) setActiveDirectory(null);
+    setDirToRemove(null);
+    toast.success('Removed directory and ' + count + ' movies');
+  };
+
+  // Rename a directory — updates directory list and all movie file_paths
+  const renameDirectory = () => {
+    if (!dirToRename || !dirNewPath.trim()) return;
+    const oldPath = dirToRename;
+    const newPath = dirNewPath.trim();
+    if (oldPath === newPath) { setDirToRename(null); return; }
+    setDirectories(prev => prev.map(d => d === oldPath ? newPath : d));
+    setMovies(prev => prev.map(m => {
+      if (m.file_path && m.file_path.startsWith(oldPath)) {
+        return { ...m, file_path: newPath + m.file_path.substring(oldPath.length) };
+      }
+      return m;
+    }));
+    if (activeDirectory === oldPath) setActiveDirectory(newPath);
+    setDirToRename(null);
+    setDirNewPath('');
+    toast.success('Directory path updated');
   };
 
   // AI Movie Suggestions
@@ -1268,18 +1300,35 @@ export default function LocalLibraryPage() {
             const count = movies.filter(m => m.file_path?.startsWith(dir)).length;
             const label = dir.split(/[\\/]/).pop() || dir;
             return (
-              <Button
-                key={i}
-                variant={activeDirectory === dir ? "default" : "outline"}
-                size="sm"
-                className="h-7 text-xs rounded-full px-3 gap-1"
-                onClick={() => setActiveDirectory(activeDirectory === dir ? null : dir)}
-                title={dir}
-                data-testid={`dir-filter-${i}`}
-              >
-                {label}
-                <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{count}</Badge>
-              </Button>
+              <div key={i} className="flex items-center gap-0.5 group">
+                <Button
+                  variant={activeDirectory === dir ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 text-xs rounded-full pl-3 pr-1.5 gap-1"
+                  onClick={() => setActiveDirectory(activeDirectory === dir ? null : dir)}
+                  title={dir}
+                  data-testid={`dir-filter-${i}`}
+                >
+                  {label}
+                  <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{count}</Badge>
+                </Button>
+                <button
+                  className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+                  onClick={(e) => { e.stopPropagation(); setDirToRename(dir); setDirNewPath(dir); }}
+                  title="Rename directory path"
+                  data-testid={'dir-rename-' + i}
+                >
+                  <Edit2 className="w-2.5 h-2.5" />
+                </button>
+                <button
+                  className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                  onClick={(e) => { e.stopPropagation(); setDirToRemove(dir); }}
+                  title="Remove this directory"
+                  data-testid={'dir-remove-' + i}
+                >
+                  <Trash2 className="w-2.5 h-2.5" />
+                </button>
+              </div>
             );
           })}
         </div>
@@ -2058,6 +2107,70 @@ export default function LocalLibraryPage() {
               data-testid="confirm-empty-trash-btn"
             >
               Empty Trash
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Directory Confirmation */}
+      <AlertDialog open={!!dirToRemove} onOpenChange={(open) => { if (!open) setDirToRemove(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove directory?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove <strong className="text-foreground">{dirToRemove && (dirToRemove.split(/[\\/]/).pop() || dirToRemove)}</strong> and all {dirToRemove ? movies.filter(m => m.file_path && m.file_path.startsWith(dirToRemove)).length : 0} of its movies from your library.
+              <span className="block mt-2 text-muted-foreground">
+                No files will be deleted from your system. Your actual movie files will remain untouched.
+              </span>
+              <span className="block mt-1 text-xs text-muted-foreground font-mono break-all">{dirToRemove}</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => removeDirectory(dirToRemove)}
+              data-testid="confirm-remove-dir-btn"
+            >
+              Remove Directory
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Rename Directory Dialog */}
+      <AlertDialog open={!!dirToRename} onOpenChange={(open) => { if (!open) { setDirToRename(null); setDirNewPath(''); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update directory path</AlertDialogTitle>
+            <AlertDialogDescription>
+              If your folder has been renamed or moved, update the path below. All movies in this directory will be updated to the new path.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 px-6 pb-2">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Current path:</p>
+              <p className="text-sm font-mono bg-secondary/50 rounded px-2 py-1.5 break-all">{dirToRename}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">New path:</p>
+              <Input
+                value={dirNewPath}
+                onChange={(e) => setDirNewPath(e.target.value)}
+                className="font-mono text-sm"
+                placeholder="Enter new directory path..."
+                data-testid="dir-rename-input"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setDirToRename(null); setDirNewPath(''); }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={renameDirectory}
+              disabled={!dirNewPath.trim() || dirNewPath.trim() === dirToRename}
+              data-testid="confirm-rename-dir-btn"
+            >
+              Update Path
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
