@@ -21,7 +21,10 @@ import {
   Check,
   AlertTriangle,
   Trash2,
-  Users
+  Users,
+  FolderArchive,
+  Upload,
+  Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +89,137 @@ export default function SettingsPage() {
   const [castProgress, setCastProgress] = useState(0);
   const [castTotal, setCastTotal] = useState(0);
   const [castStatusText, setCastStatusText] = useState('');
+  const [backups, setBackups] = useState([]);
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(null);
+
+  // Load backup list
+  const loadBackups = () => {
+    var list = [];
+    for (var i = 1; i <= 5; i++) {
+      var raw = localStorage.getItem('obsidian_cinema_backup_' + i);
+      if (raw) {
+        try {
+          var parsed = JSON.parse(raw);
+          list.push({ slot: i, date: parsed.date, movieCount: parsed.movieCount || 0, collectionCount: parsed.collectionCount || 0 });
+        } catch (e) {}
+      }
+    }
+    setBackups(list);
+  };
+
+  // Create a backup snapshot
+  const createBackup = () => {
+    var movies = localStorage.getItem('obsidian_cinema_local_movies') || '[]';
+    var dirs = localStorage.getItem('obsidian_cinema_local_dirs') || '[]';
+    var collections = localStorage.getItem('obsidian_cinema_collections') || '[]';
+    var trash = localStorage.getItem('obsidian_cinema_trash') || '[]';
+    var tmdb = localStorage.getItem('obsidian_cinema_tmdb_key') || '';
+    var theme = localStorage.getItem('obsidian_cinema_theme') || '';
+    var gridSize = localStorage.getItem('obsidian_cinema_grid_size') || '';
+    var sortBy = localStorage.getItem('obsidian_cinema_sort_by') || '';
+    var parsedMovies = [];
+    try { parsedMovies = JSON.parse(movies); } catch (e) {}
+    var parsedCols = [];
+    try { parsedCols = JSON.parse(collections); } catch (e) {}
+
+    var snapshot = {
+      date: new Date().toISOString(),
+      movieCount: parsedMovies.length,
+      collectionCount: parsedCols.length,
+      data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSize, sortBy: sortBy }
+    };
+    // Shift existing backups down (5 -> discard, 4 -> 5, etc.)
+    for (var i = 4; i >= 1; i--) {
+      var prev = localStorage.getItem('obsidian_cinema_backup_' + i);
+      if (prev) localStorage.setItem('obsidian_cinema_backup_' + (i + 1), prev);
+    }
+    localStorage.setItem('obsidian_cinema_backup_1', JSON.stringify(snapshot));
+    loadBackups();
+  };
+
+  // Restore from a backup slot
+  const restoreBackup = (slot) => {
+    var raw = localStorage.getItem('obsidian_cinema_backup_' + slot);
+    if (!raw) return;
+    try {
+      var snapshot = JSON.parse(raw);
+      var d = snapshot.data;
+      if (d.movies) localStorage.setItem('obsidian_cinema_local_movies', d.movies);
+      if (d.dirs) localStorage.setItem('obsidian_cinema_local_dirs', d.dirs);
+      if (d.collections) localStorage.setItem('obsidian_cinema_collections', d.collections);
+      if (d.trash) localStorage.setItem('obsidian_cinema_trash', d.trash);
+      if (d.tmdb) localStorage.setItem('obsidian_cinema_tmdb_key', d.tmdb);
+      if (d.theme) localStorage.setItem('obsidian_cinema_theme', d.theme);
+      if (d.gridSize) localStorage.setItem('obsidian_cinema_grid_size', d.gridSize);
+      if (d.sortBy) localStorage.setItem('obsidian_cinema_sort_by', d.sortBy);
+      toast.success('Restored from backup. Reloading...');
+      setShowRestoreConfirm(null);
+      setTimeout(function() { window.location.reload(); }, 1000);
+    } catch (e) {
+      toast.error('Failed to restore backup');
+    }
+  };
+
+  // Export backup to file
+  const exportBackup = () => {
+    var movies = localStorage.getItem('obsidian_cinema_local_movies') || '[]';
+    var dirs = localStorage.getItem('obsidian_cinema_local_dirs') || '[]';
+    var collections = localStorage.getItem('obsidian_cinema_collections') || '[]';
+    var trash = localStorage.getItem('obsidian_cinema_trash') || '[]';
+    var tmdb = localStorage.getItem('obsidian_cinema_tmdb_key') || '';
+    var theme = localStorage.getItem('obsidian_cinema_theme') || '';
+    var gridSize = localStorage.getItem('obsidian_cinema_grid_size') || '';
+    var sortBy = localStorage.getItem('obsidian_cinema_sort_by') || '';
+    var snapshot = {
+      date: new Date().toISOString(),
+      version: 'obsidian_cinema_backup_v1',
+      data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSize, sortBy: sortBy }
+    };
+    var blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'obsidian-cinema-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Backup exported to file');
+  };
+
+  // Import backup from file
+  const importBackup = () => {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          var snapshot = JSON.parse(ev.target.result);
+          if (!snapshot.data || !snapshot.data.movies) {
+            toast.error('Invalid backup file');
+            return;
+          }
+          var d = snapshot.data;
+          if (d.movies) localStorage.setItem('obsidian_cinema_local_movies', d.movies);
+          if (d.dirs) localStorage.setItem('obsidian_cinema_local_dirs', d.dirs);
+          if (d.collections) localStorage.setItem('obsidian_cinema_collections', d.collections);
+          if (d.trash) localStorage.setItem('obsidian_cinema_trash', d.trash);
+          if (d.tmdb) localStorage.setItem('obsidian_cinema_tmdb_key', d.tmdb);
+          if (d.theme) localStorage.setItem('obsidian_cinema_theme', d.theme);
+          if (d.gridSize) localStorage.setItem('obsidian_cinema_grid_size', d.gridSize);
+          if (d.sortBy) localStorage.setItem('obsidian_cinema_sort_by', d.sortBy);
+          toast.success('Backup imported. Reloading...');
+          setTimeout(function() { window.location.reload(); }, 1000);
+        } catch (err) {
+          toast.error('Failed to read backup file');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
 
   useEffect(() => {
     loadData();
@@ -116,6 +250,23 @@ export default function SettingsPage() {
       }
     } catch (e) {}
     
+    // Load backups list and auto-backup
+    loadBackups();
+    // Auto-backup: once per session, only if movies exist
+    try {
+      var lastAutoBackup = sessionStorage.getItem('obsidian_cinema_last_auto_backup');
+      if (!lastAutoBackup) {
+        var savedMoviesForBackup = localStorage.getItem('obsidian_cinema_local_movies');
+        if (savedMoviesForBackup) {
+          var parsed = JSON.parse(savedMoviesForBackup);
+          if (parsed.length > 0) {
+            createBackup();
+            sessionStorage.setItem('obsidian_cinema_last_auto_backup', 'true');
+          }
+        }
+      }
+    } catch (e) {}
+
     // Get app version if in Electron
     if (isElectron()) {
       window.electronAPI.getAppVersion().then(version => {
@@ -877,6 +1028,58 @@ export default function SettingsPage() {
 
               <Separator />
 
+              {/* Backup & Restore */}
+              <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
+                <div>
+                  <p className="font-medium text-foreground text-sm flex items-center gap-2">
+                    <FolderArchive className="w-4 h-4" /> Backup & Restore
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your library is automatically backed up each session. Up to 5 recent backups are kept.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={function() { createBackup(); toast.success('Backup created'); }} data-testid="manual-backup-btn">
+                    <Save className="w-4 h-4 mr-2" /> Backup Now
+                  </Button>
+                  <Button variant="outline" onClick={exportBackup} data-testid="export-backup-btn">
+                    <Download className="w-4 h-4 mr-2" /> Export to File
+                  </Button>
+                  <Button variant="outline" onClick={importBackup} data-testid="import-backup-btn">
+                    <Upload className="w-4 h-4 mr-2" /> Import from File
+                  </Button>
+                </div>
+                {backups.length > 0 && (
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-xs font-medium text-muted-foreground">Recent Backups</p>
+                    {backups.map(function(b) {
+                      var d = new Date(b.date);
+                      var label = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      return (
+                        <div key={b.slot} className="flex items-center justify-between p-2 rounded-md bg-background border border-border/50 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span>{label}</span>
+                            <span className="text-xs text-muted-foreground">{b.movieCount} movies, {b.collectionCount} collections</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs h-7"
+                            onClick={function() { setShowRestoreConfirm(b.slot); }}
+                            data-testid={'restore-backup-' + b.slot}
+                          >
+                            Restore
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
               {/* Collection Management */}
               <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
                 <div>
@@ -1091,6 +1294,27 @@ export default function SettingsPage() {
               data-testid="confirm-clear-collections-btn"
             >
               Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restore Backup Confirmation */}
+      <AlertDialog open={showRestoreConfirm !== null} onOpenChange={function(open) { if (!open) setShowRestoreConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore from backup?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will replace your current library with the backup data. Your current data will be overwritten.
+              <span className="block mt-2 font-medium text-foreground">
+                Tip: Use "Backup Now" first to save your current state before restoring.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={function() { restoreBackup(showRestoreConfirm); }} data-testid="confirm-restore-btn">
+              Restore
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
