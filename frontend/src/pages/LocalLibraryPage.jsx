@@ -227,6 +227,8 @@ export default function LocalLibraryPage() {
   const [yearInput, setYearInput] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
+  const [editingSynopsis, setEditingSynopsis] = useState(false);
+  const [synopsisInput, setSynopsisInput] = useState('');
   const [collections, setCollections] = useState([]);
   const [activeCollection, setActiveCollection] = useState(null);
   const [newCollectionName, setNewCollectionName] = useState('');
@@ -510,6 +512,7 @@ export default function LocalLibraryPage() {
     setPosterUrl('');
     setEditingYear(false);
     setEditingTitle(false);
+    setEditingSynopsis(false);
     setAiSuggestions([]);
     setAiError(null);
   };
@@ -1704,54 +1707,92 @@ export default function LocalLibraryPage() {
                 </div>
               </div>
 
-              {selectedMovie.overview ? (
-                <p className="text-sm text-muted-foreground line-clamp-3">
-                  {selectedMovie.overview}
+              {editingSynopsis ? (
+                <div className="space-y-2" data-testid="edit-synopsis-wrapper">
+                  <textarea
+                    className="w-full min-h-[80px] p-2 text-sm bg-secondary border border-border rounded-md resize-y focus:outline-none focus:ring-1 focus:ring-primary"
+                    value={synopsisInput}
+                    onChange={(e) => setSynopsisInput(e.target.value)}
+                    placeholder="Enter or paste a synopsis..."
+                    autoFocus
+                    data-testid="edit-synopsis-input"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" className="text-xs h-7" onClick={() => {
+                      var val = synopsisInput.trim();
+                      setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, overview: val || null } : m));
+                      setSelectedMovie(prev => ({ ...prev, overview: val || null }));
+                      setEditingSynopsis(false);
+                      toast.success(val ? 'Synopsis updated' : 'Synopsis cleared');
+                    }} data-testid="save-synopsis-btn">Save</Button>
+                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditingSynopsis(false)}>Cancel</Button>
+                  </div>
+                </div>
+              ) : selectedMovie.overview ? (
+                <p
+                  className="text-sm text-muted-foreground line-clamp-3 cursor-pointer hover:text-foreground transition-colors group flex items-start gap-1"
+                  onClick={() => { setEditingSynopsis(true); setSynopsisInput(selectedMovie.overview); }}
+                  title="Click to edit synopsis"
+                  data-testid="synopsis-editable"
+                >
+                  <span className="flex-1">{selectedMovie.overview}</span>
+                  <Edit2 className="w-3 h-3 mt-0.5 opacity-0 group-hover:opacity-50 text-muted-foreground shrink-0" />
                 </p>
               ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                  onClick={async () => {
-                    if (!tmdbApiKey) { toast.error('Add your TMDB API key in Settings first'); return; }
-                    try {
-                      const query = encodeURIComponent(selectedMovie.title);
-                      const resp = await fetch(TMDB_API + '/search/movie?api_key=' + tmdbApiKey + '&query=' + query);
-                      const data = await resp.json();
-                      if (data.results && data.results.length > 0) {
-                        const best = data.results[0];
-                        const meta = {};
-                        if (best.overview) meta.overview = best.overview;
-                        if (best.vote_average) meta.rating = best.vote_average;
-                        if (best.release_date) meta.year = best.release_date.substring(0, 4);
-                        if (best.poster_path && !selectedMovie.poster_path) meta.poster_path = TMDB_IMG + best.poster_path;
-                        meta.tmdb_id = best.id;
-                        // Also fetch cast
-                        try {
-                          const credResp = await fetch(TMDB_API + '/movie/' + best.id + '/credits?api_key=' + tmdbApiKey);
-                          const credData = await credResp.json();
-                          if (credData.cast) {
-                            meta.cast = credData.cast.slice(0, 5).map(function(c) {
-                              return { name: c.name, character: c.character, profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null };
-                            });
-                          }
-                        } catch (_) {}
-                        setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, ...meta } : m));
-                        setSelectedMovie(prev => ({ ...prev, ...meta }));
-                        toast.success('Metadata updated from TMDB');
-                      } else {
-                        toast.info('No results found on TMDB for "' + selectedMovie.title + '"');
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={async () => {
+                      if (!tmdbApiKey) { toast.error('Add your TMDB API key in Settings first'); return; }
+                      try {
+                        const query = encodeURIComponent(selectedMovie.title);
+                        const resp = await fetch(TMDB_API + '/search/movie?api_key=' + tmdbApiKey + '&query=' + query);
+                        const data = await resp.json();
+                        if (data.results && data.results.length > 0) {
+                          const best = data.results[0];
+                          const meta = {};
+                          if (best.overview) meta.overview = best.overview;
+                          if (best.vote_average) meta.rating = best.vote_average;
+                          if (best.release_date) meta.year = best.release_date.substring(0, 4);
+                          if (best.poster_path && !selectedMovie.poster_path) meta.poster_path = TMDB_IMG + best.poster_path;
+                          meta.tmdb_id = best.id;
+                          try {
+                            const credResp = await fetch(TMDB_API + '/movie/' + best.id + '/credits?api_key=' + tmdbApiKey);
+                            const credData = await credResp.json();
+                            if (credData.cast) {
+                              meta.cast = credData.cast.slice(0, 5).map(function(c) {
+                                return { name: c.name, character: c.character, profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null };
+                              });
+                            }
+                          } catch (_) {}
+                          setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, ...meta } : m));
+                          setSelectedMovie(prev => ({ ...prev, ...meta }));
+                          toast.success('Metadata updated from TMDB');
+                        } else {
+                          toast.info('No results found on TMDB for "' + selectedMovie.title + '"');
+                        }
+                      } catch (e) {
+                        toast.error('Failed to fetch metadata');
                       }
-                    } catch (e) {
-                      toast.error('Failed to fetch metadata');
-                    }
-                  }}
-                  data-testid="fetch-metadata-btn"
-                >
-                  <Search className="w-3 h-3 mr-1.5" />
-                  Fetch synopsis from TMDB
-                </Button>
+                    }}
+                    data-testid="fetch-metadata-btn"
+                  >
+                    <Search className="w-3 h-3 mr-1.5" />
+                    Fetch from TMDB
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground"
+                    onClick={() => { setEditingSynopsis(true); setSynopsisInput(''); }}
+                    data-testid="add-synopsis-manual-btn"
+                  >
+                    <Edit2 className="w-3 h-3 mr-1.5" />
+                    Add manually
+                  </Button>
+                </div>
               )}
 
               {/* Cast Section */}
