@@ -86,6 +86,7 @@ const SORT_KEY = 'obsidian_cinema_sort';
 const COLLECTIONS_KEY = 'obsidian_cinema_collections';
 const SKIP_REMOVE_CONFIRM_KEY = 'obsidian_cinema_skip_remove_confirm';
 const SKIP_POSTER_TIP_KEY = 'obsidian_cinema_skip_poster_tip';
+const ACTIVITY_KEY = 'obsidian_cinema_activity';
 
 // 30 days in milliseconds
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -504,6 +505,24 @@ export default function LocalLibraryPage() {
     }
   };
 
+  // Track movie activity (views and plays)
+  const trackActivity = (movieId, type) => {
+    try {
+      var saved = localStorage.getItem(ACTIVITY_KEY);
+      var activity = saved ? JSON.parse(saved) : {};
+      if (!activity[movieId]) activity[movieId] = { views: 0, plays: 0, lastView: 0 };
+      if (type === 'view') { activity[movieId].views++; activity[movieId].lastView = Date.now(); }
+      if (type === 'play') { activity[movieId].plays++; }
+      localStorage.setItem(ACTIVITY_KEY, JSON.stringify(activity));
+    } catch (e) {}
+  };
+
+  // Open movie detail with tracking
+  const openMovieDetail = (movie) => {
+    setSelectedMovie(movie);
+    trackActivity(movie.id, 'view');
+  };
+
   // Reset poster state when closing modal
   const closeDetail = () => {
     setSelectedMovie(null);
@@ -608,41 +627,63 @@ export default function LocalLibraryPage() {
     }
   };
 
-  // Sidebar "Suggested For You" — picks a seed movie from top genre
+  // Sidebar "Suggested For You" — uses activity data + genre matching
   const fetchSidebarSuggestions = async () => {
     setSidebarLoading(true);
     setSidebarError(null);
     setSidebarSuggestions([]);
     try {
-      // Find the most popular genre
-      const genreCount = {};
-      movies.forEach(m => {
-        if (m.genres && Array.isArray(m.genres)) {
-          m.genres.forEach(g => {
-            const name = typeof g === 'object' && g.name ? g.name : g;
-            if (typeof name === 'string') genreCount[name] = (genreCount[name] || 0) + 1;
-          });
-        }
-      });
-      const topGenre = Object.entries(genreCount).sort((a, b) => b[1] - a[1])[0];
-      // Pick a random highly-rated movie from top genre as the seed
-      const topGenreMovies = topGenre
-        ? movies.filter(m => m.genres && m.genres.some(g => (typeof g === 'object' ? g.name : g) === topGenre[0]))
-        : movies;
-      const rated = topGenreMovies.filter(m => m.rating).sort((a, b) => b.rating - a.rating);
-      const pool = rated.length > 0 ? rated.slice(0, Math.min(10, rated.length)) : topGenreMovies;
-      const seed = pool[Math.floor(Math.random() * pool.length)];
-      if (!seed) { setSidebarError('Not enough movies to generate suggestions'); setSidebarLoading(false); return; }
+      // Load activity data
+      var activityRaw = localStorage.getItem(ACTIVITY_KEY);
+      var activity = activityRaw ? JSON.parse(activityRaw) : {};
 
-      const libraryMovies = movies.map(m => ({
-        id: m.id,
-        title: m.title || m.file_name,
-        year: m.year || null,
-        genres: m.genres || [],
-        overview: m.overview ? m.overview.substring(0, 100) : null,
-        rating: m.rating || null,
-      }));
-      const resp = await fetch(BACKEND_API + '/ai/suggestions', {
+      // Score movies by engagement: plays * 3 + views
+      var scored = movies.map(function(m) {
+        var a = activity[m.id] || { views: 0, plays: 0 };
+        return { movie: m, score: a.plays * 3 + a.views };
+      }).filter(function(s) { return s.movie.genres && s.movie.genres.length > 0; });
+
+      // Pick seed: prefer most-interacted movies, fallback to random high-rated
+      scored.sort(function(a, b) { return b.score - a.score; });
+      var interacted = scored.filter(function(s) { return s.score > 0; });
+      var seed;
+      if (interacted.length > 0) {
+        // Pick randomly from top 10 most interacted
+        var topPool = interacted.slice(0, Math.min(10, interacted.length));
+        seed = topPool[Math.floor(Math.random() * topPool.length)].movie;
+      } else {
+        // No activity yet — pick random highly-rated
+        var rated = movies.filter(function(m) { return m.rating && m.genres && m.genres.length > 0; });
+        rated.sort(function(a, b) { return b.rating - a.rating; });
+        var pool = rated.length > 0 ? rated.slice(0, 20) : movies.filter(function(m) { return m.genres && m.genres.length > 0; });
+        seed = pool[Math.floor(Math.random() * pool.length)];
+      }
+      if (!seed) { setSidebarError('Not enough movies with metadata to generate suggestions'); setSidebarLoading(false); return; }
+
+      // Build candidate list: prioritize same-genre movies for better matches
+      var seedGenres = {};
+      if (seed.genres) {
+        seed.genres.forEach(function(g) {
+          var name = typeof g === 'object' && g.name ? g.name : g;
+          if (typeof name === 'string') seedGenres[name] = true;
+        });
+      }
+      // Split candidates into genre-matched and others
+      var genreMatched = [];
+      var others = [];
+      movies.forEach(function(m) {
+        if (m.id === seed.id) return;
+        var hasGenreOverlap = m.genres && m.genres.some(function(g) {
+          var name = typeof g === 'object' && g.name ? g.name : g;
+          return seedGenres[name];
+        });
+        var item = { id: m.id, title: m.title || m.file_name, year: m.year || null, genres: m.genres || [], overview: m.overview ? m.overview.substring(0, 80) : null, rating: m.rating || null };
+        if (hasGenreOverlap) { genreMatched.push(item); } else { others.push(item); }
+      });
+      // Send up to 180 genre-matched + 20 others for variety
+      var candidates = genreMatched.slice(0, 180).concat(others.slice(0, 20));
+
+      var resp = await fetch(BACKEND_API + '/ai/suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -654,17 +695,17 @@ export default function LocalLibraryPage() {
             overview: seed.overview || null,
             rating: seed.rating || null,
           },
-          library_movies: libraryMovies,
+          library_movies: candidates,
         }),
       });
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
+        var err = await resp.json().catch(function() { return {}; });
         throw new Error(err.detail || 'Failed to get suggestions');
       }
-      const data = await resp.json();
+      var data = await resp.json();
       setSidebarSuggestions(data.suggestions || []);
       if (!data.suggestions || data.suggestions.length === 0) {
-        setSidebarError('No suggestions found — try adding more movies to your library');
+        setSidebarError('No suggestions found — try again for different picks');
       }
     } catch (e) {
       setSidebarError(e.message || 'Failed to get suggestions');
@@ -946,6 +987,7 @@ export default function LocalLibraryPage() {
   };
 
   const playMovie = (movie) => {
+    trackActivity(movie.id, 'play');
     if (isElectron()) {
       // Open with system default player
       if (window.electronAPI?.openPath) {
@@ -1523,7 +1565,7 @@ export default function LocalLibraryPage() {
                 </div>
                 <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
                   {dirMovies.map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => setSelectedMovie(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} />
+                    <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => openMovieDetail(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} />
                   ))}
                 </div>
               </div>
@@ -1532,7 +1574,7 @@ export default function LocalLibraryPage() {
         ) : (
         <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
           {displayedMovies.map((movie) => (
-            <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => setSelectedMovie(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} />
+            <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => openMovieDetail(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} />
           ))}
         </div>
         )
