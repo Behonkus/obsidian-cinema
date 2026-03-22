@@ -162,19 +162,19 @@ function CastRow({ cast }) {
       <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
         <Users className="w-3.5 h-3.5" /> Cast
       </p>
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-3 overflow-x-auto pb-1">
         {cast.map(function(actor, idx) {
           return (
-            <div key={idx} className="flex flex-col items-center shrink-0 w-14" data-testid={'cast-member-' + idx}>
+            <div key={idx} className="flex flex-col items-center shrink-0 w-20" data-testid={'cast-member-' + idx}>
               {actor.profile_path ? (
-                <img src={actor.profile_path} alt={actor.name} className="w-10 h-10 rounded-full object-cover" />
+                <img src={actor.profile_path} alt={actor.name} className="w-12 h-12 rounded-full object-cover" />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                  <Users className="w-4 h-4 text-muted-foreground/50" />
+                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
+                  <Users className="w-5 h-5 text-muted-foreground/50" />
                 </div>
               )}
-              <p className="text-[10px] font-medium text-center mt-1 leading-tight truncate w-full">{actor.name}</p>
-              <p className="text-[9px] text-muted-foreground text-center leading-tight truncate w-full">{actor.character}</p>
+              <p className="text-[10px] font-medium text-center mt-1.5 leading-tight w-full">{actor.name}</p>
+              <p className="text-[9px] text-muted-foreground text-center leading-tight w-full">{actor.character}</p>
             </div>
           );
         })}
