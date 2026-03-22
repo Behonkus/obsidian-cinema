@@ -20,7 +20,7 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - SEO meta tags, marketing materials
 - Download endpoint (/api/download/windows) — now prefers .exe over .zip
 
-### Desktop App (Electron — v1.0.8)
+### Desktop App (Electron — v1.1.4)
 - Local/network drive scanning
 - TMDB poster/metadata/cast auto-fetch
 - One-click playback
@@ -31,12 +31,17 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - Directory filter tabs & pagination, individual file import
 - Cast display in movie detail modal (top 5 actors)
 - "Fetch Cast" bulk button + per-movie "Load cast" button
-- AI Movie Suggestions (detail modal + "Suggest For Me" sidebar)
+- AI Movie Suggestions (activity-weighted, genre-filtered) — detail modal + "Suggest For Me" sidebar
 - Poster Fetch Tip popup with "Don't show again"
 - License activation, auto-update
+- Editable movie titles, year & synopsis; reset/re-fetch metadata
+- Centralized directory management (rename/remove paths)
+- Backup & Restore wizard (rolling auto-backups + JSON export/import)
+- Expandable "Missing Metadata/Posters" lists in Stats & Settings
+- Updated "About Obsidian Cinema" features list (v1.1.4)
 
 ### CI/CD
-- GitHub Actions builds .exe directly (no longer zipped)
+- GitHub Actions builds .exe, zips it for releases (avoids SmartScreen)
 - Manual triggers with version input
 - Auto-creates GitHub releases
 

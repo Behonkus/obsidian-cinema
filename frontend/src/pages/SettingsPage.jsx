@@ -1274,25 +1274,37 @@ export default function SettingsPage() {
             <CardContent>
               <div className="grid md:grid-cols-3 gap-6 text-sm">
                 <div>
-                  <h4 className="font-medium text-foreground mb-2">Features</h4>
+                  <h4 className="font-medium text-foreground mb-2">Library</h4>
                   <ul className="space-y-1 text-muted-foreground">
                     <li>• Scan local & network directories</li>
-                    <li>• TMDB movie posters & metadata</li>
+                    <li>• TMDB posters, metadata & cast</li>
                     <li>• System default player integration</li>
-                    <li>• Search & filter movies</li>
+                    <li>• 13 sorting options & poster sizes</li>
+                    <li>• Directory management & filtering</li>
+                    <li>• Individual file import</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-medium text-foreground mb-2">Supported Formats</h4>
-                  <p className="text-muted-foreground">
-                    MP4, MKV, AVI, MOV, WMV, FLV, WebM, M4V, MPEG, TS, VOB, and more...
-                  </p>
+                  <h4 className="font-medium text-foreground mb-2">Smart Features</h4>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li>• AI movie suggestions</li>
+                    <li>• Editable title, year & synopsis</li>
+                    <li>• Cast display & bulk fetch</li>
+                    <li>• Reset & re-fetch metadata</li>
+                    <li>• Collections & trash management</li>
+                    <li>• Backup, export & restore</li>
+                  </ul>
                 </div>
                 <div>
-                  <h4 className="font-medium text-foreground mb-2">Network Paths</h4>
-                  <p className="text-muted-foreground">
-                    Supports UNC paths like <code className="bg-secondary px-1 rounded">\\server\share</code> and mounted drives
-                  </p>
+                  <h4 className="font-medium text-foreground mb-2">Stats & More</h4>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li>• Library stats & cast insights</li>
+                    <li>• Collection health tracking</li>
+                    <li>• 18 color themes</li>
+                    <li>• Auto-updates</li>
+                    <li>• MP4, MKV, AVI, MOV, WMV & more</li>
+                    <li>• UNC & network path support</li>
+                  </ul>
                 </div>
               </div>
             </CardContent>
