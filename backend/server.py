@@ -2693,6 +2693,7 @@ class MovieSummary(BaseModel):
 class SuggestionRequest(BaseModel):
     selected_movie: MovieSummary
     library_movies: List[MovieSummary]
+    activity_context: Optional[str] = None
 
 class SuggestionItem(BaseModel):
     id: str
@@ -2744,16 +2745,22 @@ async def get_ai_suggestions(request: Request):
     if selected.overview: sel_info += f"\nSynopsis: {selected.overview[:200]}"
 
     system_msg = (
-        "You are a movie recommendation engine. The user has selected a movie from their personal library. "
-        "Based on that movie's metadata, suggest up to 5 other movies FROM THEIR LIBRARY that they would enjoy. "
-        "Consider genre overlap, themes, era, tone, director style, and rating similarity. "
+        "You are a movie recommendation engine. The user has a personal movie library and you know which movies they watch and click on most. "
+        "Based on their viewing activity and the selected movie, suggest up to 5 other movies FROM THEIR LIBRARY that they would enjoy. "
+        "Prioritize movies that match the user's demonstrated taste through their activity patterns. "
+        "Consider title similarity, themes, era, tone, and the types of movies they engage with most. "
+        "Genre data may be sparse — rely primarily on titles, ratings, and the activity context provided. "
         "ONLY suggest movies that appear in the provided library list. "
         "Return ONLY valid JSON — an array of objects with keys: id, title, reason. "
-        "The reason should be 1 concise sentence explaining why this movie is similar. "
-        "Example: [{\"id\":\"abc\",\"title\":\"Movie Name\",\"reason\":\"Both are sci-fi thrillers from the 2010s with mind-bending plots.\"}]"
+        "The reason should be 1 concise sentence explaining why this movie fits their taste. "
+        "Example: [{\"id\":\"abc\",\"title\":\"Movie Name\",\"reason\":\"Based on your frequent viewing of action thrillers, this is a great match.\"}]"
     )
 
-    user_text = f"SELECTED MOVIE:\n{sel_info}\n\nMY LIBRARY:\n{library_text}\n\nSuggest up to 5 movies from my library that are similar to the selected movie. Return ONLY the JSON array."
+    activity_info = ""
+    if req.activity_context:
+        activity_info = f"\n\nUSER ACTIVITY:\n{req.activity_context}"
+
+    user_text = f"SELECTED MOVIE:\n{sel_info}{activity_info}\n\nMY LIBRARY:\n{library_text}\n\nSuggest up to 5 movies from my library based on my viewing habits and the selected movie. Return ONLY the JSON array."
 
     try:
         chat = LlmChat(

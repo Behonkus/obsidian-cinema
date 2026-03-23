@@ -631,7 +631,7 @@ export default function LocalLibraryPage() {
     }
   };
 
-  // Sidebar "Suggested For You" — uses activity data + genre matching
+  // Sidebar "Suggested For You" — driven by user activity (views, plays, clicks)
   const fetchSidebarSuggestions = async () => {
     setSidebarLoading(true);
     setSidebarError(null);
@@ -641,53 +641,51 @@ export default function LocalLibraryPage() {
       var activityRaw = localStorage.getItem(ACTIVITY_KEY);
       var activity = activityRaw ? JSON.parse(activityRaw) : {};
 
-      // Score movies by engagement: plays * 3 + views
-      var scored = movies.map(function(m) {
+      // Score every movie by engagement: plays * 3 + views
+      var allScored = movies.map(function(m) {
         var a = activity[m.id] || { views: 0, plays: 0 };
         return { movie: m, score: a.plays * 3 + a.views };
       }).filter(function(s) { return s.movie.title || s.movie.file_name; });
 
-      // Pick seed: prefer most-interacted movies, fallback to random high-rated
-      scored.sort(function(a, b) { return b.score - a.score; });
-      var interacted = scored.filter(function(s) { return s.score > 0; });
+      if (allScored.length < 2) { setSidebarError('Need at least 2 movies to generate suggestions'); setSidebarLoading(false); return; }
+
+      // Sort by engagement score descending
+      allScored.sort(function(a, b) { return b.score - a.score; });
+      var interacted = allScored.filter(function(s) { return s.score > 0; });
+
+      // Pick seed from most-watched/clicked movies
       var seed;
       if (interacted.length > 0) {
-        // Pick randomly from top 10 most interacted
         var topPool = interacted.slice(0, Math.min(10, interacted.length));
         seed = topPool[Math.floor(Math.random() * topPool.length)].movie;
       } else {
-        // No activity yet — pick random highly-rated or any movie with a title
-        var rated = movies.filter(function(m) { return m.rating && (m.title || m.file_name); });
-        rated.sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); });
-        var pool = rated.length > 0 ? rated.slice(0, 20) : movies.filter(function(m) { return m.title || m.file_name; });
-        seed = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
+        // No activity yet — pick a random movie
+        seed = allScored[Math.floor(Math.random() * Math.min(20, allScored.length))].movie;
       }
-      if (!seed) { setSidebarError('Not enough movies with metadata to generate suggestions'); setSidebarLoading(false); return; }
 
-      // Build candidate list: prioritize same-genre movies for better matches
-      var seedGenres = {};
-      if (seed.genres && seed.genres.length > 0) {
-        seed.genres.forEach(function(g) {
-          var name = typeof g === 'object' && g.name ? g.name : g;
-          if (typeof name === 'string') seedGenres[name] = true;
-        });
-      }
-      // Split candidates into genre-matched and others
-      var genreMatched = [];
-      var others = [];
-      movies.forEach(function(m) {
-        if (m.id === seed.id) return;
-        if (!(m.title || m.file_name)) return;
-        var hasGenreOverlap = Object.keys(seedGenres).length > 0 && m.genres && m.genres.some(function(g) {
-          var name = typeof g === 'object' && g.name ? g.name : g;
-          return seedGenres[name];
-        });
-        var genreStrs = (m.genres || []).map(function(g) { return typeof g === 'object' && g.name ? g.name : String(g); });
-        var item = { id: m.id, title: m.title || m.file_name, year: m.year || null, genres: genreStrs, overview: m.overview ? m.overview.substring(0, 80) : null, rating: m.rating || null };
-        if (hasGenreOverlap) { genreMatched.push(item); } else { others.push(item); }
+      // Build activity context string for the AI
+      var topWatched = interacted.slice(0, 15).map(function(s) {
+        return (s.movie.title || s.movie.file_name) + ' (score:' + s.score + ')';
       });
-      // Send up to 180 genre-matched + 20 others for variety (or 200 others if no genre data)
-      var candidates = genreMatched.length > 0 ? genreMatched.slice(0, 180).concat(others.slice(0, 20)) : others.slice(0, 200);
+      var activityContext = topWatched.length > 0
+        ? 'User most-watched/clicked movies: ' + topWatched.join(', ')
+        : 'No activity data yet — suggest based on the selected movie.';
+
+      // Build candidate list: prioritize movies the user has engaged with
+      var toItem = function(m) {
+        var genreStrs = (m.genres || []).map(function(g) { return typeof g === 'object' && g.name ? g.name : String(g); });
+        return { id: m.id, title: m.title || m.file_name, year: m.year || null, genres: genreStrs, overview: m.overview ? m.overview.substring(0, 80) : null, rating: m.rating || null };
+      };
+
+      // Include engaged movies first, then fill with random others
+      var candidateMap = {};
+      allScored.forEach(function(s) {
+        if (s.movie.id === seed.id) return;
+        candidateMap[s.movie.id] = { item: toItem(s.movie), score: s.score };
+      });
+      var entries = Object.values(candidateMap);
+      entries.sort(function(a, b) { return b.score - a.score; });
+      var candidates = entries.slice(0, 200).map(function(e) { return e.item; });
 
       var resp = await fetch(BACKEND_API + '/ai/suggestions', {
         method: 'POST',
@@ -702,6 +700,7 @@ export default function LocalLibraryPage() {
             rating: seed.rating || null,
           },
           library_movies: candidates,
+          activity_context: activityContext,
         }),
       });
       if (!resp.ok) {
