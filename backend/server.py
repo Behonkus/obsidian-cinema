@@ -12,8 +12,8 @@ import httpx
 import hashlib
 import asyncio
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Dict, AsyncGenerator
+from pydantic import BaseModel, Field, ConfigDict, model_validator
+from typing import List, Optional, Dict, AsyncGenerator, Any
 import uuid
 from datetime import datetime, timezone, timedelta
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
@@ -2652,9 +2652,19 @@ class MovieSummary(BaseModel):
     id: str
     title: str
     year: Optional[int] = None
-    genres: Optional[List[str]] = None
+    genres: Optional[List[Any]] = None
     overview: Optional[str] = None
     rating: Optional[float] = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def normalize_genres(cls, data):
+        if isinstance(data, dict) and 'genres' in data and data['genres']:
+            data['genres'] = [
+                g['name'] if isinstance(g, dict) and 'name' in g else str(g)
+                for g in data['genres']
+            ]
+        return data
 
 class SuggestionRequest(BaseModel):
     selected_movie: MovieSummary
