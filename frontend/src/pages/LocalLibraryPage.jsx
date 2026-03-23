@@ -31,7 +31,8 @@ import {
   Sparkles,
   Wand2,
   Users,
-  RotateCcw
+  RotateCcw,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1341,8 +1342,18 @@ export default function LocalLibraryPage() {
           placeholder="Search movies..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className="pl-10 pr-8"
+          data-testid="movie-search-input"
         />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            data-testid="movie-search-clear-btn"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Directory Filter */}
