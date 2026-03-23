@@ -234,7 +234,6 @@ export default function LocalLibraryPage() {
   const [synopsisInput, setSynopsisInput] = useState('');
   const [collections, setCollections] = useState([]);
   const [activeCollection, setActiveCollection] = useState(null);
-  const [activeSubCollection, setActiveSubCollection] = useState(null);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [showNewCollectionInput, setShowNewCollectionInput] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -330,21 +329,11 @@ export default function LocalLibraryPage() {
   // Collection helpers
   const createCollection = (name) => {
     if (!name.trim()) return;
-    const col = { id: Date.now().toString(), name: name.trim(), movie_ids: [], sub_collections: [], created_at: Date.now() };
+    const col = { id: Date.now().toString(), name: name.trim(), movie_ids: [], created_at: Date.now() };
     setCollections(prev => [...prev, col]);
     setNewCollectionName('');
     setShowNewCollectionInput(false);
     toast.success(`Collection "${col.name}" created`);
-  };
-
-  const createSubCollection = (collectionId, name) => {
-    if (!name.trim()) return;
-    const sub = { id: Date.now().toString(), name: name.trim(), movie_ids: [] };
-    setCollections(prev => prev.map(c => {
-      if (c.id !== collectionId) return c;
-      return { ...c, sub_collections: [...(c.sub_collections || []), sub] };
-    }));
-    toast.success(`Sub-collection "${sub.name}" created`);
   };
 
   const toggleMovieInCollection = (collectionId, movieId) => {
@@ -355,36 +344,10 @@ export default function LocalLibraryPage() {
     }));
   };
 
-  const toggleMovieInSubCollection = (collectionId, subId, movieId) => {
-    setCollections(prev => prev.map(c => {
-      if (c.id !== collectionId) return c;
-      return { ...c, sub_collections: (c.sub_collections || []).map(s => {
-        if (s.id !== subId) return s;
-        const has = s.movie_ids.includes(movieId);
-        return { ...s, movie_ids: has ? s.movie_ids.filter(id => id !== movieId) : [...s.movie_ids, movieId] };
-      })};
-    }));
-  };
-
   const deleteCollection = (collectionId) => {
     setCollections(prev => prev.filter(c => c.id !== collectionId));
-    if (activeCollection === collectionId) { setActiveCollection(null); setActiveSubCollection(null); }
+    if (activeCollection === collectionId) setActiveCollection(null);
     toast.success('Collection deleted');
-  };
-
-  const deleteSubCollection = (collectionId, subId) => {
-    setCollections(prev => prev.map(c => {
-      if (c.id !== collectionId) return c;
-      return { ...c, sub_collections: (c.sub_collections || []).filter(s => s.id !== subId) };
-    }));
-    if (activeSubCollection === subId) setActiveSubCollection(null);
-    toast.success('Sub-collection deleted');
-  };
-
-  const getCollectionAllMovieIds = (col) => {
-    const ids = new Set(col.movie_ids || []);
-    (col.sub_collections || []).forEach(s => s.movie_ids.forEach(id => ids.add(id)));
-    return ids;
   };
 
   // Fetch poster from TMDB
@@ -1193,15 +1156,7 @@ export default function LocalLibraryPage() {
       // Collection filter
       if (activeCollection) {
         const col = collections.find(c => c.id === activeCollection);
-        if (col) {
-          if (activeSubCollection) {
-            const sub = (col.sub_collections || []).find(s => s.id === activeSubCollection);
-            if (sub && !sub.movie_ids.includes(movie.id)) return false;
-          } else {
-            const allIds = getCollectionAllMovieIds(col);
-            if (!allIds.has(movie.id)) return false;
-          }
-        }
+        if (col && !col.movie_ids.includes(movie.id)) return false;
       }
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
@@ -1216,7 +1171,7 @@ export default function LocalLibraryPage() {
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(100);
-  }, [activeDirectory, activeCollection, activeSubCollection, searchQuery, sortBy]);
+  }, [activeDirectory, activeCollection, searchQuery, sortBy]);
 
   if (!isElectron()) {
     return (
@@ -1451,66 +1406,30 @@ export default function LocalLibraryPage() {
 
       {/* Collections Filter */}
       {collections.length > 0 && (
-        <div className="space-y-2" data-testid="collections-filter">
-          <div className="flex flex-wrap items-center gap-2">
-            <FolderHeart className="w-4 h-4 text-muted-foreground" />
+        <div className="flex flex-wrap items-center gap-2" data-testid="collections-filter">
+          <FolderHeart className="w-4 h-4 text-muted-foreground" />
+          <Button
+            variant={activeCollection === null ? "default" : "outline"}
+            size="sm"
+            className="h-7 text-xs rounded-full px-3"
+            onClick={() => setActiveCollection(null)}
+            data-testid="collection-filter-all"
+          >
+            All Movies
+          </Button>
+          {collections.map(col => (
             <Button
-              variant={activeCollection === null ? "default" : "outline"}
+              key={col.id}
+              variant={activeCollection === col.id ? "default" : "outline"}
               size="sm"
-              className="h-7 text-xs rounded-full px-3"
-              onClick={() => { setActiveCollection(null); setActiveSubCollection(null); }}
-              data-testid="collection-filter-all"
+              className="h-7 text-xs rounded-full px-3 gap-1.5"
+              onClick={() => setActiveCollection(activeCollection === col.id ? null : col.id)}
+              data-testid={`collection-filter-${col.id}`}
             >
-              All Movies
+              {col.name}
+              <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{col.movie_ids.length}</Badge>
             </Button>
-            {collections.map(col => {
-              const totalCount = getCollectionAllMovieIds(col).size;
-              return (
-                <Button
-                  key={col.id}
-                  variant={activeCollection === col.id ? "default" : "outline"}
-                  size="sm"
-                  className="h-7 text-xs rounded-full px-3 gap-1.5"
-                  onClick={() => { setActiveCollection(activeCollection === col.id ? null : col.id); setActiveSubCollection(null); }}
-                  data-testid={`collection-filter-${col.id}`}
-                >
-                  {col.name}
-                  <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{totalCount}</Badge>
-                </Button>
-              );
-            })}
-          </div>
-          {activeCollection && (() => {
-            const col = collections.find(c => c.id === activeCollection);
-            if (!col || !(col.sub_collections || []).length) return null;
-            return (
-              <div className="flex flex-wrap items-center gap-2 pl-6" data-testid="sub-collections-filter">
-                <span className="text-xs text-muted-foreground">Sub:</span>
-                <Button
-                  variant={activeSubCollection === null ? "secondary" : "ghost"}
-                  size="sm"
-                  className="h-6 text-[11px] rounded-full px-2.5"
-                  onClick={() => setActiveSubCollection(null)}
-                  data-testid="sub-collection-filter-all"
-                >
-                  All
-                </Button>
-                {col.sub_collections.map(sub => (
-                  <Button
-                    key={sub.id}
-                    variant={activeSubCollection === sub.id ? "secondary" : "ghost"}
-                    size="sm"
-                    className="h-6 text-[11px] rounded-full px-2.5 gap-1"
-                    onClick={() => setActiveSubCollection(activeSubCollection === sub.id ? null : sub.id)}
-                    data-testid={`sub-collection-filter-${sub.id}`}
-                  >
-                    {sub.name}
-                    <Badge variant="outline" className="h-3.5 px-1 text-[9px]">{sub.movie_ids.length}</Badge>
-                  </Button>
-                ))}
-              </div>
-            );
-          })()}
+          ))}
         </div>
       )}
 
@@ -2069,12 +1988,8 @@ export default function LocalLibraryPage() {
               <CollectionAssigner
                 movieId={selectedMovie.id}
                 collections={collections}
-                getCollectionAllMovieIds={getCollectionAllMovieIds}
                 toggleMovieInCollection={toggleMovieInCollection}
-                toggleMovieInSubCollection={toggleMovieInSubCollection}
                 createCollection={createCollection}
-                createSubCollection={createSubCollection}
-                deleteSubCollection={deleteSubCollection}
               />
 
               {/* AI Movie Suggestions */}
