@@ -2650,20 +2650,44 @@ EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
 class MovieSummary(BaseModel):
     id: str
-    title: str
-    year: Optional[int] = None
+    title: str = ""
+    year: Optional[Any] = None
     genres: Optional[List[Any]] = None
     overview: Optional[str] = None
-    rating: Optional[float] = None
+    rating: Optional[Any] = None
 
     @model_validator(mode='before')
     @classmethod
-    def normalize_genres(cls, data):
-        if isinstance(data, dict) and 'genres' in data and data['genres']:
-            data['genres'] = [
-                g['name'] if isinstance(g, dict) and 'name' in g else str(g)
-                for g in data['genres']
-            ]
+    def normalize_fields(cls, data):
+        if not isinstance(data, dict):
+            return data
+        # Normalize id to string
+        if 'id' in data and data['id'] is not None:
+            data['id'] = str(data['id'])
+        # Normalize genres: TMDB objects to strings
+        if 'genres' in data and data['genres']:
+            normalized = []
+            for g in data['genres']:
+                if isinstance(g, dict) and 'name' in g:
+                    normalized.append(g['name'])
+                elif isinstance(g, str):
+                    normalized.append(g)
+                else:
+                    normalized.append(str(g))
+            data['genres'] = normalized
+        # Normalize year to int or None
+        if 'year' in data and data['year'] is not None:
+            try:
+                yr = str(data['year']).strip()
+                data['year'] = int(yr) if yr else None
+            except (ValueError, TypeError):
+                data['year'] = None
+        # Normalize rating to float or None
+        if 'rating' in data and data['rating'] is not None:
+            try:
+                data['rating'] = float(data['rating'])
+            except (ValueError, TypeError):
+                data['rating'] = None
         return data
 
 class SuggestionRequest(BaseModel):
@@ -2679,9 +2703,21 @@ class SuggestionResponse(BaseModel):
     suggestions: List[SuggestionItem]
 
 @api_router.post("/ai/suggestions", response_model=SuggestionResponse)
-async def get_ai_suggestions(req: SuggestionRequest):
+async def get_ai_suggestions(request: Request):
     if not EMERGENT_LLM_KEY:
         raise HTTPException(status_code=500, detail="AI service not configured")
+
+    # Parse body manually to log validation errors
+    try:
+        body = await request.json()
+        req = SuggestionRequest(**body)
+    except Exception as e:
+        logging.error(f"AI suggestions validation error: {e}")
+        logging.error(f"Request body keys: {list(body.keys()) if isinstance(body, dict) else 'not a dict'}")
+        if isinstance(body, dict) and 'selected_movie' in body:
+            sm = body['selected_movie']
+            logging.error(f"selected_movie sample: id={sm.get('id')}, title={sm.get('title')}, genres={sm.get('genres', [])[:2]}, year={sm.get('year')}, rating={sm.get('rating')}")
+        raise HTTPException(status_code=422, detail=str(e))
 
     selected = req.selected_movie
     # Filter out the selected movie from candidates
