@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   MostViewedMovies, BingeScore, AverageMovieAge, TitleLengthRecords,
-  RarestDecade, MarathonMode, RatingPersonality, AlphabetCoverage, RandomMoviePicker
+  RarestDecade, MarathonMode, RatingPersonality, AlphabetCoverage, SuggestForMe
 } from "@/components/FunStats";
 import {
   BarChart,
@@ -833,7 +833,7 @@ export default function StatsPage() {
 
       <div className="grid md:grid-cols-2 gap-4">
         <AlphabetCoverage movies={movies} />
-        <RandomMoviePicker movies={movies} />
+        <SuggestForMe movies={movies} />
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">

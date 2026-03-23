@@ -253,10 +253,6 @@ export default function LocalLibraryPage() {
   const [showPosterTip, setShowPosterTip] = useState(false);
   const [skipPosterTip, setSkipPosterTip] = useState(() => localStorage.getItem(SKIP_POSTER_TIP_KEY) === 'true');
   const [posterTipDontShow, setPosterTipDontShow] = useState(false);
-  const [showSuggestSidebar, setShowSuggestSidebar] = useState(false);
-  const [sidebarSuggestions, setSidebarSuggestions] = useState([]);
-  const [sidebarLoading, setSidebarLoading] = useState(false);
-  const [sidebarError, setSidebarError] = useState(null);
   const [fetchingCast, setFetchingCast] = useState(false);
   const [castFetchProgress, setCastFetchProgress] = useState(0);
 
@@ -628,94 +624,6 @@ export default function LocalLibraryPage() {
       setAiError(e.message || 'Failed to get AI suggestions');
     } finally {
       setAiLoading(false);
-    }
-  };
-
-  // Sidebar "Suggested For You" — driven by user activity (views, plays, clicks)
-  const fetchSidebarSuggestions = async () => {
-    setSidebarLoading(true);
-    setSidebarError(null);
-    setSidebarSuggestions([]);
-    try {
-      // Load activity data
-      var activityRaw = localStorage.getItem(ACTIVITY_KEY);
-      var activity = activityRaw ? JSON.parse(activityRaw) : {};
-
-      // Score every movie by engagement: plays * 3 + views
-      var allScored = movies.map(function(m) {
-        var a = activity[m.id] || { views: 0, plays: 0 };
-        return { movie: m, score: a.plays * 3 + a.views };
-      }).filter(function(s) { return s.movie.title || s.movie.file_name; });
-
-      if (allScored.length < 2) { setSidebarError('Need at least 2 movies to generate suggestions'); setSidebarLoading(false); return; }
-
-      // Sort by engagement score descending
-      allScored.sort(function(a, b) { return b.score - a.score; });
-      var interacted = allScored.filter(function(s) { return s.score > 0; });
-
-      // Pick seed from most-watched/clicked movies
-      var seed;
-      if (interacted.length > 0) {
-        var topPool = interacted.slice(0, Math.min(10, interacted.length));
-        seed = topPool[Math.floor(Math.random() * topPool.length)].movie;
-      } else {
-        // No activity yet — pick a random movie
-        seed = allScored[Math.floor(Math.random() * Math.min(20, allScored.length))].movie;
-      }
-
-      // Build activity context string for the AI
-      var topWatched = interacted.slice(0, 15).map(function(s) {
-        return (s.movie.title || s.movie.file_name) + ' (score:' + s.score + ')';
-      });
-      var activityContext = topWatched.length > 0
-        ? 'User most-watched/clicked movies: ' + topWatched.join(', ')
-        : 'No activity data yet — suggest based on the selected movie.';
-
-      // Build candidate list: prioritize movies the user has engaged with
-      var toItem = function(m) {
-        var genreStrs = (m.genres || []).map(function(g) { return typeof g === 'object' && g.name ? g.name : String(g); });
-        return { id: m.id, title: m.title || m.file_name, year: m.year || null, genres: genreStrs, overview: m.overview ? m.overview.substring(0, 80) : null, rating: m.rating || null };
-      };
-
-      // Include engaged movies first, then fill with random others
-      var candidateMap = {};
-      allScored.forEach(function(s) {
-        if (s.movie.id === seed.id) return;
-        candidateMap[s.movie.id] = { item: toItem(s.movie), score: s.score };
-      });
-      var entries = Object.values(candidateMap);
-      entries.sort(function(a, b) { return b.score - a.score; });
-      var candidates = entries.slice(0, 200).map(function(e) { return e.item; });
-
-      var resp = await fetch(BACKEND_API + '/ai/suggestions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          selected_movie: {
-            id: seed.id,
-            title: seed.title || seed.file_name,
-            year: seed.year || null,
-            genres: (seed.genres || []).map(function(g) { return typeof g === 'object' && g.name ? g.name : String(g); }),
-            overview: seed.overview || null,
-            rating: seed.rating || null,
-          },
-          library_movies: candidates,
-          activity_context: activityContext,
-        }),
-      });
-      if (!resp.ok) {
-        var err = await resp.json().catch(function() { return {}; });
-        throw new Error(err.detail || 'Failed to get suggestions');
-      }
-      var data = await resp.json();
-      setSidebarSuggestions(data.suggestions || []);
-      if (!data.suggestions || data.suggestions.length === 0) {
-        setSidebarError('No suggestions found — try again for different picks');
-      }
-    } catch (e) {
-      setSidebarError(e.message || 'Failed to get suggestions');
-    } finally {
-      setSidebarLoading(false);
     }
   };
 
@@ -1287,17 +1195,6 @@ export default function LocalLibraryPage() {
                     return missing > 0 ? 'Fetch Posters (' + missing + ')' : 'Fetch Posters';
                   })()
               }
-            </Button>
-          )}
-          {movies.length > 1 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSuggestSidebar(true)}
-              data-testid="suggest-for-me-btn"
-            >
-              <Wand2 className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline text-xs">Suggest For Me</span>
             </Button>
           )}
         </div>
@@ -2372,91 +2269,6 @@ export default function LocalLibraryPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Suggested For You Sidebar */}
-      {showSuggestSidebar && (
-        <div className="fixed inset-0 z-50 flex justify-end" data-testid="suggest-sidebar-overlay">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowSuggestSidebar(false)} />
-          <div className="relative w-full max-w-sm bg-background border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Wand2 className="w-5 h-5 text-primary" />
-                <h2 className="font-semibold text-lg">Suggested For You</h2>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => setShowSuggestSidebar(false)} data-testid="close-suggest-sidebar">
-                <span className="text-lg">&times;</span>
-              </Button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {sidebarLoading && (
-                <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground" data-testid="sidebar-loading">
-                  <RefreshCw className="w-6 h-6 animate-spin" />
-                  <p className="text-sm">Analyzing your library...</p>
-                </div>
-              )}
-              {sidebarError && !sidebarLoading && (
-                <div className="text-center py-8">
-                  <p className="text-sm text-muted-foreground">{sidebarError}</p>
-                  <Button variant="outline" size="sm" className="mt-3" onClick={fetchSidebarSuggestions} data-testid="sidebar-retry-btn">
-                    Try Again
-                  </Button>
-                </div>
-              )}
-              {!sidebarLoading && !sidebarError && sidebarSuggestions.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Sparkles className="w-8 h-8 mx-auto mb-3 opacity-40" />
-                  <p className="text-sm">Click below to get personalized picks</p>
-                  <Button variant="outline" size="sm" className="mt-3 gap-2" onClick={fetchSidebarSuggestions} data-testid="sidebar-suggest-btn">
-                    <Sparkles className="w-3.5 h-3.5" /> Suggest For Me
-                  </Button>
-                </div>
-              )}
-              {!sidebarLoading && sidebarSuggestions.length > 0 && (
-                <>
-                  <p className="text-xs text-muted-foreground">Based on your most popular genres</p>
-                  {sidebarSuggestions.map(function(suggestion) {
-                    const match = movies.find(m => m.id === suggestion.id);
-                    return (
-                      <div
-                        key={suggestion.id}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-secondary/40 hover:bg-secondary cursor-pointer transition-colors"
-                        onClick={() => {
-                          if (match) {
-                            setShowSuggestSidebar(false);
-                            setSelectedMovie(match);
-                          }
-                        }}
-                        data-testid={'sidebar-suggestion-' + suggestion.id}
-                      >
-                        {match?.poster_path ? (
-                          <img src={match.poster_path} alt="" className="w-12 h-[72px] rounded-md object-cover shrink-0" />
-                        ) : (
-                          <div className="w-12 h-[72px] rounded-md bg-secondary flex items-center justify-center shrink-0">
-                            <Film className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate">{suggestion.title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{match?.year || ''}{match?.rating ? ' · ★ ' + match.rating.toFixed(1) : ''}</p>
-                          <p className="text-[11px] text-muted-foreground/80 mt-1 line-clamp-2">{suggestion.reason}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full text-xs text-muted-foreground mt-2"
-                    onClick={fetchSidebarSuggestions}
-                    data-testid="sidebar-refresh-btn"
-                  >
-                    <RefreshCw className="w-3 h-3 mr-1.5" /> Get new suggestions
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
