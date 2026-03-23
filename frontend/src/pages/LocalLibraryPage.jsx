@@ -437,16 +437,17 @@ export default function LocalLibraryPage() {
   };
 
   // Search TMDB for poster options
-  const searchPosters = async () => {
+  const searchPosters = async (queryOverride) => {
     if (!tmdbApiKey) {
       toast.error('Add your TMDB API key in settings first');
       return;
     }
-    if (!posterSearch.trim()) return;
+    const searchText = queryOverride || posterSearch;
+    if (!searchText.trim()) return;
 
     setPosterSearching(true);
     try {
-      const query = encodeURIComponent(posterSearch.trim());
+      const query = encodeURIComponent(searchText.trim());
       const resp = await fetch(TMDB_API + '/search/movie?api_key=' + tmdbApiKey + '&query=' + query);
       const data = await resp.json();
       var results = [];
@@ -1618,7 +1619,7 @@ export default function LocalLibraryPage() {
               <div className="flex gap-4">
                 <div 
                   className="w-24 h-36 rounded-lg overflow-hidden bg-secondary flex items-center justify-center cursor-pointer group relative shrink-0"
-                  onClick={() => { setPosterMode(posterMode ? null : 'search'); setPosterSearch(selectedMovie.title || ''); }}
+                  onClick={() => { if (posterMode) { setPosterMode(null); } else { setPosterMode('search'); setPosterSearch(selectedMovie.title || ''); searchPosters(selectedMovie.title || ''); } }}
                   data-testid="poster-change-trigger"
                 >
                   {selectedMovie.poster_path ? (
@@ -1871,7 +1872,7 @@ export default function LocalLibraryPage() {
                     <Button
                       variant={posterMode === 'search' ? 'default' : 'ghost'}
                       size="sm"
-                      onClick={() => setPosterMode('search')}
+                      onClick={() => { setPosterMode('search'); if (posterSearch.trim()) searchPosters(posterSearch); }}
                       className="text-xs flex-1"
                     >
                       <Search className="w-3 h-3 mr-1" /> Search TMDB
