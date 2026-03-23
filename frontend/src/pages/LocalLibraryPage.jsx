@@ -233,8 +233,11 @@ export default function LocalLibraryPage() {
   const [synopsisInput, setSynopsisInput] = useState('');
   const [collections, setCollections] = useState([]);
   const [activeCollection, setActiveCollection] = useState(null);
+  const [activeSubCollection, setActiveSubCollection] = useState(null);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [showNewCollectionInput, setShowNewCollectionInput] = useState(false);
+  const [expandedCollectionId, setExpandedCollectionId] = useState(null);
+  const [newSubCollectionName, setNewSubCollectionName] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [skipRemoveConfirm, setSkipRemoveConfirm] = useState(() => localStorage.getItem(SKIP_REMOVE_CONFIRM_KEY) === 'true');
   const [dontShowAgainChecked, setDontShowAgainChecked] = useState(false);
@@ -328,11 +331,21 @@ export default function LocalLibraryPage() {
   // Collection helpers
   const createCollection = (name) => {
     if (!name.trim()) return;
-    const col = { id: Date.now().toString(), name: name.trim(), movie_ids: [], created_at: Date.now() };
+    const col = { id: Date.now().toString(), name: name.trim(), movie_ids: [], sub_collections: [], created_at: Date.now() };
     setCollections(prev => [...prev, col]);
     setNewCollectionName('');
     setShowNewCollectionInput(false);
     toast.success(`Collection "${col.name}" created`);
+  };
+
+  const createSubCollection = (collectionId, name) => {
+    if (!name.trim()) return;
+    const sub = { id: Date.now().toString(), name: name.trim(), movie_ids: [] };
+    setCollections(prev => prev.map(c => {
+      if (c.id !== collectionId) return c;
+      return { ...c, sub_collections: [...(c.sub_collections || []), sub] };
+    }));
+    toast.success(`Sub-collection "${sub.name}" created`);
   };
 
   const toggleMovieInCollection = (collectionId, movieId) => {
@@ -343,10 +356,36 @@ export default function LocalLibraryPage() {
     }));
   };
 
+  const toggleMovieInSubCollection = (collectionId, subId, movieId) => {
+    setCollections(prev => prev.map(c => {
+      if (c.id !== collectionId) return c;
+      return { ...c, sub_collections: (c.sub_collections || []).map(s => {
+        if (s.id !== subId) return s;
+        const has = s.movie_ids.includes(movieId);
+        return { ...s, movie_ids: has ? s.movie_ids.filter(id => id !== movieId) : [...s.movie_ids, movieId] };
+      })};
+    }));
+  };
+
   const deleteCollection = (collectionId) => {
     setCollections(prev => prev.filter(c => c.id !== collectionId));
-    if (activeCollection === collectionId) setActiveCollection(null);
+    if (activeCollection === collectionId) { setActiveCollection(null); setActiveSubCollection(null); }
     toast.success('Collection deleted');
+  };
+
+  const deleteSubCollection = (collectionId, subId) => {
+    setCollections(prev => prev.map(c => {
+      if (c.id !== collectionId) return c;
+      return { ...c, sub_collections: (c.sub_collections || []).filter(s => s.id !== subId) };
+    }));
+    if (activeSubCollection === subId) setActiveSubCollection(null);
+    toast.success('Sub-collection deleted');
+  };
+
+  const getCollectionAllMovieIds = (col) => {
+    const ids = new Set(col.movie_ids || []);
+    (col.sub_collections || []).forEach(s => s.movie_ids.forEach(id => ids.add(id)));
+    return ids;
   };
 
   // Fetch poster from TMDB
@@ -1155,7 +1194,15 @@ export default function LocalLibraryPage() {
       // Collection filter
       if (activeCollection) {
         const col = collections.find(c => c.id === activeCollection);
-        if (col && !col.movie_ids.includes(movie.id)) return false;
+        if (col) {
+          if (activeSubCollection) {
+            const sub = (col.sub_collections || []).find(s => s.id === activeSubCollection);
+            if (sub && !sub.movie_ids.includes(movie.id)) return false;
+          } else {
+            const allIds = getCollectionAllMovieIds(col);
+            if (!allIds.has(movie.id)) return false;
+          }
+        }
       }
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
@@ -1170,7 +1217,7 @@ export default function LocalLibraryPage() {
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(100);
-  }, [activeDirectory, activeCollection, searchQuery, sortBy]);
+  }, [activeDirectory, activeCollection, activeSubCollection, searchQuery, sortBy]);
 
   if (!isElectron()) {
     return (
@@ -1405,30 +1452,66 @@ export default function LocalLibraryPage() {
 
       {/* Collections Filter */}
       {collections.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2" data-testid="collections-filter">
-          <FolderHeart className="w-4 h-4 text-muted-foreground" />
-          <Button
-            variant={activeCollection === null ? "default" : "outline"}
-            size="sm"
-            className="h-7 text-xs rounded-full px-3"
-            onClick={() => setActiveCollection(null)}
-            data-testid="collection-filter-all"
-          >
-            All Movies
-          </Button>
-          {collections.map(col => (
+        <div className="space-y-2" data-testid="collections-filter">
+          <div className="flex flex-wrap items-center gap-2">
+            <FolderHeart className="w-4 h-4 text-muted-foreground" />
             <Button
-              key={col.id}
-              variant={activeCollection === col.id ? "default" : "outline"}
+              variant={activeCollection === null ? "default" : "outline"}
               size="sm"
-              className="h-7 text-xs rounded-full px-3 gap-1.5"
-              onClick={() => setActiveCollection(activeCollection === col.id ? null : col.id)}
-              data-testid={`collection-filter-${col.id}`}
+              className="h-7 text-xs rounded-full px-3"
+              onClick={() => { setActiveCollection(null); setActiveSubCollection(null); }}
+              data-testid="collection-filter-all"
             >
-              {col.name}
-              <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{col.movie_ids.length}</Badge>
+              All Movies
             </Button>
-          ))}
+            {collections.map(col => {
+              const totalCount = getCollectionAllMovieIds(col).size;
+              return (
+                <Button
+                  key={col.id}
+                  variant={activeCollection === col.id ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 text-xs rounded-full px-3 gap-1.5"
+                  onClick={() => { setActiveCollection(activeCollection === col.id ? null : col.id); setActiveSubCollection(null); }}
+                  data-testid={`collection-filter-${col.id}`}
+                >
+                  {col.name}
+                  <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{totalCount}</Badge>
+                </Button>
+              );
+            })}
+          </div>
+          {activeCollection && (() => {
+            const col = collections.find(c => c.id === activeCollection);
+            if (!col || !(col.sub_collections || []).length) return null;
+            return (
+              <div className="flex flex-wrap items-center gap-2 pl-6" data-testid="sub-collections-filter">
+                <span className="text-xs text-muted-foreground">Sub:</span>
+                <Button
+                  variant={activeSubCollection === null ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-6 text-[11px] rounded-full px-2.5"
+                  onClick={() => setActiveSubCollection(null)}
+                  data-testid="sub-collection-filter-all"
+                >
+                  All
+                </Button>
+                {col.sub_collections.map(sub => (
+                  <Button
+                    key={sub.id}
+                    variant={activeSubCollection === sub.id ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-6 text-[11px] rounded-full px-2.5 gap-1"
+                    onClick={() => setActiveSubCollection(activeSubCollection === sub.id ? null : sub.id)}
+                    data-testid={`sub-collection-filter-${sub.id}`}
+                  >
+                    {sub.name}
+                    <Badge variant="outline" className="h-3.5 px-1 text-[9px]">{sub.movie_ids.length}</Badge>
+                  </Button>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1988,52 +2071,121 @@ export default function LocalLibraryPage() {
                 <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <FolderHeart className="w-3.5 h-3.5" /> Collections
                 </p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="space-y-1.5">
                   {collections.map(col => {
-                    const isIn = col.movie_ids.includes(selectedMovie.id);
+                    const allIds = getCollectionAllMovieIds(col);
+                    const isInParent = col.movie_ids.includes(selectedMovie.id);
+                    const isInAny = allIds.has(selectedMovie.id);
+                    const hasSubs = (col.sub_collections || []).length > 0;
+                    const isExpanded = expandedCollectionId === col.id;
                     return (
-                      <Button
-                        key={col.id}
-                        variant={isIn ? "default" : "outline"}
-                        size="sm"
-                        className="h-7 text-xs rounded-full gap-1"
-                        onClick={() => {
-                          toggleMovieInCollection(col.id, selectedMovie.id);
-                          toast.success(isIn ? `Removed from "${col.name}"` : `Added to "${col.name}"`);
-                        }}
-                        data-testid={`toggle-collection-${col.id}`}
-                      >
-                        {isIn && <Check className="w-3 h-3" />}
-                        {col.name}
-                      </Button>
+                      <div key={col.id} className="space-y-1">
+                        <div className="flex items-center gap-1">
+                          {hasSubs && (
+                            <button
+                              onClick={() => setExpandedCollectionId(isExpanded ? null : col.id)}
+                              className="p-0.5 text-muted-foreground hover:text-foreground transition-colors"
+                              data-testid={`expand-collection-${col.id}`}
+                            >
+                              <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                            </button>
+                          )}
+                          <Button
+                            variant={isInAny ? "default" : "outline"}
+                            size="sm"
+                            className="h-7 text-xs rounded-full gap-1 flex-1 justify-start"
+                            onClick={() => {
+                              toggleMovieInCollection(col.id, selectedMovie.id);
+                              toast.success(isInParent ? `Removed from "${col.name}"` : `Added to "${col.name}"`);
+                            }}
+                            data-testid={`toggle-collection-${col.id}`}
+                          >
+                            {isInParent && <Check className="w-3 h-3" />}
+                            {col.name}
+                            {hasSubs && <Badge variant="secondary" className="h-3.5 px-1 text-[9px] ml-auto">{allIds.size}</Badge>}
+                          </Button>
+                        </div>
+                        {isExpanded && (
+                          <div className="pl-5 space-y-1">
+                            {(col.sub_collections || []).map(sub => {
+                              const isInSub = sub.movie_ids.includes(selectedMovie.id);
+                              return (
+                                <div key={sub.id} className="flex items-center gap-1">
+                                  <Button
+                                    variant={isInSub ? "default" : "outline"}
+                                    size="sm"
+                                    className="h-6 text-[11px] rounded-full gap-1 flex-1 justify-start"
+                                    onClick={() => {
+                                      toggleMovieInSubCollection(col.id, sub.id, selectedMovie.id);
+                                      toast.success(isInSub ? `Removed from "${sub.name}"` : `Added to "${sub.name}"`);
+                                    }}
+                                    data-testid={`toggle-sub-${sub.id}`}
+                                  >
+                                    {isInSub && <Check className="w-3 h-3" />}
+                                    {sub.name}
+                                    <Badge variant="outline" className="h-3 px-1 text-[9px] ml-auto">{sub.movie_ids.length}</Badge>
+                                  </Button>
+                                  <button
+                                    onClick={() => deleteSubCollection(col.id, sub.id)}
+                                    className="p-0.5 text-muted-foreground hover:text-destructive transition-colors"
+                                    data-testid={`delete-sub-${sub.id}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                            <div className="flex gap-1">
+                              <Input
+                                placeholder="New sub-collection..."
+                                value={expandedCollectionId === col.id ? newSubCollectionName : ''}
+                                onChange={(e) => setNewSubCollectionName(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { createSubCollection(col.id, newSubCollectionName); setNewSubCollectionName(''); } }}
+                                className="h-6 text-[11px] flex-1"
+                                data-testid={`new-sub-input-${col.id}`}
+                              />
+                              <Button
+                                size="sm"
+                                className="h-6 text-[11px] px-2"
+                                onClick={() => { createSubCollection(col.id, newSubCollectionName); setNewSubCollectionName(''); }}
+                                data-testid={`confirm-new-sub-${col.id}`}
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
-                  {showNewCollectionInput ? (
-                    <div className="flex gap-1">
-                      <Input
-                        placeholder="Collection name"
-                        value={newCollectionName}
-                        onChange={(e) => setNewCollectionName(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && createCollection(newCollectionName)}
-                        className="h-7 text-xs w-36"
-                        autoFocus
-                        data-testid="new-collection-input"
-                      />
-                      <Button size="sm" className="h-7 text-xs px-2" onClick={() => createCollection(newCollectionName)} data-testid="confirm-new-collection-btn">
-                        <Check className="w-3 h-3" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {showNewCollectionInput ? (
+                      <div className="flex gap-1">
+                        <Input
+                          placeholder="Collection name"
+                          value={newCollectionName}
+                          onChange={(e) => setNewCollectionName(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && createCollection(newCollectionName)}
+                          className="h-7 text-xs w-36"
+                          autoFocus
+                          data-testid="new-collection-input"
+                        />
+                        <Button size="sm" className="h-7 text-xs px-2" onClick={() => createCollection(newCollectionName)} data-testid="confirm-new-collection-btn">
+                          <Check className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs rounded-full gap-1 border border-dashed border-border"
+                        onClick={() => setShowNewCollectionInput(true)}
+                        data-testid="new-collection-btn"
+                      >
+                        <Plus className="w-3 h-3" /> New Collection
                       </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs rounded-full gap-1 border border-dashed border-border"
-                      onClick={() => setShowNewCollectionInput(true)}
-                      data-testid="new-collection-btn"
-                    >
-                      <Plus className="w-3 h-3" /> New
-                    </Button>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
