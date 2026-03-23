@@ -645,7 +645,7 @@ export default function LocalLibraryPage() {
       var scored = movies.map(function(m) {
         var a = activity[m.id] || { views: 0, plays: 0 };
         return { movie: m, score: a.plays * 3 + a.views };
-      }).filter(function(s) { return s.movie.genres && s.movie.genres.length > 0; });
+      }).filter(function(s) { return s.movie.title || s.movie.file_name; });
 
       // Pick seed: prefer most-interacted movies, fallback to random high-rated
       scored.sort(function(a, b) { return b.score - a.score; });
@@ -656,17 +656,17 @@ export default function LocalLibraryPage() {
         var topPool = interacted.slice(0, Math.min(10, interacted.length));
         seed = topPool[Math.floor(Math.random() * topPool.length)].movie;
       } else {
-        // No activity yet — pick random highly-rated
-        var rated = movies.filter(function(m) { return m.rating && m.genres && m.genres.length > 0; });
-        rated.sort(function(a, b) { return b.rating - a.rating; });
-        var pool = rated.length > 0 ? rated.slice(0, 20) : movies.filter(function(m) { return m.genres && m.genres.length > 0; });
-        seed = pool[Math.floor(Math.random() * pool.length)];
+        // No activity yet — pick random highly-rated or any movie with a title
+        var rated = movies.filter(function(m) { return m.rating && (m.title || m.file_name); });
+        rated.sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); });
+        var pool = rated.length > 0 ? rated.slice(0, 20) : movies.filter(function(m) { return m.title || m.file_name; });
+        seed = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
       }
       if (!seed) { setSidebarError('Not enough movies with metadata to generate suggestions'); setSidebarLoading(false); return; }
 
       // Build candidate list: prioritize same-genre movies for better matches
       var seedGenres = {};
-      if (seed.genres) {
+      if (seed.genres && seed.genres.length > 0) {
         seed.genres.forEach(function(g) {
           var name = typeof g === 'object' && g.name ? g.name : g;
           if (typeof name === 'string') seedGenres[name] = true;
@@ -677,7 +677,8 @@ export default function LocalLibraryPage() {
       var others = [];
       movies.forEach(function(m) {
         if (m.id === seed.id) return;
-        var hasGenreOverlap = m.genres && m.genres.some(function(g) {
+        if (!(m.title || m.file_name)) return;
+        var hasGenreOverlap = Object.keys(seedGenres).length > 0 && m.genres && m.genres.some(function(g) {
           var name = typeof g === 'object' && g.name ? g.name : g;
           return seedGenres[name];
         });
@@ -685,8 +686,8 @@ export default function LocalLibraryPage() {
         var item = { id: m.id, title: m.title || m.file_name, year: m.year || null, genres: genreStrs, overview: m.overview ? m.overview.substring(0, 80) : null, rating: m.rating || null };
         if (hasGenreOverlap) { genreMatched.push(item); } else { others.push(item); }
       });
-      // Send up to 180 genre-matched + 20 others for variety
-      var candidates = genreMatched.slice(0, 180).concat(others.slice(0, 20));
+      // Send up to 180 genre-matched + 20 others for variety (or 200 others if no genre data)
+      var candidates = genreMatched.length > 0 ? genreMatched.slice(0, 180).concat(others.slice(0, 20)) : others.slice(0, 200);
 
       var resp = await fetch(BACKEND_API + '/ai/suggestions', {
         method: 'POST',
