@@ -588,11 +588,12 @@ export default function LocalLibraryPage() {
     setAiError(null);
     setAiSuggestions([]);
     try {
+      const toGenreStrings = (genres) => (genres || []).map(g => typeof g === 'object' && g.name ? g.name : String(g));
       const libraryMovies = movies.map(m => ({
         id: m.id,
         title: m.title || m.file_name,
         year: m.year || null,
-        genres: m.genres || [],
+        genres: toGenreStrings(m.genres),
         overview: m.overview ? m.overview.substring(0, 100) : null,
         rating: m.rating || null,
       }));
@@ -604,7 +605,7 @@ export default function LocalLibraryPage() {
             id: movie.id,
             title: movie.title || movie.file_name,
             year: movie.year || null,
-            genres: movie.genres || [],
+            genres: toGenreStrings(movie.genres),
             overview: movie.overview || null,
             rating: movie.rating || null,
           },
@@ -677,7 +678,8 @@ export default function LocalLibraryPage() {
           var name = typeof g === 'object' && g.name ? g.name : g;
           return seedGenres[name];
         });
-        var item = { id: m.id, title: m.title || m.file_name, year: m.year || null, genres: m.genres || [], overview: m.overview ? m.overview.substring(0, 80) : null, rating: m.rating || null };
+        var genreStrs = (m.genres || []).map(function(g) { return typeof g === 'object' && g.name ? g.name : String(g); });
+        var item = { id: m.id, title: m.title || m.file_name, year: m.year || null, genres: genreStrs, overview: m.overview ? m.overview.substring(0, 80) : null, rating: m.rating || null };
         if (hasGenreOverlap) { genreMatched.push(item); } else { others.push(item); }
       });
       // Send up to 180 genre-matched + 20 others for variety
@@ -691,7 +693,7 @@ export default function LocalLibraryPage() {
             id: seed.id,
             title: seed.title || seed.file_name,
             year: seed.year || null,
-            genres: seed.genres || [],
+            genres: (seed.genres || []).map(function(g) { return typeof g === 'object' && g.name ? g.name : String(g); }),
             overview: seed.overview || null,
             rating: seed.rating || null,
           },

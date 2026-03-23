@@ -20,7 +20,7 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - SEO meta tags, marketing materials
 - Download endpoint (/api/download/windows) — now prefers .exe over .zip
 
-### Desktop App (Electron — v1.1.4)
+### Desktop App (Electron — v1.1.5)
 - Local/network drive scanning
 - TMDB poster/metadata/cast auto-fetch
 - One-click playback
