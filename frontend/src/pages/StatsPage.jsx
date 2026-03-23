@@ -24,6 +24,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  MostViewedMovies, BingeScore, AverageMovieAge, TitleLengthRecords,
+  RarestDecade, MarathonMode, RatingPersonality, AlphabetCoverage, RandomMoviePicker
+} from "@/components/FunStats";
+import {
   BarChart,
   Bar,
   XAxis,
@@ -783,6 +787,15 @@ export default function StatsPage() {
         </motion.div>
       )}
 
+      {/* Fun Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <BingeScore movies={movies} />
+        <AverageMovieAge movies={movies} />
+        <RarestDecade decadeData={stats.decadeData} />
+        <MarathonMode total={stats.total} />
+        <RatingPersonality avgRating={stats.avgRating} movies={movies} />
+      </div>
+
       <div className="grid md:grid-cols-2 gap-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <DecadeChart data={stats.decadeData} />
@@ -811,6 +824,16 @@ export default function StatsPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
           <LowestRatedList movies={stats.lowestRated} />
         </motion.div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <MostViewedMovies movies={movies} />
+        <TitleLengthRecords movies={movies} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <AlphabetCoverage movies={movies} />
+        <RandomMoviePicker movies={movies} />
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
