@@ -2404,7 +2404,7 @@ async def get_pricing():
     """Get Pro tier pricing info (public endpoint)."""
     return {
         "pro_tier": {
-            "price": PRO_TIER_PRICE,
+            "price": PRO_TIER_PRICE / 100,
             "currency": PRO_TIER_CURRENCY,
             "type": "one_time",
             "features": [

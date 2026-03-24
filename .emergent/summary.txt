@@ -16,138 +16,177 @@ Build Obsidian Cinema—an installable Windows desktop app (Electron) that scans
 **User's preferred language**: English
 
 **what currently exists?**
-A highly functional hybrid application with a production web component and a local Windows desktop component.
-1. **Web App**: React/FastAPI application acting as an account portal. Handles Google Auth, Stripe payments, license generation, and proxies AI requests using the Emergent Universal Key.
-2. **Desktop App**: Feature-rich Electron application using  for all data. Features include: local directory scanning, directory management, TMDB metadata/cast fetching, advanced sorting/filtering, editable movie titles/synopses, local collections, activity-based AI recommendations, library statistics with drill-down lists, and a JSON backup/restore wizard.
-3. **CI/CD**: GitHub Actions workflow builds a  containing the Windows  installer (to avoid SmartScreen blocks) and uploads it to GitHub Releases.
+A functional hybrid application with a live web app at  and a local Windows desktop component.
+1.  **Web App**: A React/FastAPI application that handles user accounts, a landing page, an account dashboard, and Stripe payments. The Google Auth is managed by Emergent. The backend proxies AI requests and handles Stripe integration using the official Stripe Python library.
+2.  **Desktop App**: An Electron application that uses  for data. It features directory scanning, TMDB metadata/cast fetching, activity-based AI recommendations, a comprehensive stats page, advanced sorting/filtering, and local collections.
+3.  **CI/CD**: A GitHub Actions workflow builds a  containing the Windows  installer and uploads it to GitHub Releases. The workflow is configured to use the production domain .
 
 **Last working item**:
-- Last item agent was working: Updating the About Obsidian Cinema features list text in  to accurately reflect all the newly built features from this session.
+- Last item agent was working: Investigating a set of three critical user-facing bugs reported after the latest deployment.
 - Status: IN PROGRESS
 - Agent Testing Done: N
-- Which testing method agent to use? manual testing by screenshot tool (to verify the text rendered correctly on the Settings page) and linting.
+- Which testing method agent to use? manual testing by screenshot tool. The next agent will need to take screenshots of the Upgrade page to verify the price, the Google Auth page to verify the text, and potentially add logging to debug the intermittent login failures.
 - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-Issue 1: Test and finish the About Obsidian Cinema text update.
-- Attempted fixes: The agent just applied the  text update but hasn't compiled or verified it visually.
-- Next debug checklist: Run yarn run v1.22.22
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. or  and take a screenshot of the Settings page.
-- Why fix this issue and what will be achieved with the fix? Completes the user's latest request to update the about section.
-- Status: IN PROGRESS
-- Is recurring issue? N
-- Should Test frontend/backend/both after fix? Frontend
+- **Issue 1: (P0) Stripe Checkout Displays Price as 000**
+  - **Description:** After migrating to the official Stripe library, the checkout page shows the Pro tier price as 000 instead of 0.
+  - **Attempted fixes:** The agent confirmed the backend  variable was set to  (for cents), but had not yet investigated how the frontend is rendering this value on the Upgrade page. The UI likely needs to be changed to display a static 0 or format the cents value correctly.
+  - **Next debug checklist:**
+    - Examine  to see how the price is displayed.
+    - It's likely hardcoded, but if not, ensure the price is formatted correctly (dividing by 100).
+    - If it is hardcoded, find where the 000 text is coming from.
+  - **Why fix this issue and what will be achieved with the fix?** This is a critical bug preventing users from purchasing the Pro tier. Fixing it is essential for monetization.
+  - **Status:** NOT STARTED
+  - **Is recurring issue?** N
+  - **Should Test frontend/backend/both after fix?** Frontend
 
-Issue 2: Production Deployment for Web App Features
-- Attempted fixes: N/A (requires user action).
-- Next debug checklist: Instruct user to deploy the application from the Emergent dashboard using Use existing database.
-- Why fix this issue and what will be achieved with the fix? The new AI suggestions feature and the Download Guide modal rely on the backend endpoint () and web app routes. The desktop app connects to the production backend, so these won't work for end-users until the backend is deployed.
-- Status: USER VERIFICATION PENDING
-- Is recurring issue? N
-- Should Test frontend/backend/both after fix? Both (Frontend web app + API)
+- **Issue 2: (P1) Intermittent Google Auth Failures**
+  - **Description:** Users are reporting that the first login attempt with Google Auth sometimes fails, but the second attempt succeeds.
+  - **Attempted fixes:** None. The agent acknowledged the issue but hasn't started debugging.
+  - **Next debug checklist:**
+    - Examine the  and  to understand the auth flow and how the redirect from  is handled.
+    - Check for potential race conditions in  hooks that handle the session token.
+    - Add console logging to track the token and user state during both the failed and successful login attempts.
+  - **Why fix this issue and what will be achieved with the fix?** This creates a poor and confusing user experience, potentially causing users to abandon the sign-up process.
+  - **Status:** NOT STARTED
+  - **Is recurring issue?** N
+  - **Should Test frontend/backend/both after fix?** Frontend
+
+- **Issue 3: (P1) Google Auth Page Displays WWW only**
+  - **Description:** The Google authentication page incorrectly says WWW only instead of the full domain .
+  - **Attempted fixes:** None. The agent acknowledged the issue but hasn't started debugging.
+  - **Next debug checklist:**
+    - Investigate how the  is constructed in . The URL passed to  likely needs to include the full domain.
+    - The issue might be within the Emergent-managed auth service configuration, which may require contacting support if not solvable via the redirect URL parameter.
+  - **Why fix this issue and what will be achieved with the fix?** This is a cosmetic but unprofessional bug that erodes user trust during the critical sign-in/sign-up phase.
+  - **Status:** NOT STARTED
+  - **Is recurring issue?** N
+  - **Should Test frontend/backend/both after fix?** Frontend
+
+- **Issue 4: (P2) Made with Emergent Badge on Production**
+  - **Description:** The badge is still present on the live site () despite being removed from the code.
+  - **Attempted fixes:** The agent removed the badge from  and also removed the script that injects it. It was concluded this is a platform-level injection by Emergent.
+  - **Next debug checklist:** This is no longer a code-level issue. The user has been instructed to contact Emergent support.
+  - **Status:** BLOCKED (on Emergent support)
+  - **Is recurring issue?** Y
+  - **Should Test frontend/backend/both after fix?** N/A
 
 **In progress Task List**:
-None. All major features requested in this session were implemented successfully.
-
-**Upcoming and Future Tasks**
-- **P0: User to Purchase and Configure Custom Domain:** User is pausing to purchase a custom domain from GoDaddy. Once purchased, guide user to link domain to Emergent, update , redeploy, and update Google OAuth consent screen.
-- **P1: Landing Page Demo Video/Screenshots:** Add a demo video or screenshots to the landing page hero section.
-- **P2: Refactor :** The main library component is roughly 2,500 lines long. It triggered Babel memory limits during this session. Must be carefully broken down into smaller components (, , custom hooks) to maintain future stability.
-- **P3: Future Feature Backlog:**
-    - Implement a watch party feature.
-    - Develop a mobile companion app.
-    - Automatically fetch and display movie trailers.
-    - Add parental controls and multi-user profiles.
-
-**Completed work in this session**
-- AI movie recommendations based on user library, filtered by genre and weighted by user activity (views/plays).
-- TMDB Main Cast fetching (top 5 actors) + Cast statistics added to Stats Page.
-- Web app Download Guide Modal for novice users.
-- Reverted CI/CD workflow to  output to bypass Windows SmartScreen warnings.
-- Added comprehensive manual metadata editing: reset metadata, inline editable movie titles, editable/pasteable synopsis, clear cast.
-- Centralized Directory Management dialog (rename paths and remove directories cleanly).
-- Backup & Restore Wizard: Rolling session auto-backups + JSON file Export/Import flow in Settings.
-- Expandable Missing Metadata/Posters lists in Stats and Settings for easier library cleanup.
-- Extracted  component to resolve Babel plugin call stack limitations.
-- Version bumped to 1.1.4.
-
-**Earlier issues found/mentioned but not fixed**
 None.
 
+**Upcoming and Future Tasks**
+- **P0: Rebuild and Redeploy (v1.2.2+):** A new desktop build must be created via GitHub Actions and the web app must be redeployed to ship all recent bug fixes and the Stripe migration.
+- **P1: Landing Page Demo:** Add a demo video or screenshots to the landing page hero section to improve user engagement.
+- **P2: Custom Domain Root Redirect:** Configure the DNS/server to redirect  to  for SEO consistency.
+- **Future Tasks (Backlog):**
+  - Watch party feature.
+  - Mobile companion app.
+  - Auto-fetch movie trailers.
+  - Parental controls and multi-user profiles.
+  - **Refactor :** The user and agent agreed to postpone this high-risk, low-reward task to conserve budget. Avoid proposing this unless a new feature makes it absolutely necessary.
+
+**Completed work in this session**
+- Migrated from  Stripe wrapper to the official  Python SDK to resolve a test mode bug.
+- Fixed a critical Stripe checkout bug where the price was sent as a float instead of an integer in cents.
+- Guided the user through setting up their custom domain () and updated all relevant code (, backend URL constants).
+- Implemented a full technical SEO audit: enhanced meta/OG tags, added JSON-LD structured data for the software, and created  and .
+- Guided user through sitemap submission on Google Search Console.
+- Reworked the Suggest for me AI engine to be driven by user activity (views/plays) instead of genres, resolving multiple user-reported bugs.
+- Hardened the AI suggestion backend endpoint to be fully permissive, accepting various data types (string/object genres, string years) to prevent validation errors.
+- Added 10+ fun stats to the Stats Page (e.g., Average Movie Age, Marathon Mode, Binge Score).
+- Moved the Suggest for Me feature from the Library page sidebar to the Stats page for better UX.
+- Fixed numerous bugs on the Stats Page (Binge Score logic, Average Year calculation, duplicate components).
+- Removed the sub-collections feature per user request, reverting to a simpler collection model.
+- Fixed multiple UI bugs related to button widths, search bar clear buttons, and component layouts.
+- Extracted  and  from  and  respectively to mitigate Babel stack overflow errors.
+- Systematically bumped app version from 1.1.4 up to 1.2.2.
+
 **Known issue recurrence from previous fork**
-- **Issue:**  complexity limits. The file is too large and caused  in Babel when adding inline nested UI elements.
-- **Recurrence count:** 2
-- **Status:** IN PROGRESS (Mitigated by extracting , but the core file needs architectural refactoring).
+- **Issue:**  complexity ().
+- **Recurrence count:** 3+
+- **Status:** RESOLVED (for now). The issue was mitigated by extracting components () and disabling the  Babel plugin in . The core refactor is postponed.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend:** React, Tailwind CSS, Shadcn UI, Recharts. Desktop logic uses  gates heavily.
-- **Backend:** FastAPI, Emergent LLM integration ().
-- **Desktop Data:**  (localStorage) is the single source of truth for the desktop client, holding movies, settings, tracking activity, and rolling backups.
-- **External APIs:** TMDB for metadata/cast, OpenAI (via Emergent Key) for AI suggestions.
+- **Frontend:** React, Tailwind CSS, Shadcn UI, Recharts.
+- **Backend:** FastAPI. Now uses the official  library for payments, not .
+- **Desktop Data:**  (localStorage).
+- **External APIs:** TMDB, OpenAI (via Emergent Key), Stripe (official SDK).
 
 **key DB schema**
 - **Desktop localStorage (JSON):**
-  - : Array of movie objects with extensive metadata (title, year, file_path, genres, cast, overview, rating).
-  - : Tracks user views and plays for AI weighting.
-  - Backup strings holding snapshots of all keys.
+  - : Array of movie objects.
+  - : Array of collection objects (reverted to simple  structure).
+  - : Tracks , , and  timestamp for each movie.
 
 **changes in tech stack**
-- Added  to the backend to power the OpenAI recommendation engine.
+- **Stripe Integration:** Moved from  to the official  Python library to gain full control and resolve a persistent test mode issue.
 
 **All files of reference**
-- : The monolith. Contains new activity tracking, AI sidebar, inline title/synopsis editing, reset buttons.
-- : Backup/restore logic, bulk cast fetching, update about section.
-- : Cast statistics and expandable health lists.
-- : Contains the  endpoint.
-- : Added for user onboarding.
+- : Major refactor of all Stripe endpoints (, , ) and hardening of the AI suggestion model ().
+- : AI sidebar and related logic were removed. Sub-collection logic was removed.
+- : Major additions, including new stat components and the Suggest for Me AI feature.
+- : New file containing UI for the 10+ new stats.
+- : New file containing the simplified collection assignment UI for the movie detail modal.
+- , , : New/updated files for SEO implementation.
+- : Updated with the user's live Stripe keys.
 
 **Areas that need refactoring**:
-- : Extremely critical. It reached the absolute maximum AST depth for standard Babel compiling. The next time a major feature is added here, it *must* involve extracting functional components to separate files.
+- : Still a very large file (~2400 lines), but the user has requested to **postpone refactoring** due to cost and risk, as the application is currently stable.
 
 **key api endpoints**
-- : Uses Universal Key to suggest movies based on an input seed and local catalog constraints.
+- : Refactored to use . Expects price in cents.
+- : Refactored to use .
+- : Refactored to use .
+- : Backend model hardened with a  to accept multiple data formats for movie objects.
 
 **Critical Info for New Agent**
-- **Deployment Requirement**: The user *must* deploy the web app from the dashboard so the desktop app can ping the production  endpoint. Remind the user of this when they are ready.
-- **Babel Stack Overflow**: If  throws compilation errors (Maximum call stack size exceeded) during an edit, extract the edited JSX into a standalone functional component outside the main component or into a new file.
-- **Electron vs Web**: Remember to respect . Do not mock Electron API calls using browser standard APIs for production features; use the standard checks implemented.
-- **Made with Emergent Badge**: The user asked to remove this. They were instructed to contact Emergent support, so do not attempt to write code to remove it.
+- **Stripe is Live but Broken:** The app was migrated to use the official Stripe library with the user's live keys. However, there are three new critical bugs preventing successful payments and creating a poor user experience (price display, auth failures). Your top priority is to fix these three issues.
+- ** Refactor is POSTPONED:** Do not suggest refactoring this large file. The user has explicitly decided against it to save on cost, as the app is stable enough.
+- **Custom Domain is :** All backend and build configurations now point to this live domain.
+- **Made with Emergent Badge:** This is a platform-level issue. Instruct the user to follow up with Emergent support. Do not attempt to fix it in the code.
 
 **documents and test reports created in this job**
 - 
--  (AI Suggestion Testing)
--  (Sidebar/Popup Testing)
--  (Cast UI Testing)
--  (Download Guide Testing)
+- 
+- 
+- 
+-  (updated with latest progress)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1. **the backup and restore utility will lead a user through the restore procedure with regard to json file importing?** (Answered: Built a guided wizard)
-2. **yes** (Answered: Confirmed building the wizard)
-3. **bump to version 1.1.4** (Answered: Done)
-4. **when using the suggested for you on the main page, it often fails to find any suggestions... can these failures be resolved and can suggestions be based upon my movie views...** (Answered: Overhauled AI prompt context and added activity tracking)
-5. **on the settings page under about obsidian cinema can we update the features list to include some of the great new features we have created since?** (Pending: Agent applied code edit, needs completion and finish).
+1. **User:** Redeployed. (Response to agent's request to redeploy to fix Stripe).
+2. **Agent:** Asks user to test payment again.
+3. **User:** Asks if the Stripe publishable key is needed.
+4. **Agent:** Confirms only the secret key is needed for the server-side flow.
+5. **User:** Reports payment failed again, same test mode error, and checkout says sandbox1.
+6. **Agent:** Realizes the  library is the problem and decides to switch to the official  library.
+7. **User:** Reports failed to create checkout session after the Stripe library migration and redeployment.
+8. **Agent:** Fixes the checkout session bug (price in cents, async issue) and asks user to redeploy.
+9. **User:** Reports three new bugs: a) price shows as 000, b) intermittent auth failures, c) Google auth page says WWW only.
+10. **Agent:** Acknowledges the three new bugs and starts investigating the pricing issue.
 
 **Project Health Check:**
-- **Running:** Desktop build workflow (GH Actions), UI, AI integrations, Backup/Restore.
-- **Mocked:** None in current focus.
+- **Broken**: Stripe checkout flow (price display is wrong), Google Auth (intermittent failures).
+- **Mocked**: None.
 
 **3rd Party Integrations**
-- **OpenAI GPT-4.x:** uses Emergent LLM Key (for AI recommendations)
+- **OpenAI GPT-4o:** uses Emergent LLM Key (for AI recommendations)
 - **TMDB:** API Key configured by User (for metadata, cast, posters)
-- **Stripe (Payments):** requires User API Key
+- **Stripe (Payments):** uses User API Key with the official  Python SDK. The  wrapper is NO LONGER used for payments.
 
 **Testing status**
-- **Testing agent used after significant changes:** YES (Iterations 14, 15, 16, 17)
+- **Testing agent used after significant changes:** NO
 - **Troubleshoot agent used after agent stuck in loop:** NO
-- **Test files created:**  to 
-- **Known regressions:** None currently, but  compilation is highly sensitive.
+- **Test files created:** []
+- **Known regressions:** Stripe checkout UI is showing the wrong price (000). Google Auth has become flaky.
 
 **Credentials to test flow:**
 - **User Account:** 
 - **Pro License Key:** 
+- **Stripe Live Keys are in **.
 
 **What agent forgot to execute**
-The agent correctly initiated the text replacement for the final user request (updating the About section), but the session halted before verifying it compiled and triggering the  tool.</analysis>
+The agent was in the process of debugging the three new critical bugs (Stripe price, auth failures) and had not yet implemented any fixes when the session ended.</analysis>

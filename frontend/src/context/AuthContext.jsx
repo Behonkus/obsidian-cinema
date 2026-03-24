@@ -44,9 +44,16 @@ export function AuthProvider({ children }) {
     await checkAuth();
   };
 
+  // Wrapper that also sets isAuthenticated when user is set externally (e.g., from AuthCallback)
+  const updateUser = (userData) => {
+    setUser(userData);
+    setIsAuthenticated(!!userData);
+    if (userData) setLoading(false);
+  };
+
   const value = {
     user,
-    setUser,
+    setUser: updateUser,
     loading,
     isAuthenticated,
     logout,

@@ -67,10 +67,19 @@ Obsidian Cinema is an installable Windows desktop app (Electron) that scans loca
 - Backend MovieSummary uses model_validator to normalize genres (objects/strings/numbers)
 - Activity tracking: plays * 3 + views scoring for AI suggestions
 - "Made with Emergent" badge: platform-level injection, contact support to remove
+- Stripe: PRO_TIER_PRICE=2000 (cents); /api/pricing returns dollars (PRO_TIER_PRICE/100)
+- Auth: AuthCallback retries 3x with 1s delay; updates AuthContext directly
+
+## Recent Fixes (2026-03-24)
+- Fixed Stripe checkout price display: /api/pricing now returns $20 (dollars) not 2000 (cents)
+- Fixed intermittent Google Auth failures: AuthCallback now retries 3x and updates AuthContext
+- "WWW only" on auth page: Emergent platform issue — user should contact support@emergent.sh
 
 ## Backlog
+- P0: Rebuild & redeploy (v1.2.2+) to ship bug fixes
 - P1: Landing page demo video/screenshots
 - P2: Root domain redirect (obsidiancinema.com → www.obsidiancinema.com)
+- P2: "WWW only" auth page display — contact Emergent support
 - P3: Watch party feature
 - P3: Mobile companion app
 - P3: Auto-fetch movie trailers

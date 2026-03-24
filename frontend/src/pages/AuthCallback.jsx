@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -12,17 +13,16 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 export default function AuthCallback() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setUser } = useAuth();
   const hasProcessed = useRef(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Prevent double processing in StrictMode
     if (hasProcessed.current) return;
     hasProcessed.current = true;
 
     const processAuth = async () => {
       try {
-        // Extract session_id from URL hash fragment
         const hash = location.hash;
         const sessionIdMatch = hash.match(/session_id=([^&]+)/);
         
@@ -34,16 +34,34 @@ export default function AuthCallback() {
 
         const sessionId = sessionIdMatch[1];
 
-        // Send session_id to backend
-        const response = await axios.post(`${API}/auth/session`, {
-          session_id: sessionId
-        }, { withCredentials: true });
+        // Retry up to 3 times with delay for intermittent failures
+        let lastError = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const response = await axios.post(`${API}/auth/session`, {
+              session_id: sessionId
+            }, { withCredentials: true });
 
-        // Navigate to home with user data
-        navigate("/", { 
-          state: { user: response.data },
-          replace: true 
-        });
+            // Update auth context directly so ProtectedRoute works immediately
+            setUser(response.data);
+
+            navigate("/", { 
+              state: { user: response.data },
+              replace: true 
+            });
+            return;
+          } catch (err) {
+            lastError = err;
+            if (attempt < 2) {
+              await new Promise(r => setTimeout(r, 1000));
+            }
+          }
+        }
+
+        // All retries failed
+        console.error("Auth callback error after retries:", lastError);
+        setError("Authentication failed. Please try again.");
+        setTimeout(() => navigate("/login"), 2000);
       } catch (err) {
         console.error("Auth callback error:", err);
         setError("Authentication failed. Please try again.");
@@ -52,7 +70,7 @@ export default function AuthCallback() {
     };
 
     processAuth();
-  }, [location.hash, navigate]);
+  }, [location.hash, navigate, setUser]);
 
   if (error) {
     return (
