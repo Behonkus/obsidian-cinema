@@ -22,16 +22,29 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env', override=True)
+load_dotenv(ROOT_DIR / '.env')
+
+# Read Stripe keys directly from .env file to avoid pod env override
+def _read_env_value(key: str) -> str:
+    """Read a specific key from .env file, bypassing system env."""
+    env_path = ROOT_DIR / '.env'
+    if env_path.exists():
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith(f'{key}='):
+                    val = line[len(key) + 1:].strip().strip('"').strip("'")
+                    return val
+    return os.environ.get(key, '')
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Stripe Configuration
-STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
-STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+# Stripe Configuration - read from .env file directly to avoid pod env override
+STRIPE_API_KEY = _read_env_value('STRIPE_API_KEY')
+STRIPE_WEBHOOK_SECRET = _read_env_value('STRIPE_WEBHOOK_SECRET')
 
 # SendGrid Configuration
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
