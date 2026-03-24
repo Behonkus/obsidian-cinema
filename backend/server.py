@@ -16,7 +16,6 @@ from pydantic import BaseModel, Field, ConfigDict, model_validator
 from typing import List, Optional, Dict, AsyncGenerator, Any
 import uuid
 from datetime import datetime, timezone, timedelta
-from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 import stripe
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from sendgrid import SendGridAPIClient
