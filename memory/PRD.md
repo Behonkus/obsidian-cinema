@@ -1,81 +1,77 @@
 # Obsidian Cinema — Product Requirements Document
 
-## Original Problem Statement
-Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that scans local/network drives for movie files, fetches metadata and posters from TMDB, and allows playback. A companion web app serves as an account portal for Google auth, Stripe payments ($20 one-time Pro tier), and license key management.
+## Overview
+Obsidian Cinema is an installable Windows desktop app (Electron) that scans local/network drives for movie files, fetches metadata/posters from TMDB, and allows playback. A companion web app at www.obsidiancinema.com serves as an account portal for Google authentication, Stripe monetization for a Pro tier, and license key generation.
 
 ## Architecture
-- **Web App**: React + FastAPI + MongoDB (account portal, payments, license keys)
-- **Desktop App**: Electron + electron-store (movie library, local scanning, playback)
-- **External APIs**: TMDB, Stripe, Google OAuth (Emergent-managed), OpenAI GPT-4.1-mini (via Emergent LLM key)
-- **CI/CD**: GitHub Actions for Windows installer builds
+- **Frontend:** React, Tailwind CSS, Shadcn UI, Recharts, Framer Motion
+- **Backend:** FastAPI, MongoDB, Emergent LLM integration
+- **Desktop:** Electron with electron-store (localStorage)
+- **CI/CD:** GitHub Actions builds .exe, zips for releases
+- **Domain:** www.obsidiancinema.com (linked via Emergent deployment)
 
 ## What's Been Implemented
 
-### Web App (Deployed)
-- Google OAuth authentication
-- Stripe payment flow for $20 Pro tier
-- License key generation and management
-- Account Dashboard with Download Guide Modal (NEW)
-- Public Landing Page with hero, features, pricing, CTA
-- SEO meta tags, marketing materials
-- Download endpoint (/api/download/windows) — now prefers .exe over .zip
+### Web App
+- Landing page with features, pricing (Free/Pro), CTAs
+- Google Auth (Emergent-managed)
+- Stripe payments for Pro tier ($20 one-time)
+- License key generation and activation
+- Download guide modal for novice users
+- SEO: meta tags, OG/Twitter cards, JSON-LD structured data, sitemap.xml, robots.txt
 
-### Desktop App (Electron — v1.1.5)
+### Desktop App (Electron — v1.2.2)
 - Local/network drive scanning
 - TMDB poster/metadata/cast auto-fetch
 - One-click playback
 - Advanced sorting (13 options), poster size toggle (S/M/L)
-- Stats page with charts + Cast Insights (Most Appearing Actors, Top-Rated Actors, Genre Chameleons)
 - 18 color themes, Recently Deleted trash
 - Manual poster editor, local collections
 - Directory filter tabs & pagination, individual file import
 - Cast display in movie detail modal (top 5 actors)
 - "Fetch Cast" bulk button + per-movie "Load cast" button
-- AI Movie Suggestions (activity-weighted, genre-filtered) — detail modal + "Suggest For Me" sidebar
+- Per-movie AI suggestions in detail modal
 - Poster Fetch Tip popup with "Don't show again"
 - License activation, auto-update
 - Editable movie titles, year & synopsis; reset/re-fetch metadata
 - Centralized directory management (rename/remove paths)
 - Backup & Restore wizard (rolling auto-backups + JSON export/import)
 - Expandable "Missing Metadata/Posters" lists in Stats & Settings
-- Updated "About Obsidian Cinema" features list (v1.1.4)
+- Search bar with clear (X) button
+- Search TMDB auto-searches on click/tab switch
+
+### Stats Page
+- Total movies, directories, poster coverage, avg rating, collections
+- Decade chart, genre pie chart, rating distribution, format breakdown
+- Top/lowest rated lists, cast insights (most appearing, top-rated, genre chameleons)
+- Fun stats: Most Viewed/Played, Binge Score, Average Movie Age, Title Length Records
+- Rarest Decade, Marathon Mode (with full breakdown), Rating Personality, Alphabet Coverage
+- AI "Suggest For Me" (activity-driven, moved from library sidebar)
+- "What Should I Watch?" random picker with posters
 
 ### CI/CD
 - GitHub Actions builds .exe, zips it for releases (avoids SmartScreen)
-- Manual triggers with version input
-- Auto-creates GitHub releases
+- REACT_APP_BACKEND_URL points to https://www.obsidiancinema.com
 
-### Backend API Endpoints
-- `POST /api/auth/google_login`
-- `POST /api/stripe/create-checkout-session`
-- `GET /api/license/my-license`, `POST /api/license/activate`
-- `GET /api/download/windows` — prefers .exe over .zip
-- `DELETE /api/posters/cache`
-- `POST /api/ai/suggestions`
+### SEO
+- Enhanced meta tags with 13 keywords
+- Open Graph + Twitter Card with generated banner image
+- JSON-LD SoftwareApplication schema (Free/$20 Pro pricing)
+- Sitemap.xml submitted to Google Search Console
+- robots.txt allowing public pages, blocking dashboard/settings
+- Canonical URL: https://www.obsidiancinema.com
 
-## Key Files
-- `/app/frontend/src/pages/LocalLibraryPage.jsx` — Desktop library main
-- `/app/frontend/src/pages/StatsPage.jsx` — Statistics + cast insights
-- `/app/frontend/src/components/DownloadGuideModal.jsx` — Install guide modal (NEW)
-- `/app/frontend/src/pages/AccountDashboard.jsx` — Account + download
-- `/app/frontend/src/pages/LandingPage.jsx` — Public landing
-- `/app/backend/server.py` — FastAPI backend
-- `/app/.github/workflows/build-windows.yml` — CI/CD
+## Key Technical Notes
+- Babel visual-edits plugin disabled (LocalLibraryPage.jsx exceeds AST depth)
+- Components extracted to avoid Babel overflow: CastRow, CollectionAssigner, FunStats, SuggestForMe
+- Backend MovieSummary uses model_validator to normalize genres (objects/strings/numbers)
+- Activity tracking: plays * 3 + views scoring for AI suggestions
+- "Made with Emergent" badge: platform-level injection, contact support to remove
 
-## Backlog (Prioritized)
-
-### P0
-- Custom domain setup (user purchasing from GoDaddy — pending)
-- Deploy latest changes to production
-
-### P1
-- Landing page demo video/screenshots
-- Refactor `LocalLibraryPage.jsx` (~2180 lines)
-
-### P2
-- Watch party feature
-- Mobile companion app
-- Auto-fetch movie trailers
-- Parental controls and multi-user profiles
-- Re-enable referral incentive program
-- Marketing campaign
+## Backlog
+- P1: Landing page demo video/screenshots
+- P2: Root domain redirect (obsidiancinema.com → www.obsidiancinema.com)
+- P3: Watch party feature
+- P3: Mobile companion app
+- P3: Auto-fetch movie trailers
+- P3: Parental controls & multi-user profiles
