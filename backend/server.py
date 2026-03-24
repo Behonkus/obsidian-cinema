@@ -17,6 +17,7 @@ from typing import List, Optional, Dict, AsyncGenerator, Any
 import uuid
 from datetime import datetime, timezone, timedelta
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+import stripe
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
@@ -2152,9 +2153,8 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
             referrer_id = referrer["user_id"]
             logging.info(f"Applying referral discount. Code: {referral_code}, Referrer: {referrer_id}")
     
-    # Initialize Stripe
-    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    # Initialize Stripe with live key
+    stripe.api_key = STRIPE_API_KEY
     
     # Create checkout session
     metadata = {
@@ -2166,22 +2166,31 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
         metadata["referrer_id"] = referrer_id
         metadata["referral_code"] = checkout_request.referral_code.strip().upper()
     
-    checkout_req = CheckoutSessionRequest(
-        amount=final_price,
-        currency=PRO_TIER_CURRENCY,
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata=metadata
-    )
-    
     try:
-        session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_req)
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": PRO_TIER_CURRENCY,
+                    "product_data": {
+                        "name": "Obsidian Cinema Pro",
+                        "description": "Unlimited movies, unlimited collections, priority support"
+                    },
+                    "unit_amount": final_price,
+                },
+                "quantity": 1,
+            }],
+            mode="payment",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata=metadata,
+        )
         
         # Create payment transaction record
         transaction = {
             "transaction_id": f"txn_{uuid.uuid4().hex[:12]}",
             "user_id": user.user_id,
-            "session_id": session.session_id,
+            "session_id": session.id,
             "amount": final_price,
             "currency": PRO_TIER_CURRENCY,
             "payment_status": "pending",
@@ -2192,7 +2201,7 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
         
         return {
             "url": session.url,
-            "session_id": session.session_id,
+            "session_id": session.id,
             "amount": final_price,
             "discount_applied": referrer_id is not None
         }
@@ -2211,11 +2220,12 @@ async def get_checkout_status(session_id: str, request: Request, background_task
         raise HTTPException(status_code=500, detail="Stripe not configured")
     
     # Initialize Stripe
-    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    stripe.api_key = STRIPE_API_KEY
     
     try:
-        status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
+        session = stripe.checkout.Session.retrieve(session_id)
+        
+        payment_status = "paid" if session.payment_status == "paid" else session.payment_status
         
         # Find transaction
         transaction = await db.payment_transactions.find_one(
@@ -2227,11 +2237,11 @@ async def get_checkout_status(session_id: str, request: Request, background_task
             raise HTTPException(status_code=404, detail="Transaction not found")
         
         # Update transaction and user if paid
-        if status.payment_status == "paid" and transaction["payment_status"] != "paid":
+        if payment_status == "paid" and transaction["payment_status"] != "paid":
             # Update transaction
             await db.payment_transactions.update_one(
                 {"session_id": session_id},
-                {"$set": {"payment_status": "paid", "status": status.status}}
+                {"$set": {"payment_status": "paid", "status": session.status}}
             )
             
             # Generate referral code for new Pro user
@@ -2300,10 +2310,10 @@ async def get_checkout_status(session_id: str, request: Request, background_task
             )
         
         return {
-            "status": status.status,
-            "payment_status": status.payment_status,
-            "amount_total": status.amount_total,
-            "currency": status.currency
+            "status": session.status,
+            "payment_status": payment_status,
+            "amount_total": session.amount_total,
+            "currency": session.currency
         }
     except Exception as e:
         logging.error(f"Stripe status check error: {e}")
@@ -2315,32 +2325,35 @@ async def stripe_webhook(request: Request):
     if not STRIPE_API_KEY:
         raise HTTPException(status_code=500, detail="Stripe not configured")
     
-    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    stripe.api_key = STRIPE_API_KEY
     
     try:
         body = await request.body()
         signature = request.headers.get("Stripe-Signature")
         
-        webhook_response = await stripe_checkout.handle_webhook(body, signature)
+        event = stripe.Webhook.construct_event(
+            body, signature, STRIPE_WEBHOOK_SECRET
+        )
         
         # Process successful payment
-        if webhook_response.payment_status == "paid":
-            user_id = webhook_response.metadata.get("user_id")
-            if user_id:
-                # Update transaction
-                await db.payment_transactions.update_one(
-                    {"session_id": webhook_response.session_id},
-                    {"$set": {"payment_status": "paid"}}
-                )
-                
-                # Upgrade user to Pro
-                await db.users.update_one(
-                    {"user_id": user_id},
-                    {"$set": {"subscription_tier": "pro"}}
-                )
-                
-                logging.info(f"Webhook: User {user_id} upgraded to Pro")
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            if session.get("payment_status") == "paid":
+                user_id = session.get("metadata", {}).get("user_id")
+                if user_id:
+                    # Update transaction
+                    await db.payment_transactions.update_one(
+                        {"session_id": session["id"]},
+                        {"$set": {"payment_status": "paid"}}
+                    )
+                    
+                    # Upgrade user to Pro
+                    await db.users.update_one(
+                        {"user_id": user_id},
+                        {"$set": {"subscription_tier": "pro"}}
+                    )
+                    
+                    logging.info(f"Webhook: User {user_id} upgraded to Pro")
         
         return {"received": True}
     except Exception as e:
