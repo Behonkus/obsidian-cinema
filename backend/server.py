@@ -39,7 +39,7 @@ SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@obsidiancinema.app')
 
 # Pro tier pricing (one-time payment)
-PRO_TIER_PRICE = 20.00
+PRO_TIER_PRICE = 2000  # in cents ($20.00)
 PRO_TIER_CURRENCY = "usd"
 
 # Free tier limits
@@ -2205,8 +2205,11 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
             "amount": final_price,
             "discount_applied": referrer_id is not None
         }
+    except stripe.error.StripeError as e:
+        logging.error(f"Stripe checkout error: {e.user_message or e}")
+        raise HTTPException(status_code=500, detail=f"Stripe error: {e.user_message or str(e)}")
     except Exception as e:
-        logging.error(f"Stripe checkout error: {e}")
+        logging.error(f"Checkout error: {e}")
         raise HTTPException(status_code=500, detail="Failed to create checkout session")
 
 @api_router.get("/stripe/checkout-status/{session_id}")
