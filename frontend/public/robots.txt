@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /stats
+
+Sitemap: https://www.obsidiancinema.com/sitemap.xml
