@@ -45,7 +45,7 @@ jobs:
         env:
           # CI=false prevents ESLint warnings from failing the build
           CI: false
-          REACT_APP_BACKEND_URL: https://cinema-hub-402.emergent.host
+          REACT_APP_BACKEND_URL: https://www.obsidiancinema.com
 
       - name: Copy Electron files to build output
         run: |
