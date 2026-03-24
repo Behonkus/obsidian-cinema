@@ -749,13 +749,12 @@ export default function StatsPage() {
         <p className="text-muted-foreground">Your collection at a glance</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard icon={Film} label="Total Movies" value={stats.total} delay={0} />
         <StatCard icon={FolderOpen} label="Directories" value={stats.dirCount} delay={0.03} color="text-amber-400" />
         <StatCard icon={Image} label="Poster Coverage" value={stats.posterPct + '%'} sub={posterSub} delay={0.06} color="text-green-400" />
         <StatCard icon={Star} label="Avg Rating" value={stats.avgRating ? stats.avgRating.toFixed(1) : '\u2014'} sub={ratingSub} delay={0.09} color="text-amber-400" />
-        <StatCard icon={Hourglass} label="Watch Time" value={stats.watchDays > 0 ? stats.watchDays + 'd ' + stats.watchHours + 'h' : stats.totalHours + 'h'} sub={'~' + stats.totalHours + ' hours total'} delay={0.12} color="text-cyan-400" />
-        <StatCard icon={FolderHeart} label="Collections" value={stats.collectionCount} sub={stats.totalInCollections + ' movies organized'} delay={0.15} color="text-purple-400" />
+        <StatCard icon={FolderHeart} label="Collections" value={stats.collectionCount} sub={stats.totalInCollections + ' movies organized'} delay={0.12} color="text-purple-400" />
       </div>
 
       {(stats.newest || stats.oldest) && (

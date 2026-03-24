@@ -57,9 +57,9 @@ export function BingeScore({ movies }) {
   var day30 = now - 30 * 24 * 60 * 60 * 1000;
   var views7 = 0, views30 = 0;
   Object.values(activity).forEach(function(a) {
-    if (a.last_viewed) {
-      if (a.last_viewed > day7) views7++;
-      if (a.last_viewed > day30) views30++;
+    if (a.lastView) {
+      if (a.lastView > day7) views7++;
+      if (a.lastView > day30) views30++;
     }
   });
   var totalViews = Object.values(activity).reduce(function(sum, a) { return sum + (a.views || 0); }, 0);
@@ -82,9 +82,12 @@ export function BingeScore({ movies }) {
 }
 
 export function AverageMovieAge({ movies }) {
-  var withYear = movies.filter(function(m) { return m.year && m.year > 1800; });
+  var withYear = movies.filter(function(m) {
+    var y = parseInt(m.year, 10);
+    return y && y > 1800 && y < 2100;
+  });
   if (withYear.length === 0) return null;
-  var sum = withYear.reduce(function(s, m) { return s + m.year; }, 0);
+  var sum = withYear.reduce(function(s, m) { return s + parseInt(m.year, 10); }, 0);
   var avg = Math.round(sum / withYear.length);
   var currentYear = new Date().getFullYear();
   var avgAge = currentYear - avg;
@@ -158,7 +161,7 @@ export function RarestDecade({ decadeData }) {
 }
 
 export function MarathonMode({ total }) {
-  if (!total) return null;
+  if (!total || total <= 0) return null;
   var hours = total * 2;
   var days = (hours / 24).toFixed(1);
   var weeks = (hours / 168).toFixed(1);
