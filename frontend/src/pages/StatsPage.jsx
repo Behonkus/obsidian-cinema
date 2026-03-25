@@ -741,7 +741,7 @@ export default function StatsPage() {
   var ratingSub = 'from ' + (stats.total - stats.missingRating) + ' rated';
 
   return (
-    <div className="p-6 space-y-6" data-testid="stats-page">
+    <div className="p-6 space-y-4" data-testid="stats-page">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <BarChart3 className="w-6 h-6 text-primary" /> Library Stats
@@ -795,7 +795,7 @@ export default function StatsPage() {
         <RatingPersonality avgRating={stats.avgRating} movies={movies} />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <DecadeChart data={stats.decadeData} />
         </motion.div>
@@ -816,7 +816,7 @@ export default function StatsPage() {
         </motion.div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
           <TopRatedList movies={stats.topRated} />
         </motion.div>
@@ -825,20 +825,13 @@ export default function StatsPage() {
         </motion.div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3">
         <MostViewedMovies movies={movies} />
         <TitleLengthRecords movies={movies} />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3">
         <AlphabetCoverage movies={movies} />
-        <SuggestForMe movies={movies} />
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-          <RandomPicker movies={movies} />
-        </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}>
           <Card>
             <CardHeader className="pb-2">
@@ -865,6 +858,13 @@ export default function StatsPage() {
         </motion.div>
       </div>
 
+      <div className="grid md:grid-cols-2 gap-3">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+          <RandomPicker movies={movies} />
+        </motion.div>
+        <SuggestForMe movies={movies} />
+      </div>
+
       {/* Cast Stats */}
       {stats.moviesWithCast > 0 && (
         <>
@@ -875,7 +875,7 @@ export default function StatsPage() {
               <span className="text-xs text-muted-foreground">({stats.uniqueActors} actors across {stats.moviesWithCast} movies)</span>
             </div>
           </motion.div>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-3 gap-3">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}>
               <MostAppearingActors actors={stats.topActors} />
             </motion.div>

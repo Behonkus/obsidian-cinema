@@ -119,21 +119,23 @@ export function TitleLengthRecords({ movies }) {
 
   return (
     <Card data-testid="title-length-records">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-          <Type className="w-4 h-4 text-pink-400" /> Title Records
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2 text-sm">
-        <div>
-          <p className="text-xs text-muted-foreground">Longest title ({longest.title.length} chars)</p>
-          <p className="font-medium truncate">{longest.title}</p>
+      <CardContent className="p-4 space-y-1.5 text-sm">
+        <div className="flex items-center gap-2 text-muted-foreground mb-2">
+          <Type className="w-4 h-4 text-pink-400" />
+          <span className="text-sm font-medium">Title Records</span>
         </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Shortest title ({shortest.title.length} chars)</p>
-          <p className="font-medium">{shortest.title}</p>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Longest ({longest.title.length} chars)</span>
+          <span className="font-medium text-xs truncate max-w-[60%] text-right">{longest.title}</span>
         </div>
-        <p className="text-xs text-muted-foreground">Average title length: {avgLen} characters</p>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Shortest ({shortest.title.length} chars)</span>
+          <span className="font-medium text-xs">{shortest.title}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Average length</span>
+          <span className="font-medium text-xs">{avgLen} chars</span>
+        </div>
       </CardContent>
     </Card>
   );
