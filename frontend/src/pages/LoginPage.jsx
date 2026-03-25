@@ -22,8 +22,11 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     setIsLoading(true);
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    const redirectUrl = window.location.origin + "/";
+    // Use domain without www for display on auth page ("Obsidiancinema" instead of "Www")
+    // After auth, Emergent redirects to this URL — the server/DNS should handle www redirect
+    const origin = window.location.origin;
+    const displayOrigin = origin.replace("://www.", "://");
+    const redirectUrl = displayOrigin + "/";
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
