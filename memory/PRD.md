@@ -73,6 +73,11 @@ Obsidian Cinema is an installable Windows desktop app (Electron) that scans loca
 ## Recent Fixes (2026-03-24)
 - Fixed Stripe checkout price display: /api/pricing now returns $20 (dollars) not 2000 (cents)
 - Fixed intermittent Google Auth failures: AuthCallback now retries 3x and updates AuthContext
+- Fixed Stripe API key override: pod injected sk_test_emergent; now reads directly from .env file
+- Fixed post-payment blank screen: checkout-status no longer requires auth, success route unprotected
+- Fixed crash bug: `status.status` → `session.status` in checkout-status endpoint
+- Upgraded Shannan (shannan2008@gmail.com) to Pro with license key OBSIDIAN-1CBB-CC18-A8D1-3166
+- Redesigned payment success screen: shows license key + 3-step activation guide
 - "WWW only" on auth page: Emergent platform issue — user should contact support@emergent.sh
 
 ## Backlog
