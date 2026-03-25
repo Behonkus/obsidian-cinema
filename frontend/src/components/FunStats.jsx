@@ -167,18 +167,36 @@ export function MarathonMode({ total }) {
   if (!total || total <= 0) return null;
   var hours = total * 2;
   var days = (hours / 24).toFixed(1);
+  var weeks = (hours / 168).toFixed(1);
+  var months = (hours / 730).toFixed(1);
 
   return (
     <Card data-testid="marathon-mode">
-      <CardContent className="p-4 flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-secondary text-emerald-400">
-          <Timer className="w-5 h-5" />
+      <CardContent className="p-4 space-y-2">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Timer className="w-4 h-4 text-emerald-400" />
+          <span className="text-sm font-medium">Marathon Mode</span>
         </div>
-        <div>
-          <p className="text-2xl font-bold text-foreground">{Number(hours).toLocaleString()}h</p>
-          <p className="text-xs text-muted-foreground">Marathon runtime ({days} days)</p>
-          <p className="text-xs text-muted-foreground/70">{total.toLocaleString()} movies at ~2 hrs each</p>
+        <p className="text-xs text-muted-foreground">If you watched every movie back-to-back (~2 hrs each):</p>
+        <div className="flex gap-4 text-sm">
+          <div className="text-center">
+            <p className="text-lg font-bold text-foreground">{Number(hours).toLocaleString()}</p>
+            <p className="text-[10px] text-muted-foreground">hours</p>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-bold text-foreground">{days}</p>
+            <p className="text-[10px] text-muted-foreground">days</p>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-bold text-foreground">{weeks}</p>
+            <p className="text-[10px] text-muted-foreground">weeks</p>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-bold text-foreground">{months}</p>
+            <p className="text-[10px] text-muted-foreground">months</p>
+          </div>
         </div>
+        <p className="text-[10px] text-muted-foreground/60">{total.toLocaleString()} movies at ~2 hours each = {Number(hours).toLocaleString()} hours of non-stop cinema!</p>
       </CardContent>
     </Card>
   );
