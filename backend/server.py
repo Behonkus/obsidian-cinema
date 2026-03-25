@@ -256,6 +256,104 @@ def send_referral_success_email(referrer_email: str, referrer_name: str, referre
         logging.error(f"Failed to send referral email: {e}")
         return False
 
+def send_welcome_pro_email(email: str, name: str, license_key: str):
+    """Send welcome email with license key to new Pro users."""
+    if not SENDGRID_API_KEY:
+        logging.warning("SendGrid API key not configured, skipping welcome email")
+        return False
+    
+    first_name = name.split()[0] if name else "there"
+    subject = "Your Obsidian Cinema Pro license key"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0a0a0a; color: #e5e5e5; margin: 0; padding: 20px; }}
+            .container {{ max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 12px; padding: 32px; border: 1px solid #262626; }}
+            .header {{ text-align: center; margin-bottom: 24px; }}
+            .logo {{ font-size: 24px; font-weight: bold; color: #f59e0b; }}
+            .crown {{ color: #f59e0b; font-size: 48px; }}
+            h1 {{ color: #ffffff; margin: 16px 0 8px 0; font-size: 24px; }}
+            .highlight {{ color: #f59e0b; font-weight: bold; }}
+            .license-box {{ background-color: #262626; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0; border: 1px solid #f59e0b33; }}
+            .license-key {{ font-size: 22px; font-weight: bold; color: #f59e0b; font-family: 'Courier New', monospace; letter-spacing: 2px; }}
+            .license-label {{ color: #a3a3a3; font-size: 12px; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px; }}
+            .step {{ display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; }}
+            .step-num {{ width: 28px; height: 28px; border-radius: 50%; background-color: #262626; color: #f59e0b; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }}
+            .step-text {{ color: #d4d4d4; font-size: 14px; line-height: 1.5; }}
+            .step-text strong {{ color: #ffffff; }}
+            .cta {{ display: inline-block; background-color: #f59e0b; color: #000000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; margin-top: 16px; }}
+            .footer {{ text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #262626; color: #737373; font-size: 12px; }}
+            p {{ line-height: 1.6; color: #d4d4d4; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="crown">&#127909;</div>
+                <div class="logo">Obsidian Cinema</div>
+            </div>
+            
+            <h1>Welcome to Pro, {first_name}!</h1>
+            
+            <p>Thank you for upgrading. Your license key is below — save this email so you always have it.</p>
+            
+            <div class="license-box">
+                <div class="license-label">Your License Key</div>
+                <div class="license-key">{license_key}</div>
+            </div>
+            
+            <h2 style="color: #ffffff; font-size: 16px; margin: 24px 0 12px 0;">Getting started</h2>
+            
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text"><strong>Download</strong> the desktop app from <a href="https://www.obsidiancinema.com" style="color: #f59e0b;">www.obsidiancinema.com</a> (sign in, then click Download).</div>
+            </div>
+            
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text"><strong>Install & launch</strong> Obsidian Cinema on your Windows PC.</div>
+            </div>
+            
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text"><strong>Enter your license key</strong> when prompted — copy it from above and paste it in.</div>
+            </div>
+            
+            <p>That's it. You now have unlimited movies, unlimited collections, and priority support.</p>
+            
+            <div style="text-align: center;">
+                <a href="https://www.obsidiancinema.com" class="cta">Go to Obsidian Cinema</a>
+            </div>
+            
+            <div class="footer">
+                <p>Obsidian Cinema — Your Personal Movie Library</p>
+                <p>You're receiving this because you purchased Obsidian Cinema Pro.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    message = Mail(
+        from_email=SENDER_EMAIL,
+        to_emails=email,
+        subject=subject,
+        html_content=html_content
+    )
+    
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message)
+        logging.info(f"Welcome Pro email sent to {email}, status: {response.status_code}")
+        return response.status_code == 202
+    except Exception as e:
+        logging.error(f"Failed to send welcome email: {e}")
+        return False
+
+
 # User and Auth Models
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -2318,6 +2416,15 @@ async def get_checkout_status(session_id: str, request: Request, background_task
             )
             
             logging.info(f"User {tx_user_id} upgraded to Pro with referral code {new_referral_code}")
+            
+            # Send welcome email with license key in background
+            final_license = new_license_key if not existing_license else (existing_license.get("license_key") or new_license_key)
+            background_tasks.add_task(
+                send_welcome_pro_email,
+                email=tx_user.get("email", ""),
+                name=tx_user.get("name", ""),
+                license_key=final_license
+            )
         elif session.status == "expired":
             await db.payment_transactions.update_one(
                 {"session_id": session_id},
