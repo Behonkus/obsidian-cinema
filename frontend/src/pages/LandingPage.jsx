@@ -88,7 +88,9 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    const redirectUrl = window.location.origin + "/";
+    const origin = window.location.origin;
+    const displayOrigin = origin.replace("://www.", "://");
+    const redirectUrl = displayOrigin + "/";
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
