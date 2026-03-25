@@ -826,12 +826,12 @@ export default function StatsPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-3">
-        <MostViewedMovies movies={movies} />
         <TitleLengthRecords movies={movies} />
+        <AlphabetCoverage movies={movies} />
       </div>
 
       <div className="grid md:grid-cols-2 gap-3">
-        <AlphabetCoverage movies={movies} />
+        <MostViewedMovies movies={movies} />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}>
           <Card>
             <CardHeader className="pb-2">

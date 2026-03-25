@@ -260,13 +260,12 @@ export function AlphabetCoverage({ movies }) {
 
   return (
     <Card data-testid="alphabet-coverage">
-      <CardHeader className="pb-1">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-          <LetterText className="w-4 h-4 text-violet-400" /> Alphabet Coverage
+      <CardContent className="p-4 pb-3">
+        <div className="flex items-center gap-2 text-muted-foreground mb-2">
+          <LetterText className="w-4 h-4 text-violet-400" />
+          <span className="text-sm font-medium">Alphabet Coverage</span>
           <span className="ml-auto text-xs font-normal">{26 - missing.length}/26</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pb-3">
+        </div>
         <div className="flex flex-wrap gap-[3px]">
           {letters.map(function(l) {
             var count = letterCounts[l];
