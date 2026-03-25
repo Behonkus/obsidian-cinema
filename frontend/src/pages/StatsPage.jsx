@@ -403,6 +403,7 @@ function TopRatedActors({ actors }) {
                 <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
               )}
               <p className="text-sm font-medium truncate flex-1">{actor.name}</p>
+              <span className="text-xs text-muted-foreground">{actor.movieCount} films</span>
               <Badge variant="secondary" className="text-amber-400 bg-amber-400/10 text-xs">{'★ ' + actor.avgRating.toFixed(1)}</Badge>
             </div>
           );
