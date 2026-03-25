@@ -338,13 +338,15 @@ export default function UpgradePage() {
       setPricing(pricingRes.data);
     } catch (err) {
       console.error("Failed to load data:", err);
-      if (err.response?.status === 401) {
+      // Don't redirect to login if we're on the success page with a session_id
+      const hasSessionId = searchParams.get("session_id");
+      if (err.response?.status === 401 && !hasSessionId) {
         navigate("/login");
       }
     } finally {
       setLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   const pollPaymentStatus = useCallback(async (sessionId, attempts = 0) => {
     const maxAttempts = 10;
@@ -363,7 +365,8 @@ export default function UpgradePage() {
       if (response.data.payment_status === "paid") {
         setPaymentSuccess(true);
         toast.success("Welcome to Pro! Your upgrade is complete.");
-        loadData();
+        // Try to reload user data (may fail if not authed, that's ok)
+        try { await loadData(); } catch {}
         window.history.replaceState({}, document.title, "/upgrade/success");
         return;
       } else if (response.data.status === "expired") {
@@ -448,10 +451,18 @@ export default function UpgradePage() {
     }
   };
 
-  if (loading) {
+  // Show loading/verifying state when we have a session_id and are still checking
+  const hasSessionId = searchParams.get("session_id");
+  
+  if (loading || (hasSessionId && !paymentSuccess)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          {hasSessionId && (
+            <p className="text-muted-foreground">Verifying your payment...</p>
+          )}
+        </div>
       </div>
     );
   }
@@ -513,10 +524,17 @@ export default function UpgradePage() {
           <p className="text-muted-foreground mb-6">
             Your upgrade is complete. Enjoy unlimited movies and collections!
           </p>
-          <Button onClick={() => navigate("/")} className="gap-2 bg-primary">
-            <Film className="w-4 h-4" />
-            Go to Library
-          </Button>
+          {user ? (
+            <Button onClick={() => navigate("/")} className="gap-2 bg-primary" data-testid="go-to-library-btn">
+              <Film className="w-4 h-4" />
+              Go to Library
+            </Button>
+          ) : (
+            <Button onClick={() => navigate("/login")} className="gap-2 bg-primary" data-testid="sign-in-for-license-btn">
+              <Key className="w-4 h-4" />
+              Sign in to view your license key
+            </Button>
+          )}
         </motion.div>
       </div>
     );

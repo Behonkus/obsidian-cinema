@@ -137,11 +137,7 @@ function AppRouter() {
       />
       <Route
         path="/upgrade/success"
-        element={
-          <ProtectedRoute>
-            <UpgradePage />
-          </ProtectedRoute>
-        }
+        element={<UpgradePage />}
       />
     </Routes>
   );

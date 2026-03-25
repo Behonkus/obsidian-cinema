@@ -2226,15 +2226,15 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
 
 @api_router.get("/stripe/checkout-status/{session_id}")
 async def get_checkout_status(session_id: str, request: Request, background_tasks: BackgroundTasks, session_token: Optional[str] = Cookie(default=None)):
-    """Get checkout session status and update user if paid."""
+    """Get checkout session status and update user if paid.
+    Auth is optional — session_id is the secret token. This allows
+    the success page to work even if the cookie is lost during Stripe redirect.
+    """
     user = await get_current_user(request, session_token)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
     
     if not STRIPE_API_KEY:
         raise HTTPException(status_code=500, detail="Stripe not configured")
     
-    # Initialize Stripe
     stripe.api_key = STRIPE_API_KEY
     
     try:
@@ -2242,55 +2242,57 @@ async def get_checkout_status(session_id: str, request: Request, background_task
         
         payment_status = "paid" if session.payment_status == "paid" else session.payment_status
         
-        # Find transaction
+        # Find transaction by session_id (don't filter by user_id since auth may be lost)
         transaction = await db.payment_transactions.find_one(
-            {"session_id": session_id, "user_id": user.user_id},
+            {"session_id": session_id},
             {"_id": 0}
         )
         
         if not transaction:
             raise HTTPException(status_code=404, detail="Transaction not found")
         
+        tx_user_id = transaction["user_id"]
+        
         # Update transaction and user if paid
         if payment_status == "paid" and transaction["payment_status"] != "paid":
-            # Update transaction
             await db.payment_transactions.update_one(
                 {"session_id": session_id},
                 {"$set": {"payment_status": "paid", "status": session.status}}
             )
             
-            # Generate referral code for new Pro user
+            # Look up the user who owns this transaction
+            tx_user = await db.users.find_one({"user_id": tx_user_id}, {"_id": 0})
+            if not tx_user:
+                logging.error(f"User {tx_user_id} not found for transaction {session_id}")
+                return {"status": session.status, "payment_status": payment_status}
+            
             new_referral_code = generate_referral_code()
             
             # Generate license key for desktop app
             new_license_key = generate_license_key()
             license_doc = {
                 "license_key": new_license_key,
-                "user_id": user.user_id,
-                "email": user.email,
+                "user_id": tx_user_id,
+                "email": tx_user["email"],
                 "is_active": True,
                 "activated_machine_id": None,
                 "activated_at": None,
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
             
-            # Check if license already exists (shouldn't happen, but be safe)
-            existing_license = await db.license_keys.find_one({"user_id": user.user_id})
+            existing_license = await db.license_keys.find_one({"user_id": tx_user_id})
             if not existing_license:
                 await db.license_keys.insert_one(license_doc)
-                logging.info(f"License key generated for user {user.user_id}: {new_license_key}")
+                logging.info(f"License key generated for user {tx_user_id}: {new_license_key}")
             
-            # Upgrade user to Pro with referral code
             update_data = {
                 "subscription_tier": "pro",
                 "referral_code": new_referral_code
             }
             
-            # Track referrer if present and send notification email
             referrer_id = transaction.get("metadata", {}).get("referrer_id")
             if referrer_id:
                 update_data["referred_by"] = referrer_id
-                # Increment referrer's referral count
                 result = await db.users.find_one_and_update(
                     {"user_id": referrer_id},
                     {"$inc": {"referral_count": 1}},
@@ -2299,8 +2301,7 @@ async def get_checkout_status(session_id: str, request: Request, background_task
                 )
                 
                 if result:
-                    # Send email notification to referrer in background
-                    referred_first_name = user.name.split()[0] if user.name else "A friend"
+                    referred_first_name = tx_user.get("name", "A friend").split()[0]
                     background_tasks.add_task(
                         send_referral_success_email,
                         referrer_email=result["email"],
@@ -2308,17 +2309,16 @@ async def get_checkout_status(session_id: str, request: Request, background_task
                         referred_name=referred_first_name,
                         new_referral_count=result.get("referral_count", 1)
                     )
-                    logging.info(f"Referral email queued for {result['email']}")
                 
                 logging.info(f"Referral credited to {referrer_id}")
             
             await db.users.update_one(
-                {"user_id": user.user_id},
+                {"user_id": tx_user_id},
                 {"$set": update_data}
             )
             
-            logging.info(f"User {user.user_id} upgraded to Pro with referral code {new_referral_code}")
-        elif status.status == "expired":
+            logging.info(f"User {tx_user_id} upgraded to Pro with referral code {new_referral_code}")
+        elif session.status == "expired":
             await db.payment_transactions.update_one(
                 {"session_id": session_id},
                 {"$set": {"payment_status": "expired", "status": "expired"}}
@@ -2330,8 +2330,13 @@ async def get_checkout_status(session_id: str, request: Request, background_task
             "amount_total": session.amount_total,
             "currency": session.currency
         }
-    except Exception as e:
+    except stripe.error.StripeError as e:
         logging.error(f"Stripe status check error: {e}")
+        raise HTTPException(status_code=500, detail=f"Stripe error: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Checkout status error: {e}")
         raise HTTPException(status_code=500, detail="Failed to check payment status")
 
 @api_router.post("/webhook/stripe")
