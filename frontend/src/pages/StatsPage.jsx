@@ -368,9 +368,9 @@ function MostAppearingActors({ actors }) {
             <div key={actor.name} className="flex items-center gap-2" data-testid={'top-actor-' + i}>
               <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
-                <img src={actor.photo} alt="" className="w-6 h-6 rounded-full object-cover" />
+                <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
               )}
               <p className="text-sm font-medium truncate flex-1">{actor.name}</p>
               <Badge variant="secondary" className="text-blue-400 bg-blue-400/10 text-xs">{actor.count}</Badge>
@@ -398,9 +398,9 @@ function TopRatedActors({ actors }) {
             <div key={actor.name} className="flex items-center gap-2" data-testid={'rated-actor-' + i}>
               <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
-                <img src={actor.photo} alt="" className="w-6 h-6 rounded-full object-cover" />
+                <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
               )}
               <p className="text-sm font-medium truncate flex-1">{actor.name}</p>
               <Badge variant="secondary" className="text-amber-400 bg-amber-400/10 text-xs">{'★ ' + actor.avgRating.toFixed(1)}</Badge>
@@ -428,9 +428,9 @@ function GenreChameleons({ actors }) {
             <div key={actor.name} className="flex items-center gap-2" data-testid={'chameleon-actor-' + i}>
               <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
-                <img src={actor.photo} alt="" className="w-6 h-6 rounded-full object-cover" />
+                <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
               )}
               <p className="text-sm font-medium truncate flex-1">{actor.name}</p>
               <Badge variant="secondary" className="text-emerald-400 bg-emerald-400/10 text-xs">{actor.genreCount} genres</Badge>
@@ -634,7 +634,7 @@ function computeStats(movies, directories, trashedMovies) {
     }
   }
   ratedActors.sort(function(a, b) { return b.avgRating - a.avgRating; });
-  var topRatedActors = ratedActors.slice(0, 5);
+  var topRatedActors = ratedActors.slice(0, 10);
   // Genre chameleon (most genres, min 2 movies)
   var chameleonActors = [];
   for (i = 0; i < actorKeys.length; i++) {
