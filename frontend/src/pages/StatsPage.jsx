@@ -70,15 +70,15 @@ function DecadeChart({ data }) {
   if (!data || data.length === 0) return null;
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1 pt-3 px-4">
         <CardTitle className="text-sm font-medium text-muted-foreground">Movies by Decade</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={220}>
+      <CardContent className="px-4 pb-3">
+        <ResponsiveContainer width="100%" height={180}>
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-            <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
-            <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
+            <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+            <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
             <Tooltip />
             <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
           </BarChart>
@@ -92,15 +92,15 @@ function RatingChart({ data }) {
   if (!data) return null;
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1 pt-3 px-4">
         <CardTitle className="text-sm font-medium text-muted-foreground">Rating Distribution</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={220}>
+      <CardContent className="px-4 pb-3">
+        <ResponsiveContainer width="100%" height={180}>
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-            <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
-            <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
+            <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+            <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
             <Tooltip />
             <Bar dataKey="count" fill="#f59e0b" radius={[4, 4, 0, 0]} />
           </BarChart>
@@ -128,14 +128,14 @@ function FormatChart({ data }) {
   });
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1 pt-3 px-4">
         <CardTitle className="text-sm font-medium text-muted-foreground">File Formats</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 pb-3">
         <div className="flex items-center gap-4">
-          <ResponsiveContainer width="50%" height={200}>
+          <ResponsiveContainer width="50%" height={160}>
             <PieChart>
-              <Pie data={data} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="value" stroke="none">
+              <Pie data={data} cx="50%" cy="50%" innerRadius={35} outerRadius={65} dataKey="value" stroke="none">
                 {cells}
               </Pie>
               <Tooltip />
@@ -152,11 +152,11 @@ function DirectoryChart({ data }) {
   if (!data || data.length === 0) return null;
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1 pt-3 px-4">
         <CardTitle className="text-sm font-medium text-muted-foreground">Movies per Directory</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={220}>
+      <CardContent className="px-4 pb-3">
+        <ResponsiveContainer width="100%" height={180}>
           <BarChart data={data} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
             <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
@@ -173,18 +173,13 @@ function DirectoryChart({ data }) {
 function TopRatedList({ movies }) {
   if (!movies || movies.length === 0) return null;
   const rows = movies.map(function(movie, i) {
-    const poster = movie.poster_path
-      ? <img src={movie.poster_path} alt="" className="w-8 h-12 rounded object-cover" />
-      : <div className="w-8 h-12 rounded bg-secondary flex items-center justify-center"><Film className="w-4 h-4 text-muted-foreground" /></div>;
     return (
-      <div key={movie.id} className="flex items-center gap-3">
-        <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
-        {poster}
+      <div key={movie.id} className="flex items-center gap-2">
+        <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{movie.title}</p>
-          <p className="text-xs text-muted-foreground">{movie.year || 'Unknown year'}</p>
         </div>
-        <Badge variant="secondary" className="text-amber-400 bg-amber-400/10">
+        <Badge variant="secondary" className="text-amber-400 bg-amber-400/10 text-xs">
           {'★ ' + movie.rating.toFixed(1)}
         </Badge>
       </div>
@@ -192,12 +187,13 @@ function TopRatedList({ movies }) {
   });
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-          <Trophy className="w-4 h-4 text-amber-400" /> Top Rated
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">{rows}</CardContent>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-muted-foreground mb-2">
+          <Trophy className="w-4 h-4 text-amber-400" />
+          <span className="text-sm font-medium">Top Rated</span>
+        </div>
+        <div className="space-y-1.5">{rows}</div>
+      </CardContent>
     </Card>
   );
 }
@@ -228,18 +224,13 @@ function RecentList({ movies }) {
 function LowestRatedList({ movies }) {
   if (!movies || movies.length === 0) return null;
   const rows = movies.map(function(movie, i) {
-    const poster = movie.poster_path
-      ? <img src={movie.poster_path} alt="" className="w-8 h-12 rounded object-cover" />
-      : <div className="w-8 h-12 rounded bg-secondary flex items-center justify-center"><Film className="w-4 h-4 text-muted-foreground" /></div>;
     return (
-      <div key={movie.id} className="flex items-center gap-3">
-        <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
-        {poster}
+      <div key={movie.id} className="flex items-center gap-2">
+        <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{movie.title}</p>
-          <p className="text-xs text-muted-foreground">{movie.year || 'Unknown year'}</p>
         </div>
-        <Badge variant="secondary" className="text-red-400 bg-red-400/10">
+        <Badge variant="secondary" className="text-red-400 bg-red-400/10 text-xs">
           {'★ ' + movie.rating.toFixed(1)}
         </Badge>
       </div>
@@ -247,12 +238,13 @@ function LowestRatedList({ movies }) {
   });
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-          <ThumbsDown className="w-4 h-4 text-red-400" /> Lowest Rated
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">{rows}</CardContent>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-muted-foreground mb-2">
+          <ThumbsDown className="w-4 h-4 text-red-400" />
+          <span className="text-sm font-medium">Lowest Rated</span>
+        </div>
+        <div className="space-y-1.5">{rows}</div>
+      </CardContent>
     </Card>
   );
 }
@@ -270,14 +262,14 @@ function GenreChart({ data }) {
   });
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1 pt-3 px-4">
         <CardTitle className="text-sm font-medium text-muted-foreground">Genre Distribution</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 pb-3">
         <div className="flex gap-4">
-          <ResponsiveContainer width="50%" height={180}>
+          <ResponsiveContainer width="50%" height={160}>
             <PieChart>
-              <Pie data={data.slice(0, 8)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={35} paddingAngle={2}>
+              <Pie data={data.slice(0, 8)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} innerRadius={30} paddingAngle={2}>
                 {data.slice(0, 8).map(function(_, i) { return <Cell key={i} fill={COLORS[i % COLORS.length]} />; })}
               </Pie>
               <Tooltip />
@@ -294,11 +286,11 @@ function GrowthChart({ data }) {
   if (!data || data.length < 2) return null;
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1 pt-3 px-4">
         <CardTitle className="text-sm font-medium text-muted-foreground">Library Growth</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={200}>
+      <CardContent className="px-4 pb-3">
+        <ResponsiveContainer width="100%" height={180}>
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
             <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
@@ -333,12 +325,11 @@ function RandomPicker({ movies }) {
 
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-          <Dice5 className="w-4 h-4 text-purple-400" /> What Should I Watch?
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Dice5 className="w-4 h-4 text-purple-400" />
+          <span className="text-sm font-medium">What Should I Watch?</span>
+        </div>
         <Button variant="outline" className="w-full gap-2" onClick={rollRandom} disabled={spinning} data-testid="random-picker-btn">
           <Sparkles className={"w-4 h-4 " + (spinning ? 'animate-spin' : '')} />
           {spinning ? 'Picking...' : 'Pick a Random Movie'}
@@ -366,28 +357,27 @@ function MostAppearingActors({ actors }) {
   if (!actors || actors.length === 0) return null;
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-          <Users className="w-4 h-4 text-blue-400" /> Most Appearing Actors
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-muted-foreground mb-2">
+          <Users className="w-4 h-4 text-blue-400" />
+          <span className="text-sm font-medium">Most Appearing Actors</span>
+        </div>
+        <div className="space-y-1.5">
         {actors.map(function(actor, i) {
           return (
-            <div key={actor.name} className="flex items-center gap-3" data-testid={'top-actor-' + i}>
-              <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
+            <div key={actor.name} className="flex items-center gap-2" data-testid={'top-actor-' + i}>
+              <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
-                <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
+                <img src={actor.photo} alt="" className="w-6 h-6 rounded-full object-cover" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
+                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
               )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{actor.name}</p>
-              </div>
-              <Badge variant="secondary" className="text-blue-400 bg-blue-400/10">{actor.count} films</Badge>
+              <p className="text-sm font-medium truncate flex-1">{actor.name}</p>
+              <Badge variant="secondary" className="text-blue-400 bg-blue-400/10 text-xs">{actor.count}</Badge>
             </div>
           );
         })}
+        </div>
       </CardContent>
     </Card>
   );
@@ -397,29 +387,27 @@ function TopRatedActors({ actors }) {
   if (!actors || actors.length === 0) return null;
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-          <Star className="w-4 h-4 text-amber-400" /> Top-Rated Actors
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-muted-foreground mb-2">
+          <Star className="w-4 h-4 text-amber-400" />
+          <span className="text-sm font-medium">Top-Rated Actors</span>
+        </div>
+        <div className="space-y-1.5">
         {actors.map(function(actor, i) {
           return (
-            <div key={actor.name} className="flex items-center gap-3" data-testid={'rated-actor-' + i}>
-              <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
+            <div key={actor.name} className="flex items-center gap-2" data-testid={'rated-actor-' + i}>
+              <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
-                <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
+                <img src={actor.photo} alt="" className="w-6 h-6 rounded-full object-cover" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
+                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
               )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{actor.name}</p>
-                <p className="text-xs text-muted-foreground">{actor.movieCount} films</p>
-              </div>
-              <Badge variant="secondary" className="text-amber-400 bg-amber-400/10">{'★ ' + actor.avgRating.toFixed(1)}</Badge>
+              <p className="text-sm font-medium truncate flex-1">{actor.name}</p>
+              <Badge variant="secondary" className="text-amber-400 bg-amber-400/10 text-xs">{'★ ' + actor.avgRating.toFixed(1)}</Badge>
             </div>
           );
         })}
+        </div>
       </CardContent>
     </Card>
   );
@@ -429,29 +417,27 @@ function GenreChameleons({ actors }) {
   if (!actors || actors.length === 0) return null;
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-          <Sparkles className="w-4 h-4 text-emerald-400" /> Genre Chameleons
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-muted-foreground mb-2">
+          <Sparkles className="w-4 h-4 text-emerald-400" />
+          <span className="text-sm font-medium">Genre Chameleons</span>
+        </div>
+        <div className="space-y-1.5">
         {actors.map(function(actor, i) {
           return (
-            <div key={actor.name} className="flex items-center gap-3" data-testid={'chameleon-actor-' + i}>
-              <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
+            <div key={actor.name} className="flex items-center gap-2" data-testid={'chameleon-actor-' + i}>
+              <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
-                <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
+                <img src={actor.photo} alt="" className="w-6 h-6 rounded-full object-cover" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
+                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center"><Users className="w-3 h-3 text-muted-foreground" /></div>
               )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{actor.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{actor.genres.join(', ')}</p>
-              </div>
-              <Badge variant="secondary" className="text-emerald-400 bg-emerald-400/10">{actor.genreCount} genres</Badge>
+              <p className="text-sm font-medium truncate flex-1">{actor.name}</p>
+              <Badge variant="secondary" className="text-emerald-400 bg-emerald-400/10 text-xs">{actor.genreCount} genres</Badge>
             </div>
           );
         })}
+        </div>
       </CardContent>
     </Card>
   );
@@ -834,12 +820,11 @@ export default function StatsPage() {
         <MostViewedMovies movies={movies} />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}>
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                <AlertCircle className="w-4 h-4 text-orange-400" /> Collection Health
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <AlertCircle className="w-4 h-4 text-orange-400" />
+                <span className="text-sm font-medium">Collection Health</span>
+              </div>
               <HealthRow label="Missing Posters" count={stats.missingPosters} total={stats.total} color="text-orange-400" movieList={stats.missingPosterList} />
               <HealthRow label="Missing Year" count={stats.missingYear} total={stats.total} color="text-yellow-400" movieList={stats.missingYearList} />
               <HealthRow label="Missing Rating" count={stats.missingRating} total={stats.total} color="text-red-400" movieList={stats.missingRatingList} />
