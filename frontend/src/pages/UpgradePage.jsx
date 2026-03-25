@@ -17,7 +17,8 @@ import {
   Users,
   Key,
   Download,
-  ExternalLink
+  ExternalLink,
+  Monitor
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -318,6 +319,8 @@ export default function UpgradePage() {
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [successLicense, setSuccessLicense] = useState(null);
+  const [loadingLicense, setLoadingLicense] = useState(false);
   
   // Referral state
   const [referralCode, setReferralCode] = useState("");
@@ -365,8 +368,13 @@ export default function UpgradePage() {
       if (response.data.payment_status === "paid") {
         setPaymentSuccess(true);
         toast.success("Welcome to Pro! Your upgrade is complete.");
-        // Try to reload user data (may fail if not authed, that's ok)
+        // Try to reload user data and fetch license key
         try { await loadData(); } catch {}
+        try {
+          setLoadingLicense(true);
+          const licRes = await axios.get(`${API}/license/my-license`, { withCredentials: true });
+          if (licRes.data?.license_key) setSuccessLicense(licRes.data.license_key);
+        } catch {} finally { setLoadingLicense(false); }
         window.history.replaceState({}, document.title, "/upgrade/success");
         return;
       } else if (response.data.status === "expired") {
@@ -507,35 +515,152 @@ export default function UpgradePage() {
 
   // Payment success
   if (paymentSuccess) {
+    const copyKey = () => {
+      if (successLicense) {
+        navigator.clipboard.writeText(successLicense);
+        toast.success("License key copied!");
+      }
+    };
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4" data-testid="upgrade-success">
+      <div className="min-h-screen bg-background p-4 md:p-8" data-testid="upgrade-success">
         <div className="hero-glow-bg" />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 text-center max-w-md"
-        >
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/25">
-            <CheckCircle className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold font-[Outfit] text-foreground mb-2">
-            Welcome to Pro!
-          </h1>
-          <p className="text-muted-foreground mb-6">
-            Your upgrade is complete. Enjoy unlimited movies and collections!
+        <div className="relative z-10 max-w-lg mx-auto pt-8 md:pt-16">
+          {/* Success header */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center mb-8"
+          >
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/25">
+              <CheckCircle className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold font-[Outfit] text-foreground mb-2">
+              Welcome to Pro!
+            </h1>
+            <p className="text-muted-foreground">
+              Your upgrade is complete. Here's how to get started:
+            </p>
+          </motion.div>
+
+          {/* Step-by-step guide */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="space-y-4"
+          >
+            {/* Step 1: License Key */}
+            <Card className="border-green-500/30 bg-green-500/5">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center shrink-0 font-bold text-sm">
+                    1
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground mb-1">Copy your license key</h3>
+                    {loadingLicense ? (
+                      <div className="h-10 animate-pulse bg-secondary rounded-lg" />
+                    ) : successLicense ? (
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 px-3 py-2 bg-secondary rounded-lg text-sm font-mono truncate" data-testid="success-license-key">
+                          {successLicense}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={copyKey}
+                          className="h-10 w-10 shrink-0 border-green-500/30 hover:bg-green-500/10"
+                          data-testid="success-copy-license-btn"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {user 
+                          ? "Sign in to your account dashboard to view your key." 
+                          : "Sign in to view your license key."}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Step 2: Download */}
+            <Card className="border-border">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 font-bold text-sm">
+                    2
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground mb-1">Download the desktop app</h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Install on your Windows PC to scan local drives for movies.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = `${API}/download/windows`;
+                        link.click();
+                      }}
+                      data-testid="success-download-btn"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download for Windows
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Step 3: Activate */}
+            <Card className="border-border">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 font-bold text-sm">
+                    3
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground mb-1">Activate Pro in the app</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Open Obsidian Cinema, click <strong>"Enter License Key"</strong>, paste your key, and you're all set.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Bottom actions */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="mt-8 flex flex-col sm:flex-row gap-3 justify-center"
+          >
+            {user ? (
+              <Button onClick={() => navigate("/")} className="gap-2" data-testid="go-to-dashboard-btn">
+                <Monitor className="w-4 h-4" />
+                Go to Dashboard
+              </Button>
+            ) : (
+              <Button onClick={() => navigate("/login")} className="gap-2" data-testid="sign-in-btn">
+                <Key className="w-4 h-4" />
+                Sign in to your account
+              </Button>
+            )}
+          </motion.div>
+
+          <p className="text-xs text-muted-foreground text-center mt-6">
+            You can always find your license key on your account dashboard.
           </p>
-          {user ? (
-            <Button onClick={() => navigate("/")} className="gap-2 bg-primary" data-testid="go-to-library-btn">
-              <Film className="w-4 h-4" />
-              Go to Library
-            </Button>
-          ) : (
-            <Button onClick={() => navigate("/login")} className="gap-2 bg-primary" data-testid="sign-in-for-license-btn">
-              <Key className="w-4 h-4" />
-              Sign in to view your license key
-            </Button>
-          )}
-        </motion.div>
+        </div>
       </div>
     );
   }
