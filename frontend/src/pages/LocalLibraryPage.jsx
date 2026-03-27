@@ -1111,6 +1111,13 @@ export default function LocalLibraryPage() {
     }
   };
 
+  // Pre-compute recent movie IDs once (not per-movie)
+  var recentIds = null;
+  if (quickFilter === 'recent') {
+    var recentSorted = movies.filter(function(m) { return m.added_at; }).sort(function(a, b) { return (b.added_at || 0) - (a.added_at || 0); });
+    recentIds = new Set(recentSorted.slice(0, 100).map(function(m) { return m.id; }));
+  }
+
   const filteredMovies = sortMovies(
     movies.filter(movie => {
       // Quick filter
@@ -1118,12 +1125,7 @@ export default function LocalLibraryPage() {
       if (quickFilter === 'no-rating' && movie.rating) return false;
       if (quickFilter === 'no-year' && movie.year) return false;
       if (quickFilter === 'favorites' && !favorites.includes(movie.id)) return false;
-      if (quickFilter === 'recent') {
-        var RECENT_CAP = 100;
-        var sorted = [...movies].filter(function(m2) { return m2.added_at; }).sort(function(a2, b2) { return (b2.added_at || 0) - (a2.added_at || 0); });
-        var recentSet = new Set(sorted.slice(0, RECENT_CAP).map(function(m2) { return m2.id; }));
-        if (!recentSet.has(movie.id)) return false;
-      }
+      if (quickFilter === 'recent' && !recentIds.has(movie.id)) return false;
       // Directory filter
       if (activeDirectory) {
         if (!movie.file_path?.startsWith(activeDirectory)) return false;
