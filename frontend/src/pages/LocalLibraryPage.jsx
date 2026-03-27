@@ -206,10 +206,11 @@ const BACKEND_API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 export default function LocalLibraryPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [movies, setMovies] = useState([]);
   const [directories, setDirectories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [quickFilter, setQuickFilter] = useState(() => searchParams.get('qf') || null);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [tmdbApiKey, setTmdbApiKey] = useState('');
   const [fetchingPosters, setFetchingPosters] = useState(false);
@@ -1057,6 +1058,14 @@ export default function LocalLibraryPage() {
 
   const filteredMovies = sortMovies(
     movies.filter(movie => {
+      // Quick filter
+      if (quickFilter === 'no-poster' && movie.poster_path) return false;
+      if (quickFilter === 'no-rating' && movie.vote_average) return false;
+      if (quickFilter === 'no-year' && movie.year) return false;
+      if (quickFilter === 'recent') {
+        var added = movie.added_at || movie.scanned_at;
+        if (!added || (Date.now() - new Date(added).getTime()) > 7 * 86400000) return false;
+      }
       // Directory filter
       if (activeDirectory) {
         if (!movie.file_path?.startsWith(activeDirectory)) return false;
@@ -1079,7 +1088,13 @@ export default function LocalLibraryPage() {
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(100);
-  }, [activeDirectory, activeCollection, searchQuery, sortBy]);
+  }, [activeDirectory, activeCollection, searchQuery, sortBy, quickFilter]);
+
+  // Sync quickFilter with URL search params
+  useEffect(() => {
+    const qf = searchParams.get('qf');
+    if (qf !== quickFilter) setQuickFilter(qf);
+  }, [searchParams]);
 
   if (!isElectron()) {
     return (

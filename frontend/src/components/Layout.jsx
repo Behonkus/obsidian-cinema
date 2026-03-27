@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { Outlet, NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Film, 
@@ -17,7 +17,14 @@ import {
   Copy,
   Users,
   BarChart3,
-  Key
+  Key,
+  ImageOff,
+  StarOff,
+  CalendarOff,
+  Clock,
+  AlertTriangle,
+  Database,
+  HardDrive
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +39,126 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+
+function SidebarWidgets() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [stats, setStats] = useState({ total: 0, noPoster: 0, noRating: 0, noYear: 0, dirs: 0 });
+  const activeQf = searchParams.get('qf');
+
+  const refreshStats = useCallback(() => {
+    try {
+      const raw = localStorage.getItem('obsidian_cinema_local_movies');
+      const movies = raw ? JSON.parse(raw) : [];
+      const dirs = localStorage.getItem('obsidian_cinema_directories');
+      const dirCount = dirs ? JSON.parse(dirs).length : 0;
+      setStats({
+        total: movies.length,
+        noPoster: movies.filter(m => !m.poster_path).length,
+        noRating: movies.filter(m => !m.vote_average).length,
+        noYear: movies.filter(m => !m.year).length,
+        dirs: dirCount
+      });
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    refreshStats();
+    const interval = setInterval(refreshStats, 5000);
+    return () => clearInterval(interval);
+  }, [refreshStats]);
+
+  const toggleFilter = (qf) => {
+    if (activeQf === qf) {
+      setSearchParams({});
+    } else {
+      setSearchParams({ qf });
+    }
+  };
+
+  const qfBtn = (label, icon, qf, count) => (
+    <button
+      onClick={() => toggleFilter(qf)}
+      className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-xs transition-colors ${
+        activeQf === qf
+          ? 'bg-primary/20 text-primary'
+          : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+      }`}
+      data-testid={`qf-${qf}`}
+    >
+      {icon}
+      <span className="flex-1 text-left">{label}</span>
+      {count > 0 && <span className="text-[10px] opacity-70">{count}</span>}
+    </button>
+  );
+
+  if (stats.total === 0) return null;
+
+  return (
+    <div className="px-3 mt-4 space-y-4 overflow-y-auto">
+      {/* Divider */}
+      <div className="border-t border-border/50" />
+
+      {/* Quick Filters */}
+      <div>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 mb-1.5 px-2">Quick Filters</p>
+        <div className="space-y-0.5">
+          {qfBtn("No Poster", <ImageOff className="w-3.5 h-3.5" />, "no-poster", stats.noPoster)}
+          {qfBtn("No Rating", <StarOff className="w-3.5 h-3.5" />, "no-rating", stats.noRating)}
+          {qfBtn("No Year", <CalendarOff className="w-3.5 h-3.5" />, "no-year", stats.noYear)}
+          {qfBtn("Recently Added", <Clock className="w-3.5 h-3.5" />, "recent", null)}
+        </div>
+      </div>
+
+      {/* Library Health */}
+      {(stats.noPoster > 0 || stats.noRating > 0 || stats.noYear > 0) && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 mb-1.5 px-2">Library Health</p>
+          <div className="px-2 space-y-1.5">
+            {stats.noPoster > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-orange-400">Missing posters</span>
+                <span className="text-muted-foreground">{stats.noPoster}</span>
+              </div>
+            )}
+            {stats.noRating > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-yellow-400">Missing ratings</span>
+                <span className="text-muted-foreground">{stats.noRating}</span>
+              </div>
+            )}
+            {stats.noYear > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-red-400">Missing year</span>
+                <span className="text-muted-foreground">{stats.noYear}</span>
+              </div>
+            )}
+            <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden mt-1">
+              <div
+                className="h-full bg-green-500 rounded-full transition-all"
+                style={{ width: Math.round(((stats.total - stats.noPoster - stats.noRating - stats.noYear) / (stats.total * 3)) * 100) + '%' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mini Stats */}
+      <div>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 mb-1.5 px-2">Library</p>
+        <div className="px-2 space-y-1">
+          <div className="flex items-center justify-between text-xs">
+            <span className="flex items-center gap-1.5 text-muted-foreground"><Database className="w-3 h-3" /> Movies</span>
+            <span className="text-foreground font-medium">{stats.total.toLocaleString()}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="flex items-center gap-1.5 text-muted-foreground"><HardDrive className="w-3 h-3" /> Directories</span>
+            <span className="text-foreground font-medium">{stats.dirs}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
   const navigate = useNavigate();
@@ -160,6 +287,19 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           </NavLink>
         )}
       </nav>
+
+      {/* Sidebar Widgets (desktop mode only) */}
+      {desktopMode && !collapsed && <SidebarWidgets />}
+      {desktopMode && collapsed && (
+        <div className="px-3 mt-2 space-y-1">
+          <NavLink to="/?qf=no-poster" className="flex justify-center p-2 rounded-lg text-muted-foreground hover:bg-white/5 hover:text-white" title="No Poster">
+            <ImageOff className="w-4 h-4" />
+          </NavLink>
+          <NavLink to="/?qf=no-rating" className="flex justify-center p-2 rounded-lg text-muted-foreground hover:bg-white/5 hover:text-white" title="No Rating">
+            <StarOff className="w-4 h-4" />
+          </NavLink>
+        </div>
+      )}
 
       {/* User section */}
       <div className="px-3 mt-auto">
