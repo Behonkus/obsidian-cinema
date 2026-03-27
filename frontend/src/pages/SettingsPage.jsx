@@ -439,6 +439,7 @@ export default function SettingsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          className={!isElectron() ? "md:col-span-2" : ""}
         >
           <Card className="bg-card border-border">
             <CardHeader className="pb-1 pt-3 px-4">
