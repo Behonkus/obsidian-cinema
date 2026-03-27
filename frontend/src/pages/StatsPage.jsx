@@ -526,13 +526,17 @@ function computeStats(movies, directories, trashedMovies) {
   var missingPosters = 0;
   var missingYear = 0;
   var missingRating = 0;
+  var missingMeta = 0;
   var missingPosterList = [];
   var missingYearList = [];
   var missingRatingList = [];
+  var missingMetaList = [];
   for (i = 0; i < movies.length; i++) {
     if (!movies[i].poster_path) { missingPosters++; missingPosterList.push({ id: movies[i].id, title: movies[i].title || movies[i].file_name }); }
     if (!movies[i].year) { missingYear++; missingYearList.push({ id: movies[i].id, title: movies[i].title || movies[i].file_name }); }
     if (!movies[i].rating) { missingRating++; missingRatingList.push({ id: movies[i].id, title: movies[i].title || movies[i].file_name }); }
+    var mg = movies[i].genres;
+    if (!movies[i].overview && !movies[i].rating && (!mg || !mg.length)) { missingMeta++; missingMetaList.push({ id: movies[i].id, title: movies[i].title || movies[i].file_name }); }
   }
 
   var total = movies.length;
@@ -674,6 +678,8 @@ function computeStats(movies, directories, trashedMovies) {
     missingPosterList: missingPosterList,
     missingYearList: missingYearList,
     missingRatingList: missingRatingList,
+    missingMeta: missingMeta,
+    missingMetaList: missingMetaList,
     trashCount: trashedMovies.length,
     completeness: completeness,
     watchDays: watchDays,
@@ -829,6 +835,7 @@ export default function StatsPage() {
               <HealthRow label="Missing Posters" count={stats.missingPosters} total={stats.total} color="text-orange-400" movieList={stats.missingPosterList} />
               <HealthRow label="Missing Year" count={stats.missingYear} total={stats.total} color="text-yellow-400" movieList={stats.missingYearList} />
               <HealthRow label="Missing Rating" count={stats.missingRating} total={stats.total} color="text-red-400" movieList={stats.missingRatingList} />
+              <HealthRow label="No Metadata" count={stats.missingMeta} total={stats.total} color="text-rose-400" movieList={stats.missingMetaList} />
               <div className="pt-2 border-t border-border/50">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Data Completeness</span>

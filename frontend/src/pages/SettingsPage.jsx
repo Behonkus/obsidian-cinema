@@ -11,7 +11,6 @@ import {
   Eye,
   EyeOff,
   Save,
-  Film,
   HardDrive,
   Info,
   Download,
@@ -24,8 +23,7 @@ import {
   Users,
   FolderArchive,
   Upload,
-  Clock,
-  ChevronDown
+  Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +60,6 @@ const isElectron = () => {
 export default function SettingsPage() {
   const navigate = useNavigate();
   const [settings, setSettings] = useState(null);
-  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tmdbKey, setTmdbKey] = useState("");
   const [showKey, setShowKey] = useState(false);
@@ -89,8 +86,6 @@ export default function SettingsPage() {
   const [castProgress, setCastProgress] = useState(0);
   const [castTotal, setCastTotal] = useState(0);
   const [castStatusText, setCastStatusText] = useState('');
-  const [showNoMetaList, setShowNoMetaList] = useState(false);
-  const [showAllNoMeta, setShowAllNoMeta] = useState(false);
   const [backups, setBackups] = useState([]);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(null);
   const [lastExportDate, setLastExportDate] = useState(() => localStorage.getItem('obsidian_cinema_last_export') || null);
@@ -272,21 +267,6 @@ export default function SettingsPage() {
       if (savedMovies) {
         const movies = JSON.parse(savedMovies);
         setPosterCount(movies.filter(m => m.poster_path).length);
-        
-        // Build local stats for desktop mode
-        if (isElectron()) {
-          const dirs = localStorage.getItem('obsidian_cinema_local_dirs');
-          const dirCount = dirs ? JSON.parse(dirs).length : 0;
-          const withMeta = movies.filter(m => m.overview || m.rating || m.genres?.length).length;
-          const noMetaList = movies.filter(m => !m.overview && !m.rating && (!m.genres || !m.genres.length)).map(m => m.title || m.file_name);
-          setStats({
-            total_movies: movies.length,
-            total_directories: dirCount,
-            with_metadata: withMeta,
-            without_metadata: movies.length - withMeta,
-            without_metadata_list: noMetaList,
-          });
-        }
       }
       const savedCols = localStorage.getItem('obsidian_cinema_collections');
       if (savedCols) {
@@ -340,18 +320,8 @@ export default function SettingsPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      if (isElectron()) {
-        // Desktop: only load settings from API, stats come from localStorage
-        const settingsRes = await axios.get(`${API}/settings`);
-        setSettings(settingsRes.data);
-      } else {
-        const [settingsRes, statsRes] = await Promise.all([
-          axios.get(`${API}/settings`),
-          axios.get(`${API}/stats`),
-        ]);
-        setSettings(settingsRes.data);
-        setStats(statsRes.data);
-      }
+      const settingsRes = await axios.get(`${API}/settings`);
+      setSettings(settingsRes.data);
     } catch (err) {
       console.error("Failed to load settings:", err);
     } finally {
@@ -604,105 +574,6 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </motion.div>
-        
-        {/* Library Stats Card - Desktop Only */}
-        {isElectron() && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-1 pt-3 px-4">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Film className="w-4 h-4 text-primary" />
-                Library Statistics
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-3 space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2.5 rounded-lg bg-secondary/30">
-                  <p className="text-xl font-bold text-foreground">{stats?.total_movies || 0}</p>
-                  <p className="text-xs text-muted-foreground">Total Movies</p>
-                </div>
-                <div className="p-2.5 rounded-lg bg-secondary/30">
-                  <p className="text-xl font-bold text-foreground">{stats?.total_directories || 0}</p>
-                  <p className="text-xs text-muted-foreground">Directories</p>
-                </div>
-                <div className="p-2.5 rounded-lg bg-green-500/10">
-                  <p className="text-xl font-bold text-green-400">{stats?.with_metadata || 0}</p>
-                  <p className="text-xs text-muted-foreground">With Metadata</p>
-                </div>
-                <div
-                  className={"p-2.5 rounded-lg bg-orange-500/10" + ((stats?.without_metadata || 0) > 0 ? " cursor-pointer hover:bg-orange-500/15 transition-colors" : "")}
-                  onClick={() => { if ((stats?.without_metadata || 0) > 0) setShowNoMetaList(!showNoMetaList); }}
-                  data-testid="without-metadata-card"
-                >
-                  <p className="text-xl font-bold text-orange-400">{stats?.without_metadata || 0}</p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    Without Metadata
-                    {(stats?.without_metadata || 0) > 0 && <ChevronDown className={"w-3 h-3 transition-transform " + (showNoMetaList ? "rotate-180" : "")} />}
-                  </p>
-                </div>
-              </div>
-              {showNoMetaList && stats?.without_metadata_list && stats.without_metadata_list.length > 0 && (
-                <div className="space-y-0.5 max-h-48 overflow-y-auto p-2 rounded-lg bg-secondary/30 border border-border/50" data-testid="no-meta-list">
-                  {(showAllNoMeta ? stats.without_metadata_list : stats.without_metadata_list.slice(0, 10)).map(function(title, idx) {
-                    return (
-                      <p key={idx} className="text-xs text-muted-foreground truncate pl-2 border-l-2 border-orange-400/30 py-0.5">{title}</p>
-                    );
-                  })}
-                  {stats.without_metadata_list.length > 10 && !showAllNoMeta && (
-                    <button className="text-xs text-primary hover:underline pl-2 pt-1" onClick={function(e) { e.stopPropagation(); setShowAllNoMeta(true); }}>
-                      Show all {stats.without_metadata_list.length} movies
-                    </button>
-                  )}
-                  {stats.without_metadata_list.length > 10 && showAllNoMeta && (
-                    <button className="text-xs text-primary hover:underline pl-2 pt-1" onClick={function(e) { e.stopPropagation(); setShowAllNoMeta(false); }}>
-                      Show less
-                    </button>
-                  )}
-                </div>
-              )}
-              
-              {/* Poster cache stats - web only, not relevant in desktop */}
-              {!isElectron() && settings?.cached_posters > 0 && (
-                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <HardDrive className="w-4 h-4 text-blue-400" />
-                      <span className="text-sm text-blue-300">
-                        {settings.cached_posters} movie posters cached in local repository
-                      </span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-7 text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={async () => {
-                        try {
-                          await axios.delete(`${API}/posters/cache`);
-                          setSettings(prev => ({ ...prev, cached_posters: 0 }));
-                          toast.success('Poster cache cleared');
-                        } catch (e) {
-                          toast.error('Failed to clear poster cache');
-                        }
-                      }}
-                      data-testid="clear-server-poster-cache-btn"
-                    >
-                      <Trash2 className="w-3 h-3 mr-1" />
-                      Clear
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 ml-6">
-                    Posters are stored separately from movie files
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-        )}
         
         {/* App Updates Card - Desktop Only */}
         {isElectron() && (
