@@ -32,7 +32,8 @@ import {
   Wand2,
   Users,
   RotateCcw,
-  X
+  X,
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,6 +90,7 @@ const COLLECTIONS_KEY = 'obsidian_cinema_collections';
 const SKIP_REMOVE_CONFIRM_KEY = 'obsidian_cinema_skip_remove_confirm';
 const SKIP_POSTER_TIP_KEY = 'obsidian_cinema_skip_poster_tip';
 const ACTIVITY_KEY = 'obsidian_cinema_activity';
+const FAVORITES_KEY = 'obsidian_cinema_favorites';
 
 // 30 days in milliseconds
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -118,7 +120,7 @@ const GRID_SIZES = {
 };
 
 // Reusable movie card component
-function MovieCard({ movie, gridSize, onClick, onPlay }) {
+function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavorite }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -132,6 +134,20 @@ function MovieCard({ movie, gridSize, onClick, onPlay }) {
           ) : (
             <Film className="w-12 h-12 text-primary/50" />
           )}
+          {/* Favorite star - top right */}
+          <button
+            className="absolute top-1.5 right-1.5 z-10 p-1 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
+            onClick={onToggleFavorite}
+            data-testid={`fav-star-${movie.id}`}
+          >
+            <Star
+              className={`w-4 h-4 transition-all duration-300 ${
+                isFavorite 
+                  ? 'text-amber-400 fill-amber-400 scale-110 animate-[favSpin_0.5s_ease-out]' 
+                  : 'text-white/50 hover:text-white/80'
+              }`}
+            />
+          </button>
           {/* Play button - center */}
           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <Button size="sm" onClick={onPlay}>
@@ -242,6 +258,9 @@ export default function LocalLibraryPage() {
   const [dontShowAgainChecked, setDontShowAgainChecked] = useState(false);
   const [activeDirectory, setActiveDirectory] = useState(null);
   const [dirToRemove, setDirToRemove] = useState(null);
+  const [favorites, setFavorites] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []; } catch { return []; }
+  });
   const [dirToRename, setDirToRename] = useState(null);
   const [dirNewPath, setDirNewPath] = useState('');
   const [showDirManager, setShowDirManager] = useState(false);
@@ -305,6 +324,21 @@ export default function LocalLibraryPage() {
   useEffect(() => {
     localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collections));
   }, [collections]);
+
+  // Save favorites to localStorage
+  useEffect(() => {
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+  }, [favorites]);
+
+  const toggleFavorite = (movieId, e) => {
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    setFavorites(prev => {
+      if (prev.includes(movieId)) {
+        return prev.filter(id => id !== movieId);
+      }
+      return [...prev, movieId];
+    });
+  };
 
   // Save grid size preference
   useEffect(() => {
@@ -1062,6 +1096,7 @@ export default function LocalLibraryPage() {
       if (quickFilter === 'no-poster' && movie.poster_path) return false;
       if (quickFilter === 'no-rating' && movie.rating) return false;
       if (quickFilter === 'no-year' && movie.year) return false;
+      if (quickFilter === 'favorites' && !favorites.includes(movie.id)) return false;
       if (quickFilter === 'recent') {
         var added = movie.added_at || movie.scanned_at;
         if (!added || (Date.now() - new Date(added).getTime()) > 7 * 86400000) return false;
@@ -1492,7 +1527,7 @@ export default function LocalLibraryPage() {
                 </div>
                 <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
                   {dirMovies.map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => openMovieDetail(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} />
+                    <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => openMovieDetail(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} isFavorite={favorites.includes(movie.id)} onToggleFavorite={(e) => toggleFavorite(movie.id, e)} />
                   ))}
                 </div>
               </div>
@@ -1501,7 +1536,7 @@ export default function LocalLibraryPage() {
         ) : (
         <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
           {displayedMovies.map((movie) => (
-            <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => openMovieDetail(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} />
+            <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => openMovieDetail(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} isFavorite={favorites.includes(movie.id)} onToggleFavorite={(e) => toggleFavorite(movie.id, e)} />
           ))}
         </div>
         )

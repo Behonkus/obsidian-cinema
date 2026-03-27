@@ -24,7 +24,8 @@ import {
   Clock,
   AlertTriangle,
   Database,
-  HardDrive
+  HardDrive,
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,8 @@ function SidebarWidgets() {
       const movies = raw ? JSON.parse(raw) : [];
       const dirs = localStorage.getItem('obsidian_cinema_local_dirs');
       const dirCount = dirs ? JSON.parse(dirs).length : 0;
+      const favs = localStorage.getItem('obsidian_cinema_favorites');
+      const favList = favs ? JSON.parse(favs) : [];
       const now = Date.now();
       const weekAgo = now - 7 * 86400000;
       setStats({
@@ -59,6 +62,7 @@ function SidebarWidgets() {
         noRating: movies.filter(m => !m.rating && m.rating !== 0).length,
         noYear: movies.filter(m => !m.year).length,
         recentCount: movies.filter(m => m.added_at && new Date(m.added_at).getTime() > weekAgo).length,
+        favCount: favList.length,
         dirs: dirCount
       });
     } catch {}
@@ -105,6 +109,7 @@ function SidebarWidgets() {
       <div>
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 mb-1.5 px-2">Quick Filters</p>
         <div className="space-y-0.5">
+          {qfBtn("Favorites", <Star className="w-3.5 h-3.5" />, "favorites", stats.favCount)}
           {qfBtn("No Poster", <ImageOff className="w-3.5 h-3.5" />, "no-poster", stats.noPoster)}
           {qfBtn("No Rating", <StarOff className="w-3.5 h-3.5" />, "no-rating", stats.noRating)}
           {qfBtn("No Year", <CalendarOff className="w-3.5 h-3.5" />, "no-year", stats.noYear)}
