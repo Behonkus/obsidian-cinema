@@ -1667,7 +1667,7 @@ export default function LocalLibraryPage() {
                     autoFocus
                     data-testid="edit-synopsis-input"
                   />
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
                     <Button size="sm" className="text-xs h-7" onClick={() => {
                       var val = synopsisInput.trim();
                       setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, overview: val || null } : m));
@@ -1676,6 +1676,7 @@ export default function LocalLibraryPage() {
                       toast.success(val ? 'Synopsis updated' : 'Synopsis cleared');
                     }} data-testid="save-synopsis-btn">Save</Button>
                     <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditingSynopsis(false)}>Cancel</Button>
+                    <span className="ml-auto text-[10px] text-muted-foreground/50">Ctrl+V to paste</span>
                   </div>
                 </div>
               ) : selectedMovie.overview ? (
