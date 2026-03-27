@@ -85,6 +85,7 @@ const QUOTES = [
   { text: "I'm walking here!", film: "Midnight Cowboy" },
   { text: "What's so great about being a grownup anyway?", film: "Big" },
   { text: "I wish I were big.", film: "Big" },
+  { text: "Shimmy Shimmy Cocoa Puff.", film: "Big" },
   { text: "You is kind. You is smart. You is important.", film: "The Help" },
   { text: "Fasten your seatbelts. It's going to be a bumpy night.", film: "All About Eve" },
   { text: "We accept the love we think we deserve.", film: "The Perks of Being a Wallflower" },
