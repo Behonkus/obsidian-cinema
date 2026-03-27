@@ -101,19 +101,17 @@ export default function SettingsPage() {
   // Load backup list
   const loadBackups = () => {
     var list = [];
-    for (var i = 1; i <= 5; i++) {
-      var raw = localStorage.getItem('obsidian_cinema_backup_' + i);
-      if (raw) {
-        try {
-          var parsed = JSON.parse(raw);
-          list.push({ slot: i, date: parsed.date, movieCount: parsed.movieCount || 0, collectionCount: parsed.collectionCount || 0 });
-        } catch (e) {}
-      }
+    var raw = localStorage.getItem('obsidian_cinema_backup_1');
+    if (raw) {
+      try {
+        var parsed = JSON.parse(raw);
+        list.push({ slot: 1, date: parsed.date, movieCount: parsed.movieCount || 0, collectionCount: parsed.collectionCount || 0 });
+      } catch (e) {}
     }
     setBackups(list);
   };
 
-  // Create a backup snapshot
+  // Create a backup snapshot (single slot, always replaced)
   const createBackup = () => {
     try {
       var movies = localStorage.getItem('obsidian_cinema_local_movies') || '[]';
@@ -135,14 +133,9 @@ export default function SettingsPage() {
         collectionCount: parsedCols.length,
         data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSize, sortBy: sortBy }
       };
-      // Shift existing backups down (5 -> discard, 4 -> 5, etc.)
-      for (var i = 4; i >= 1; i--) {
-        var prev = localStorage.getItem('obsidian_cinema_backup_' + i);
-        if (prev) {
-          localStorage.setItem('obsidian_cinema_backup_' + (i + 1), prev);
-        } else {
-          localStorage.removeItem('obsidian_cinema_backup_' + (i + 1));
-        }
+      // Clean up any old backup slots (2-5) from previous versions
+      for (var i = 2; i <= 5; i++) {
+        localStorage.removeItem('obsidian_cinema_backup_' + i);
       }
       localStorage.setItem('obsidian_cinema_backup_1', JSON.stringify(snapshot));
       loadBackups();
@@ -196,7 +189,10 @@ export default function SettingsPage() {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    var fileName = 'obsidian-cinema-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    var now = new Date();
+    var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+    var dateStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+    var fileName = 'obsidian-cinema-backup-' + dateStr + '.json';
     a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
@@ -1133,41 +1129,33 @@ export default function SettingsPage() {
                   )}
                 </div>
 
-                {/* Quick backups */}
+                {/* Quick backup */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-muted-foreground">Quick Backups (stored in app, up to 5)</p>
-                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={function() { var ok = createBackup(); if (ok) toast.success('Backup created'); }} data-testid="manual-backup-btn">
-                      <Save className="w-3.5 h-3.5 mr-1.5" /> Backup Now
+                    <p className="text-xs font-medium text-muted-foreground">Quick Backup (stored in app)</p>
+                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={function() { var ok = createBackup(); if (ok) toast.success('Backup saved'); }} data-testid="manual-backup-btn">
+                      <Save className="w-3.5 h-3.5 mr-1.5" /> {backups.length > 0 ? 'Update Backup' : 'Backup Now'}
                     </Button>
                   </div>
                   {backups.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {backups.map(function(b) {
-                        var d = new Date(b.date);
-                        var label = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        return (
-                          <div key={b.slot} className="flex items-center justify-between p-2 rounded-md bg-background border border-border/50 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                              <span>{label}</span>
-                              <span className="text-xs text-muted-foreground">{b.movieCount} movies, {b.collectionCount} collections</span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs h-7"
-                              onClick={function() { setShowRestoreConfirm(b.slot); }}
-                              data-testid={'restore-backup-' + b.slot}
-                            >
-                              Restore
-                            </Button>
-                          </div>
-                        );
-                      })}
+                    <div className="flex items-center justify-between p-2 rounded-md bg-background border border-border/50 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>{new Date(backups[0].date).toLocaleDateString()} {new Date(backups[0].date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="text-xs text-muted-foreground">{backups[0].movieCount} movies, {backups[0].collectionCount} collections</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs h-7"
+                        onClick={function() { setShowRestoreConfirm(1); }}
+                        data-testid="restore-backup-1"
+                      >
+                        Restore
+                      </Button>
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground py-2">No quick backups yet. Click "Backup Now" to create one.</p>
+                    <p className="text-xs text-muted-foreground py-2">No backup yet. Click "Backup Now" to create one.</p>
                   )}
                 </div>
               </div>
