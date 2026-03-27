@@ -74,6 +74,9 @@ export default function SettingsPage() {
   const [gridSize, setGridSize] = useState(function() {
     return localStorage.getItem('obsidian_cinema_grid_size') || 'medium';
   });
+  const [customColor, setCustomColor] = useState(function() {
+    return localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48';
+  });
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showClearPostersConfirm, setShowClearPostersConfirm] = useState(false);
   const [showClearCollectionsConfirm, setShowClearCollectionsConfirm] = useState(false);
@@ -741,26 +744,57 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-2">Special</p>
-                    {THEMES.filter(function(t) { return t.id === 'rainbow'; }).map(function(theme) {
-                      var active = currentTheme === theme.id;
-                      return (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {THEMES.filter(function(t) { return t.id === 'rainbow'; }).map(function(theme) {
+                        var active = currentTheme === theme.id;
+                        return (
+                          <button
+                            key={theme.id}
+                            onClick={function() {
+                              setCurrentTheme(theme.id);
+                              localStorage.setItem(THEME_STORAGE_KEY, theme.id);
+                              applyTheme(theme.id);
+                            }}
+                            className={'h-9 px-6 rounded-full border-2 transition-all flex items-center justify-center gap-2 text-xs font-medium text-white ' + (active ? 'border-foreground' : 'border-transparent hover:scale-[1.02]')}
+                            style={{ background: theme.preview }}
+                            title={theme.name}
+                            data-testid={'settings-theme-' + theme.id}
+                          >
+                            {active && <Check className="w-3.5 h-3.5 drop-shadow-md" />}
+                            {theme.name}
+                          </button>
+                        );
+                      })}
+                      <div className="relative">
                         <button
-                          key={theme.id}
                           onClick={function() {
-                            setCurrentTheme(theme.id);
-                            localStorage.setItem(THEME_STORAGE_KEY, theme.id);
-                            applyTheme(theme.id);
+                            document.getElementById('custom-color-picker').click();
                           }}
-                          className={'h-9 px-6 rounded-full border-2 transition-all flex items-center justify-center gap-2 text-xs font-medium text-white ' + (active ? 'border-foreground' : 'border-transparent hover:scale-[1.02]')}
-                          style={{ background: theme.preview }}
-                          title={theme.name}
-                          data-testid={'settings-theme-' + theme.id}
+                          className={'h-9 px-4 rounded-full border-2 transition-all flex items-center gap-2 text-xs font-medium ' + (currentTheme === 'custom' ? 'border-foreground' : 'border-border hover:border-primary/30')}
+                          title="Custom color"
+                          data-testid="settings-theme-custom"
                         >
-                          {active && <Check className="w-3.5 h-3.5 drop-shadow-md" />}
-                          {theme.name}
+                          <div className="w-5 h-5 rounded-full border border-border/50" style={{ background: customColor }} />
+                          Custom
+                          {currentTheme === 'custom' && <Check className="w-3.5 h-3.5 text-primary" />}
                         </button>
-                      );
-                    })}
+                        <input
+                          id="custom-color-picker"
+                          type="color"
+                          value={customColor}
+                          onChange={function(e) {
+                            var hex = e.target.value;
+                            setCustomColor(hex);
+                            setCurrentTheme('custom');
+                            localStorage.setItem('obsidian_cinema_custom_color', hex);
+                            localStorage.setItem(THEME_STORAGE_KEY, 'custom');
+                            applyTheme('custom');
+                          }}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          data-testid="custom-color-input"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -32,8 +32,38 @@ var THEMES = [
   { id: 'rainbow',    name: 'Rainbow',        hue: 'rainbow',      preview: 'linear-gradient(90deg, #ef4444, #f59e0b, #22c55e, #3b82f6, #8b5cf6)' },
 ];
 
+function hexToHsl(hex) {
+  var r = parseInt(hex.slice(1, 3), 16) / 255;
+  var g = parseInt(hex.slice(3, 5), 16) / 255;
+  var b = parseInt(hex.slice(5, 7), 16) / 255;
+  var max = Math.max(r, g, b), min = Math.min(r, g, b);
+  var h = 0, s = 0, l = (max + min) / 2;
+  if (max !== min) {
+    var d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+  return Math.round(h * 360) + ' ' + Math.round(s * 100) + '% ' + Math.round(l * 100) + '%';
+}
+
 function applyTheme(themeId) {
   var theme = THEMES.find(function(t) { return t.id === themeId; });
+
+  // Handle custom theme
+  if (themeId === 'custom') {
+    var rainbowEl = document.getElementById('rainbow-style');
+    if (rainbowEl) rainbowEl.remove();
+    var customHex = localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48';
+    var hsl = hexToHsl(customHex);
+    var root = document.documentElement;
+    root.style.setProperty('--primary', hsl);
+    root.style.setProperty('--accent', hsl);
+    root.style.setProperty('--ring', hsl);
+    return;
+  }
+
   if (!theme) return;
 
   var root = document.documentElement;
@@ -79,7 +109,7 @@ function initTheme() {
   }
 }
 
-export { THEMES, applyTheme, initTheme, STORAGE_KEY as THEME_STORAGE_KEY };
+export { THEMES, applyTheme, initTheme, hexToHsl, STORAGE_KEY as THEME_STORAGE_KEY };
 
 export default function ThemeSelector() {
   var [current, setCurrent] = useState(function() {
@@ -97,6 +127,7 @@ export default function ThemeSelector() {
   };
 
   var currentTheme = THEMES.find(function(t) { return t.id === current; });
+  var customColor = localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48';
 
   var solidThemes = THEMES.filter(function(t) { return !t.id.startsWith('pastel') && t.id !== 'rainbow'; });
   var pastelThemes = THEMES.filter(function(t) { return t.id.startsWith('pastel'); });
@@ -108,7 +139,7 @@ export default function ThemeSelector() {
         <Button variant="outline" size="sm" className="gap-2" data-testid="theme-selector">
           <div
             className="w-4 h-4 rounded-full border border-border"
-            style={{ background: currentTheme ? currentTheme.preview : '#e11d48' }}
+            style={{ background: current === 'custom' ? customColor : (currentTheme ? currentTheme.preview : '#e11d48') }}
           />
           <Palette className="w-3.5 h-3.5" />
         </Button>
