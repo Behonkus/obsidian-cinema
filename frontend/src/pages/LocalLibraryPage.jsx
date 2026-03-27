@@ -73,6 +73,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
 import { CollectionAssigner } from "@/components/CollectionAssigner";
+import DailyQuote from "@/components/DailyQuote";
 
 // Check if running in Electron
 const isElectron = () => {
@@ -1144,6 +1145,8 @@ export default function LocalLibraryPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Daily Movie Quote */}
+      <DailyQuote />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
