@@ -59,7 +59,7 @@ function SidebarWidgets() {
       setStats({
         total: movies.length,
         noPoster: movies.filter(m => !m.poster_path).length,
-        noRating: movies.filter(m => !m.rating && m.rating !== 0).length,
+        noRating: movies.filter(m => !m.rating).length,
         noYear: movies.filter(m => !m.year).length,
         recentCount: movies.filter(m => m.added_at && new Date(m.added_at).getTime() > weekAgo).length,
         favCount: favList.length,
