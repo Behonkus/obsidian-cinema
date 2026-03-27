@@ -55,13 +55,16 @@ function SidebarWidgets() {
       const favs = localStorage.getItem('obsidian_cinema_favorites');
       const favList = favs ? JSON.parse(favs) : [];
       const now = Date.now();
-      const weekAgo = now - 7 * 86400000;
+      const RECENT_LIMIT = 100;
+      const moviesWithAdded = movies.filter(m => m.added_at).sort((a, b) => (b.added_at || 0) - (a.added_at || 0));
+      const recentIds = new Set(moviesWithAdded.slice(0, RECENT_LIMIT).map(m => m.id));
       setStats({
         total: movies.length,
         noPoster: movies.filter(m => !m.poster_path).length,
         noRating: movies.filter(m => !m.rating).length,
         noYear: movies.filter(m => !m.year).length,
-        recentCount: movies.filter(m => m.added_at && new Date(m.added_at).getTime() > weekAgo).length,
+        recentCount: recentIds.size,
+        recentIds: recentIds,
         favCount: favList.length,
         dirs: dirCount
       });

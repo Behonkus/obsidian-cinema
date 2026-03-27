@@ -1099,8 +1099,10 @@ export default function LocalLibraryPage() {
       if (quickFilter === 'no-year' && movie.year) return false;
       if (quickFilter === 'favorites' && !favorites.includes(movie.id)) return false;
       if (quickFilter === 'recent') {
-        var added = movie.added_at || movie.scanned_at;
-        if (!added || (Date.now() - new Date(added).getTime()) > 7 * 86400000) return false;
+        var RECENT_CAP = 100;
+        var sorted = [...movies].filter(function(m2) { return m2.added_at; }).sort(function(a2, b2) { return (b2.added_at || 0) - (a2.added_at || 0); });
+        var recentSet = new Set(sorted.slice(0, RECENT_CAP).map(function(m2) { return m2.id; }));
+        if (!recentSet.has(movie.id)) return false;
       }
       // Directory filter
       if (activeDirectory) {
