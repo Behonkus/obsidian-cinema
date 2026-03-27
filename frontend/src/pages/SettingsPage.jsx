@@ -117,6 +117,8 @@ export default function SettingsPage() {
       var theme = localStorage.getItem('obsidian_cinema_theme') || '';
       var gridSize = localStorage.getItem('obsidian_cinema_grid_size') || '';
       var sortBy = localStorage.getItem('obsidian_cinema_sort_by') || '';
+      var favorites = localStorage.getItem('obsidian_cinema_favorites') || '[]';
+      var activity = localStorage.getItem('obsidian_cinema_activity') || '{}';
       var parsedMovies = [];
       try { parsedMovies = JSON.parse(movies); } catch (e) {}
       var parsedCols = [];
@@ -126,7 +128,7 @@ export default function SettingsPage() {
         date: new Date().toISOString(),
         movieCount: parsedMovies.length,
         collectionCount: parsedCols.length,
-        data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSize, sortBy: sortBy }
+        data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSize, sortBy: sortBy, favorites: favorites, activity: activity }
       };
       // Clean up any old backup slots (2-5) from previous versions
       for (var i = 2; i <= 5; i++) {
@@ -157,6 +159,8 @@ export default function SettingsPage() {
       if (d.theme) localStorage.setItem('obsidian_cinema_theme', d.theme);
       if (d.gridSize) localStorage.setItem('obsidian_cinema_grid_size', d.gridSize);
       if (d.sortBy) localStorage.setItem('obsidian_cinema_sort_by', d.sortBy);
+      if (d.favorites) localStorage.setItem('obsidian_cinema_favorites', d.favorites);
+      if (d.activity) localStorage.setItem('obsidian_cinema_activity', d.activity);
       toast.success('Restored from backup. Reloading...');
       setShowRestoreConfirm(null);
       setTimeout(function() { window.location.reload(); }, 1000);
@@ -175,10 +179,12 @@ export default function SettingsPage() {
     var theme = localStorage.getItem('obsidian_cinema_theme') || '';
     var gridSize = localStorage.getItem('obsidian_cinema_grid_size') || '';
     var sortBy = localStorage.getItem('obsidian_cinema_sort_by') || '';
+    var favorites = localStorage.getItem('obsidian_cinema_favorites') || '[]';
+    var activity = localStorage.getItem('obsidian_cinema_activity') || '{}';
     var snapshot = {
       date: new Date().toISOString(),
       version: 'obsidian_cinema_backup_v1',
-      data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSize, sortBy: sortBy }
+      data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSize, sortBy: sortBy, favorites: favorites, activity: activity }
     };
     var blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
@@ -253,6 +259,8 @@ export default function SettingsPage() {
       if (d.theme) localStorage.setItem('obsidian_cinema_theme', d.theme);
       if (d.gridSize) localStorage.setItem('obsidian_cinema_grid_size', d.gridSize);
       if (d.sortBy) localStorage.setItem('obsidian_cinema_sort_by', d.sortBy);
+      if (d.favorites) localStorage.setItem('obsidian_cinema_favorites', d.favorites);
+      if (d.activity) localStorage.setItem('obsidian_cinema_activity', d.activity);
       setImportStep('done');
     } catch (e) {
       toast.error('Failed to restore backup');
