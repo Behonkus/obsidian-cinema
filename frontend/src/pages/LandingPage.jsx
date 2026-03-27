@@ -180,7 +180,7 @@ export default function LandingPage() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-xs font-medium text-primary mb-6">
             <Monitor className="w-3.5 h-3.5" />
-            Windows Desktop App &middot; v1.3.5
+            Windows Desktop App &middot; v1.3.6
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-[Outfit] font-extrabold tracking-tight leading-[1.1]">
