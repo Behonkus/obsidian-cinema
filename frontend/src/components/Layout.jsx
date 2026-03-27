@@ -49,13 +49,16 @@ function SidebarWidgets() {
     try {
       const raw = localStorage.getItem('obsidian_cinema_local_movies');
       const movies = raw ? JSON.parse(raw) : [];
-      const dirs = localStorage.getItem('obsidian_cinema_directories');
+      const dirs = localStorage.getItem('obsidian_cinema_local_dirs');
       const dirCount = dirs ? JSON.parse(dirs).length : 0;
+      const now = Date.now();
+      const weekAgo = now - 7 * 86400000;
       setStats({
         total: movies.length,
         noPoster: movies.filter(m => !m.poster_path).length,
-        noRating: movies.filter(m => !m.vote_average).length,
+        noRating: movies.filter(m => !m.rating && m.rating !== 0).length,
         noYear: movies.filter(m => !m.year).length,
+        recentCount: movies.filter(m => m.added_at && new Date(m.added_at).getTime() > weekAgo).length,
         dirs: dirCount
       });
     } catch {}
@@ -105,7 +108,7 @@ function SidebarWidgets() {
           {qfBtn("No Poster", <ImageOff className="w-3.5 h-3.5" />, "no-poster", stats.noPoster)}
           {qfBtn("No Rating", <StarOff className="w-3.5 h-3.5" />, "no-rating", stats.noRating)}
           {qfBtn("No Year", <CalendarOff className="w-3.5 h-3.5" />, "no-year", stats.noYear)}
-          {qfBtn("Recently Added", <Clock className="w-3.5 h-3.5" />, "recent", null)}
+          {qfBtn("Recently Added", <Clock className="w-3.5 h-3.5" />, "recent", stats.recentCount)}
         </div>
       </div>
 
@@ -380,7 +383,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="p-4 rounded-lg bg-secondary/50 border border-border/50"
+                className="p-3 rounded-lg bg-secondary/50 border border-border/50 mt-4"
               >
                 <p className="text-xs text-muted-foreground">
                   Powered by TMDB

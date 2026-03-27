@@ -1060,7 +1060,7 @@ export default function LocalLibraryPage() {
     movies.filter(movie => {
       // Quick filter
       if (quickFilter === 'no-poster' && movie.poster_path) return false;
-      if (quickFilter === 'no-rating' && movie.vote_average) return false;
+      if (quickFilter === 'no-rating' && movie.rating) return false;
       if (quickFilter === 'no-year' && movie.year) return false;
       if (quickFilter === 'recent') {
         var added = movie.added_at || movie.scanned_at;
