@@ -33,7 +33,6 @@ import { Label } from "@/components/ui/label";
 import { 
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -445,26 +444,26 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 lg:p-10" data-testid="settings-page">
+    <div className="p-4 md:p-6 lg:p-8" data-testid="settings-page">
       {/* Hero glow effect */}
       <div className="hero-glow-bg" />
       
       {/* Header */}
-      <div className="relative z-10 mb-8">
+      <div className="relative z-10 mb-5">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-4xl md:text-5xl font-bold font-[Outfit] tracking-tight text-foreground">
+          <h1 className="text-3xl md:text-4xl font-bold font-[Outfit] tracking-tight text-foreground">
             Settings
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Configure your Obsidian Cinema preferences
           </p>
         </motion.div>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {/* TMDB API Key Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -472,20 +471,13 @@ export default function SettingsPage() {
           transition={{ delay: 0.1 }}
         >
           <Card className="bg-card border-border">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Key className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle>TMDB API Key</CardTitle>
-                  <CardDescription>
-                    Required for movie posters and metadata
-                  </CardDescription>
-                </div>
-              </div>
+            <CardHeader className="pb-1 pt-3 px-4">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Key className="w-4 h-4 text-primary" />
+                TMDB API Key
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="px-4 pb-3 space-y-3">
               {/* Current Status */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Status:</span>
@@ -621,40 +613,33 @@ export default function SettingsPage() {
           transition={{ delay: 0.2 }}
         >
           <Card className="bg-card border-border">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Film className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle>Library Statistics</CardTitle>
-                  <CardDescription>
-                    Overview of your movie collection
-                  </CardDescription>
-                </div>
-              </div>
+            <CardHeader className="pb-1 pt-3 px-4">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Film className="w-4 h-4 text-primary" />
+                Library Statistics
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-secondary/30">
-                  <p className="text-3xl font-bold text-foreground">{stats?.total_movies || 0}</p>
-                  <p className="text-sm text-muted-foreground">Total Movies</p>
+            <CardContent className="px-4 pb-3 space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2.5 rounded-lg bg-secondary/30">
+                  <p className="text-xl font-bold text-foreground">{stats?.total_movies || 0}</p>
+                  <p className="text-xs text-muted-foreground">Total Movies</p>
                 </div>
-                <div className="p-4 rounded-lg bg-secondary/30">
-                  <p className="text-3xl font-bold text-foreground">{stats?.total_directories || 0}</p>
-                  <p className="text-sm text-muted-foreground">Directories</p>
+                <div className="p-2.5 rounded-lg bg-secondary/30">
+                  <p className="text-xl font-bold text-foreground">{stats?.total_directories || 0}</p>
+                  <p className="text-xs text-muted-foreground">Directories</p>
                 </div>
-                <div className="p-4 rounded-lg bg-green-500/10">
-                  <p className="text-3xl font-bold text-green-400">{stats?.with_metadata || 0}</p>
-                  <p className="text-sm text-muted-foreground">With Metadata</p>
+                <div className="p-2.5 rounded-lg bg-green-500/10">
+                  <p className="text-xl font-bold text-green-400">{stats?.with_metadata || 0}</p>
+                  <p className="text-xs text-muted-foreground">With Metadata</p>
                 </div>
                 <div
-                  className={"p-4 rounded-lg bg-orange-500/10" + ((stats?.without_metadata || 0) > 0 ? " cursor-pointer hover:bg-orange-500/15 transition-colors" : "")}
+                  className={"p-2.5 rounded-lg bg-orange-500/10" + ((stats?.without_metadata || 0) > 0 ? " cursor-pointer hover:bg-orange-500/15 transition-colors" : "")}
                   onClick={() => { if ((stats?.without_metadata || 0) > 0) setShowNoMetaList(!showNoMetaList); }}
                   data-testid="without-metadata-card"
                 >
-                  <p className="text-3xl font-bold text-orange-400">{stats?.without_metadata || 0}</p>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <p className="text-xl font-bold text-orange-400">{stats?.without_metadata || 0}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
                     Without Metadata
                     {(stats?.without_metadata || 0) > 0 && <ChevronDown className={"w-3 h-3 transition-transform " + (showNoMetaList ? "rotate-180" : "")} />}
                   </p>
@@ -727,20 +712,13 @@ export default function SettingsPage() {
             transition={{ delay: 0.25 }}
           >
             <Card className="bg-card border-border">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <div>
-                    <CardTitle>App Updates</CardTitle>
-                    <CardDescription>
-                      Keep Obsidian Cinema up to date
-                    </CardDescription>
-                  </div>
-                </div>
+              <CardHeader className="pb-1 pt-3 px-4">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  App Updates
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="px-4 pb-3 space-y-3">
                 {/* Current Version */}
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Current Version:</span>
@@ -830,18 +808,13 @@ export default function SettingsPage() {
           className="md:col-span-2"
         >
           <Card className="bg-card border-border">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Palette className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle>Appearance</CardTitle>
-                  <CardDescription>Customize the look and feel</CardDescription>
-                </div>
-              </div>
+            <CardHeader className="pb-1 pt-3 px-4">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Palette className="w-4 h-4 text-primary" />
+                Appearance
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="px-4 pb-3 space-y-4">
               {/* Color Theme */}
               <div>
                 <Label className="text-sm font-medium mb-3 block">Color Theme</Label>
@@ -964,24 +937,19 @@ export default function SettingsPage() {
           className="md:col-span-2"
         >
           <Card className="bg-card border-destructive/30">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-destructive" />
-                </div>
-                <div>
-                  <CardTitle>Library Management</CardTitle>
-                  <CardDescription>Manage your local movie database</CardDescription>
-                </div>
-              </div>
+            <CardHeader className="pb-1 pt-3 px-4">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-destructive" />
+                Library Management
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="px-4 pb-3 space-y-3">
               {/* Recently Deleted */}
-              <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
+              <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
                 <div>
                   <p className="font-medium text-foreground text-sm">Recently Deleted</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Movies removed from the database are kept here for 30 days before being permanently cleared. No files on disk are affected.
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Movies removed are kept for 30 days. No files on disk are affected.
                   </p>
                 </div>
                 <Button
@@ -994,15 +962,13 @@ export default function SettingsPage() {
                 </Button>
               </div>
 
-              <Separator />
-
               {/* Poster Management */}
-              <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
+              <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
                 <div>
                   <p className="font-medium text-foreground text-sm">Poster Cache</p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {posterCount > 0
-                      ? `${posterCount} movies have cached poster data. Clearing will remove all poster URLs from your library — movies and metadata will remain.`
+                      ? `${posterCount} posters cached. Clearing removes URLs only — movies and metadata remain.`
                       : 'No poster data cached.'}
                   </p>
                 </div>
@@ -1019,13 +985,11 @@ export default function SettingsPage() {
                 )}
               </div>
 
-              <Separator />
-
               {/* Fetch Cast Data */}
-              <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
+              <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
                 <div>
                   <p className="font-medium text-foreground text-sm">Cast Data</p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {castFetching
                       ? 'Fetching cast... ' + castProgress + ' of ' + castTotal + ' movies'
                       : castStatusText || (function() {
@@ -1097,21 +1061,19 @@ export default function SettingsPage() {
                 </Button>
               </div>
 
-              <Separator />
-
               {/* Backup & Restore */}
-              <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
+              <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
                 <div>
                   <p className="font-medium text-foreground text-sm flex items-center gap-2">
                     <FolderArchive className="w-4 h-4" /> Backup & Restore
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Protect your library data. Export saves a backup file to your <strong className="text-foreground">Downloads folder</strong> — use Import to restore it anytime.
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Export saves a file to <strong className="text-foreground">Downloads</strong> — use Import to restore anytime.
                   </p>
                 </div>
 
                 {/* Export / Import — primary actions */}
-                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
+                <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
                   <p className="text-xs font-medium text-foreground">Recommended: Save to File</p>
                   <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={exportBackup} data-testid="export-backup-btn">
@@ -1160,13 +1122,11 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <Separator />
-
               {/* Collection Management */}
-              <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
+              <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
                 <div>
                   <p className="font-medium text-foreground text-sm">Collections</p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {collectionsList.length > 0
                       ? `${collectionsList.length} collection${collectionsList.length > 1 ? 's' : ''} in your library.`
                       : 'No collections created.'}
@@ -1211,17 +1171,15 @@ export default function SettingsPage() {
                 )}
               </div>
 
-              <Separator />
-
               {/* Reset Library */}
-              <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5 space-y-3">
+              <div className="p-3 rounded-lg border border-destructive/20 bg-destructive/5 space-y-2">
                 <div>
                   <p className="font-medium text-destructive text-sm">Reset Entire Library</p>
-                  <p className="text-sm text-foreground font-medium mt-2">
-                    Your actual movie files on disk are never modified or deleted.
+                  <p className="text-xs text-foreground font-medium mt-1">
+                    Your actual movie files on disk are never touched.
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    This only clears the app's internal database — your scanned movie list, collections, poster data, and directories will be removed from Obsidian Cinema, allowing you to start fresh. Nothing on your hard drive is touched.
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Clears the app's internal database only — movie list, collections, poster data, and directories. Start fresh.
                   </p>
                 </div>
                 <Button
@@ -1246,21 +1204,14 @@ export default function SettingsPage() {
           className="md:col-span-2"
         >
           <Card className="bg-card border-border">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Info className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle>About Obsidian Cinema</CardTitle>
-                  <CardDescription>
-                    Your personal movie library manager
-                  </CardDescription>
-                </div>
-              </div>
+            <CardHeader className="pb-1 pt-3 px-4">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Info className="w-4 h-4 text-primary" />
+                About Obsidian Cinema
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-6 text-sm">
+            <CardContent className="px-4 pb-3">
+              <div className="grid md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <h4 className="font-medium text-foreground mb-2">Library</h4>
                   <ul className="space-y-1 text-muted-foreground">

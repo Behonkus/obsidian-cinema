@@ -15,7 +15,7 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - TMDB metadata/cast/poster fetching
 - Statistics page with charts and fun stats
 - AI-based movie recommendations (activity-driven)
-- Stripe Pro tier payments ($20 one-time)
+- Stripe Pro tier payments ($25 one-time)
 - License key generation and activation
 - Welcome email with license key (SendGrid)
 - Backup & Restore (JSON export/import)
@@ -34,18 +34,26 @@ Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that s
 - Auth redirect strips "www." from origin for proper display on Emergent auth page
 - "Made with Emergent" badge: platform-level injection, contact support to remove
 
-## Recent Fixes (2026-03-25)
-- Fixed Stripe price display: $2000 → $20 (return dollars not cents from /api/pricing)
-- Fixed Stripe API key: pod injected sk_test_emergent; now reads directly from .env file
-- Fixed post-payment blank screen: checkout-status no longer requires auth, success route unprotected
-- Fixed crash bug: `status.status` → `session.status` in checkout-status endpoint
-- Fixed intermittent Google Auth: AuthCallback retries 3x, updates AuthContext directly
-- Fixed auth page "Www" display: strip www. from redirect URL in both LandingPage and LoginPage
-- Added welcome email with license key via SendGrid after Pro purchase
-- Redesigned payment success screen: shows license key + 3-step activation guide
-- Removed referral UI from sidebar dropdown (replaced with "License Key" link)
-- Upgraded Shannan (shannan2008@gmail.com) to Pro with license key OBSIDIAN-1CBB-CC18-A8D1-3166
-- Version bumped to 1.2.4
+## Recent Changes
+### 2026-03-27
+- Compacted SettingsPage.jsx UI: replaced oversized CardHeaders with inline compact headers, reduced padding, removed redundant separators, shortened descriptions. Matches StatsPage compact style.
+
+### 2026-03-26
+- Added Favorites star to movie posters (persisted to localStorage)
+- Enhanced Sidebar with Quick Filters, Library Health, Mini Stats
+- Refactored Backup & Restore (1 quick backup, timestamped exports)
+- Compacted StatsPage layout
+- Version bumped to 1.2.8
+
+### 2026-03-25
+- Fixed Stripe price display: $2000 → $25
+- Fixed Stripe API key: reads directly from .env file
+- Fixed post-payment blank screen: checkout-status no longer requires auth
+- Fixed intermittent Google Auth: AuthCallback retries 3x
+- Fixed auth page "Www" display: strip www. from redirect URL
+- Added welcome email with license key via SendGrid
+- Redesigned payment success screen
+- Removed referral UI from sidebar
 
 ## Users
 - billrules@gmail.com (Pro) — License: OBSIDIAN-D9FE-BC22-4AE3-ACAA
