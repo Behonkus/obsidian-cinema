@@ -218,6 +218,23 @@ export default function LandingPage() {
             Free tier supports up to 50 movies in your library. No credit card required.
           </p>
         </motion.div>
+
+        {/* Hero Screenshot */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3 }}
+          className="relative z-10 max-w-4xl mx-auto mt-16"
+        >
+          <div className="rounded-xl overflow-hidden border border-border/30 shadow-2xl shadow-primary/5">
+            <img
+              src="https://customer-assets.emergentagent.com/job_2ff8f579-4e90-4c18-854e-f3fd4c43af64/artifacts/r6qo59w8_1000015792.jpg"
+              alt="Obsidian Cinema — organize your movie library with custom collections and posters"
+              className="w-full h-auto"
+              loading="eager"
+            />
+          </div>
+        </motion.div>
       </section>
 
       {/* ── Features ── */}
@@ -320,6 +337,26 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ── Free Tier Showcase ── */}
+      <section className="py-16 px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6 }}
+          className="max-w-3xl mx-auto"
+        >
+          <div className="rounded-xl overflow-hidden border border-border/30 shadow-xl shadow-primary/5">
+            <img
+              src="https://customer-assets.emergentagent.com/job_2ff8f579-4e90-4c18-854e-f3fd4c43af64/artifacts/qyynbyn9_1000015790.jpg"
+              alt="Obsidian Cinema free tier — manage up to 50 movies with essential features"
+              className="w-full h-auto"
+              loading="lazy"
+            />
+          </div>
+        </motion.div>
       </section>
 
       {/* ── Pricing ── */}
