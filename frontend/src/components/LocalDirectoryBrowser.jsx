@@ -20,8 +20,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+
+var SKIP_NAMING_TIP_KEY = 'obsidian_cinema_skip_naming_tip';
 
 var isElectron = function() {
   return typeof window !== 'undefined' && window.electronAPI && window.electronAPI.isElectron && window.electronAPI.isElectron();
@@ -93,6 +104,25 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
   var [scanning, setScanning] = useState(false);
   var [scanElapsed, setScanElapsed] = useState(0);
   var timerRef = useRef(null);
+  var [showNamingTip, setShowNamingTip] = useState(false);
+  var [namingTipDontShow, setNamingTipDontShow] = useState(false);
+
+  var handleBrowseClick = function() {
+    if (localStorage.getItem(SKIP_NAMING_TIP_KEY) === 'true') {
+      setIsOpen(true);
+    } else {
+      setShowNamingTip(true);
+    }
+  };
+
+  var confirmNamingTip = function() {
+    if (namingTipDontShow) {
+      localStorage.setItem(SKIP_NAMING_TIP_KEY, 'true');
+    }
+    setShowNamingTip(false);
+    setNamingTipDontShow(false);
+    setIsOpen(true);
+  };
 
   useEffect(function() {
     if (isElectron()) {
@@ -224,10 +254,44 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
 
   return (
     <>
-      <Button onClick={function() { setIsOpen(true); }} className="gap-2">
+      <Button onClick={handleBrowseClick} className="gap-2">
         <FolderOpen className="w-4 h-4" />
         Browse Local Drives
       </Button>
+
+      {/* Naming Convention Tip */}
+      <AlertDialog open={showNamingTip} onOpenChange={function(open) { if (!open) { setShowNamingTip(false); setNamingTipDontShow(false); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Naming Tip for Best Results</AlertDialogTitle>
+            <AlertDialogDescription>
+              For the best title import and poster fetch results, name your movie files as:
+              <code className="block mt-2 mb-1 px-3 py-2 bg-secondary rounded text-sm font-mono text-foreground">
+                Movie Title (Year).ext
+              </code>
+              For example: <code className="px-1.5 py-0.5 bg-secondary rounded text-xs font-mono text-foreground">The Dark Knight (2008).mkv</code>
+              <span className="block mt-2 text-muted-foreground">
+                Including the year in parentheses helps TMDB match the correct movie, especially for remakes or common titles.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <label className="flex items-center gap-2 cursor-pointer select-none px-6 pb-2">
+            <input
+              type="checkbox"
+              checked={namingTipDontShow}
+              onChange={function(e) { setNamingTipDontShow(e.target.checked); }}
+              className="w-4 h-4 rounded border-border accent-primary"
+              data-testid="skip-naming-tip-checkbox"
+            />
+            <span className="text-xs text-muted-foreground">Don't show this again</span>
+          </label>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={confirmNamingTip} data-testid="confirm-naming-tip-btn">
+              Got it, continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={isOpen} onOpenChange={function(open) { if (!scanning) setIsOpen(open); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">

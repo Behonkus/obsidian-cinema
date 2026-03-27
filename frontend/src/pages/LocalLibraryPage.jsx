@@ -90,6 +90,7 @@ const SORT_KEY = 'obsidian_cinema_sort';
 const COLLECTIONS_KEY = 'obsidian_cinema_collections';
 const SKIP_REMOVE_CONFIRM_KEY = 'obsidian_cinema_skip_remove_confirm';
 const SKIP_POSTER_TIP_KEY = 'obsidian_cinema_skip_poster_tip';
+const SKIP_NAMING_TIP_KEY = 'obsidian_cinema_skip_naming_tip';
 const ACTIVITY_KEY = 'obsidian_cinema_activity';
 const FAVORITES_KEY = 'obsidian_cinema_favorites';
 
@@ -274,6 +275,8 @@ export default function LocalLibraryPage() {
   const [showPosterTip, setShowPosterTip] = useState(false);
   const [skipPosterTip, setSkipPosterTip] = useState(() => localStorage.getItem(SKIP_POSTER_TIP_KEY) === 'true');
   const [posterTipDontShow, setPosterTipDontShow] = useState(false);
+  const [showNamingTip, setShowNamingTip] = useState(false);
+  const [namingTipDontShow, setNamingTipDontShow] = useState(false);
   const [fetchingCast, setFetchingCast] = useState(false);
   const [castFetchProgress, setCastFetchProgress] = useState(0);
 
@@ -793,6 +796,23 @@ export default function LocalLibraryPage() {
     toast.success(`Added ${uniqueNewMovies.length} new movies to library`);
   };
 
+  const handleAddFiles = () => {
+    if (localStorage.getItem(SKIP_NAMING_TIP_KEY) === 'true') {
+      addIndividualFiles();
+    } else {
+      setShowNamingTip(true);
+    }
+  };
+
+  const confirmNamingTip = () => {
+    if (namingTipDontShow) {
+      localStorage.setItem(SKIP_NAMING_TIP_KEY, 'true');
+    }
+    setShowNamingTip(false);
+    setNamingTipDontShow(false);
+    addIndividualFiles();
+  };
+
   const addIndividualFiles = async () => {
     if (!isElectron() || !window.electronAPI?.openFileDialog) return;
     try {
@@ -1162,7 +1182,7 @@ export default function LocalLibraryPage() {
         </div>
         <div className="flex items-center gap-2">
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
-          <Button variant="outline" size="sm" onClick={addIndividualFiles} data-testid="add-files-btn" title="Add individual movie files">
+          <Button variant="outline" size="sm" onClick={handleAddFiles} data-testid="add-files-btn" title="Add individual movie files">
             <FilePlus2 className="w-4 h-4 mr-1" />
             <span className="hidden sm:inline text-xs">Add Files</span>
           </Button>
@@ -2320,6 +2340,40 @@ export default function LocalLibraryPage() {
             <AlertDialogCancel onClick={() => { setShowPosterTip(false); setPosterTipDontShow(false); }}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmPosterTip} data-testid="poster-tip-continue-btn">
               Continue Fetching
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Naming Convention Tip (Add Files) */}
+      <AlertDialog open={showNamingTip} onOpenChange={(open) => { if (!open) { setShowNamingTip(false); setNamingTipDontShow(false); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Naming Tip for Best Results</AlertDialogTitle>
+            <AlertDialogDescription>
+              For the best title import and poster fetch results, name your movie files as:
+              <code className="block mt-2 mb-1 px-3 py-2 bg-secondary rounded text-sm font-mono text-foreground">
+                Movie Title (Year).ext
+              </code>
+              For example: <code className="px-1.5 py-0.5 bg-secondary rounded text-xs font-mono text-foreground">The Dark Knight (2008).mkv</code>
+              <span className="block mt-2 text-muted-foreground">
+                Including the year in parentheses helps TMDB match the correct movie, especially for remakes or common titles.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <label className="flex items-center gap-2 cursor-pointer select-none px-6 pb-2">
+            <input
+              type="checkbox"
+              checked={namingTipDontShow}
+              onChange={(e) => setNamingTipDontShow(e.target.checked)}
+              className="w-4 h-4 rounded border-border accent-primary"
+              data-testid="skip-naming-tip-checkbox-files"
+            />
+            <span className="text-xs text-muted-foreground">Don't show this again</span>
+          </label>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={confirmNamingTip} data-testid="confirm-naming-tip-files-btn">
+              Got it, continue
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
