@@ -11,6 +11,7 @@ const ACTIVITY_KEY = 'obsidian_cinema_activity';
 const BACKEND_API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 export function MostViewedMovies({ movies }) {
+  var [resetCount, setResetCount] = useState(0);
   var activityRaw = localStorage.getItem(ACTIVITY_KEY);
   var activity = activityRaw ? JSON.parse(activityRaw) : {};
   var scored = movies
@@ -27,9 +28,24 @@ export function MostViewedMovies({ movies }) {
   return (
     <Card data-testid="most-viewed-movies">
       <CardContent className="p-4">
-        <div className="flex items-center gap-2 text-muted-foreground mb-2">
-          <Eye className="w-4 h-4 text-blue-400" />
-          <span className="text-sm font-medium">Most Viewed / Played</span>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Eye className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-medium">Most Viewed / Played</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-[11px] text-muted-foreground hover:text-destructive"
+            onClick={function() {
+              localStorage.removeItem(ACTIVITY_KEY);
+              setResetCount(resetCount + 1);
+            }}
+            data-testid="reset-activity-btn"
+          >
+            <RefreshCw className="w-3 h-3 mr-1" />
+            Reset
+          </Button>
         </div>
         <div className="space-y-1.5">
         {scored.map(function(s, i) {
