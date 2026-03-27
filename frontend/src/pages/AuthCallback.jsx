@@ -34,9 +34,9 @@ export default function AuthCallback() {
 
         const sessionId = sessionIdMatch[1];
 
-        // Retry up to 3 times with delay for intermittent failures
+        // Retry up to 5 times with increasing delay for intermittent failures
         let lastError = null;
-        for (let attempt = 0; attempt < 3; attempt++) {
+        for (let attempt = 0; attempt < 5; attempt++) {
           try {
             const response = await axios.post(`${API}/auth/session`, {
               session_id: sessionId
@@ -52,8 +52,8 @@ export default function AuthCallback() {
             return;
           } catch (err) {
             lastError = err;
-            if (attempt < 2) {
-              await new Promise(r => setTimeout(r, 1000));
+            if (attempt < 4) {
+              await new Promise(r => setTimeout(r, 1500 + attempt * 500));
             }
           }
         }
