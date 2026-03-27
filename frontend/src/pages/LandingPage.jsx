@@ -355,7 +355,7 @@ export default function LandingPage() {
                 <h3 className="font-[Outfit] font-semibold text-lg">Pro</h3>
               </div>
               <p className="text-3xl font-[Outfit] font-bold">
-                $20
+                $25
                 <span className="text-sm font-normal text-muted-foreground ml-1">one-time</span>
               </p>
               <ul className="mt-6 space-y-3">

@@ -51,7 +51,7 @@ SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@obsidiancinema.app')
 
 # Pro tier pricing (one-time payment)
-PRO_TIER_PRICE = 2000  # in cents ($20.00)
+PRO_TIER_PRICE = 2500  # in cents ($25.00)
 PRO_TIER_CURRENCY = "usd"
 
 # Free tier limits
