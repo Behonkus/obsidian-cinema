@@ -21,6 +21,12 @@ import {
   Play,
   Grid3X3,
   SortAsc,
+  Sparkles,
+  Heart,
+  FolderArchive,
+  Users,
+  Lock,
+  Quote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -32,8 +38,8 @@ const FEATURES = [
   },
   {
     icon: Film,
-    title: "TMDB Posters & Metadata",
-    desc: "Automatically fetches high-quality posters, ratings, release years, and genres from The Movie Database.",
+    title: "TMDB Posters & Cast",
+    desc: "Fetches high-quality posters, ratings, release years, genres, and full cast data from The Movie Database.",
   },
   {
     icon: Play,
@@ -41,19 +47,34 @@ const FEATURES = [
     desc: "Launch movies instantly in your default media player. No complicated setup required.",
   },
   {
+    icon: Sparkles,
+    title: "AI Recommendations",
+    desc: "Get personalized movie suggestions powered by AI, based on your viewing and browsing activity.",
+  },
+  {
+    icon: Heart,
+    title: "Favorites & Collections",
+    desc: "Star your favorite movies and organize them into custom collections for easy access.",
+  },
+  {
     icon: SortAsc,
-    title: "Advanced Sorting",
-    desc: "Sort by title, year, rating, file size, directory, and more. 13 sort options to organize your way.",
+    title: "Advanced Sorting & Filters",
+    desc: "13 sort options, quick filters for missing posters/ratings, favorites, and recently added movies.",
   },
   {
     icon: BarChart3,
-    title: "Library Stats",
-    desc: "Visual charts showing movies by decade, rating distribution, genre breakdown, and collection insights.",
+    title: "Library Stats & Insights",
+    desc: "Charts by decade, rating distribution, genre breakdown, collection health, fun stats, and more.",
   },
   {
     icon: Palette,
-    title: "18 Color Themes",
-    desc: "Customize the look with solid, pastel, and animated themes. Your library, your style.",
+    title: "Themes & Custom Colors",
+    desc: "18 built-in themes plus a custom color picker. Solid, pastel, animated rainbow — your style.",
+  },
+  {
+    icon: FolderArchive,
+    title: "Backup & Restore",
+    desc: "Export your entire library to a file and restore it anytime. Never lose your collection data.",
   },
   {
     icon: Trash2,
@@ -66,14 +87,26 @@ const FEATURES = [
     desc: "Search TMDB, paste a URL, or pick a local image — full control over every poster.",
   },
   {
-    icon: Shield,
-    title: "Auto Updates",
-    desc: "Always running the latest version. Updates download silently in the background.",
+    icon: Lock,
+    title: "Machine-Locked Licenses",
+    desc: "Each Pro license is bound to one device for security. Auto-updates keep you on the latest version.",
   },
 ];
 
-const FREE_LIMITS = ["Up to 50 movies", "Up to 3 collections", "All core features"];
-const PRO_PERKS = ["Unlimited movies", "Unlimited collections", "Priority support", "Early access to features"];
+const FREE_LIMITS = [
+  "Up to 50 movies",
+  "Up to 3 collections",
+  "All core features",
+  "TMDB posters & metadata",
+  "Library stats & charts",
+];
+const PRO_PERKS = [
+  "Unlimited movies & collections",
+  "AI-powered recommendations",
+  "Full backup & restore",
+  "Priority support",
+  "Early access to new features",
+];
 
 const stagger = {
   hidden: {},
@@ -147,7 +180,7 @@ export default function LandingPage() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-xs font-medium text-primary mb-6">
             <Monitor className="w-3.5 h-3.5" />
-            Windows Desktop App
+            Windows Desktop App &middot; v1.3.5
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-[Outfit] font-extrabold tracking-tight leading-[1.1]">
@@ -157,7 +190,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Obsidian Cinema scans your local and network drives, fetches posters and metadata from TMDB, and lets you play any movie with one click.
+            Obsidian Cinema scans your local and network drives, fetches posters and cast data from TMDB, gives you AI-powered recommendations, and lets you play any movie with one click.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-10">
@@ -209,7 +242,7 @@ export default function LandingPage() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-60px" }}
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"
+            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5"
           >
             {FEATURES.map((f) => (
               <motion.div
@@ -263,8 +296,8 @@ export default function LandingPage() {
               {
                 step: "03",
                 icon: Grid3X3,
-                title: "Browse & Play",
-                desc: "Posters appear automatically. Click any movie to play it in your default player.",
+                title: "Browse, Play & Discover",
+                desc: "Posters appear automatically. Star favorites, get AI recommendations, and track your stats.",
               },
             ].map((s, i) => (
               <motion.div
@@ -391,7 +424,7 @@ export default function LandingPage() {
             Ready to organize your movie collection?
           </h2>
           <p className="text-muted-foreground mb-8">
-            Join Obsidian Cinema today — it's free to start and takes less than a minute.
+            Join thousands of movie lovers using Obsidian Cinema — free to start, takes less than a minute.
           </p>
           <Button
             size="lg"
