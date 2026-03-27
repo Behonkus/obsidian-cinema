@@ -192,10 +192,11 @@ export default function DailyQuote() {
   var quote = QUOTES[getDailyIndex()];
   return (
     <div className="flex items-start gap-2 px-1 pb-1" data-testid="daily-quote">
-      <Quote className="w-3.5 h-3.5 text-primary/40 mt-0.5 shrink-0 rotate-180" />
-      <p className="text-xs text-muted-foreground/70 italic leading-relaxed">
+      <Quote className="w-3.5 h-3.5 text-primary/60 mt-0.5 shrink-0 rotate-180" />
+      <p className="text-xs text-white/80 italic leading-relaxed">
         {quote.text}
-        <span className="not-italic text-muted-foreground/40 ml-1.5">— {quote.film}</span>
+        <Quote className="w-2.5 h-2.5 text-primary/60 inline-block ml-0.5 mb-0.5" />
+        <span className="not-italic text-yellow-400/80 ml-1.5">— {quote.film}</span>
       </p>
     </div>
   );
