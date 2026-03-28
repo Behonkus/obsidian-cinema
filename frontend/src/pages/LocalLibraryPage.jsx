@@ -1217,48 +1217,51 @@ export default function LocalLibraryPage() {
       )}
       {/* Header */}
       <div className="space-y-3">
-        {/* Row 1: Title + Search */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="shrink-0">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Film className="w-6 h-6 text-primary" />
-              Local Library
-            </h1>
-            <p className="text-muted-foreground">
-              {movies.length} movies from {directories.length} folders
-            </p>
-          </div>
-          <div className="relative w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search movies, genres, years..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-12 h-9 text-sm"
-              data-testid="movie-search-input"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                data-testid="movie-search-clear-btn"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+        {/* Row 1: Title + counts inline */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Film className="w-6 h-6 text-primary" />
+            Local Library
+            <span className="text-sm font-normal text-muted-foreground ml-1">
+              {movies.length} movies &middot; {directories.length} folders
+            </span>
+          </h1>
         </div>
         {/* Row 2: Action buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
           <Button variant="outline" size="sm" onClick={handleAddFiles} data-testid="add-files-btn" title="Add individual movie files">
-            <FilePlus2 className="w-4 h-4 mr-1" />
-            <span className="text-xs">Add Files</span>
+            <FilePlus2 className="w-4 h-4 mr-1.5" />
+            <span className="text-xs">Add Individual Movies</span>
           </Button>
           {directories.length > 0 && (
             <Button variant="outline" size="sm" onClick={rescanAllDirectories} disabled={isRescanning} data-testid="update-library-btn" title="Rescan all directories for changes">
-              <RefreshCw className={`w-4 h-4 mr-1 ${isRescanning ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 mr-1.5 ${isRescanning ? 'animate-spin' : ''}`} />
               <span className="text-xs">{isRescanning ? 'Scanning...' : 'Update Library'}</span>
+            </Button>
+          )}
+          {movies.length > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={startFetchPosters}
+              disabled={fetchingPosters}
+              data-testid="fetch-posters-btn"
+            >
+              {fetchingPosters ? (
+                <RefreshCw className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : (
+                <Image className="w-4 h-4 mr-1.5" />
+              )}
+              <span className="text-xs">
+              {fetchingPosters 
+                ? 'Fetching...' 
+                : (function() {
+                    var missing = movies.filter(function(m) { return !m.poster_path; }).length;
+                    return missing > 0 ? 'Fetch Posters (' + missing + ')' : 'Fetch Posters';
+                  })()
+              }
+              </span>
             </Button>
           )}
           <div className="flex-1" />
@@ -1320,28 +1323,6 @@ export default function LocalLibraryPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {movies.length > 0 && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={startFetchPosters}
-              disabled={fetchingPosters}
-              data-testid="fetch-posters-btn"
-            >
-              {fetchingPosters ? (
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Image className="w-4 h-4 mr-2" />
-              )}
-              {fetchingPosters 
-                ? 'Fetching...' 
-                : (function() {
-                    var missing = movies.filter(function(m) { return !m.poster_path; }).length;
-                    return missing > 0 ? 'Fetch Posters (' + missing + ')' : 'Fetch Posters';
-                  })()
-              }
-            </Button>
-          )}
         </div>
       </div>
 
@@ -1473,6 +1454,27 @@ export default function LocalLibraryPage() {
           ))}
         </div>
       )}
+
+      {/* Search */}
+      <div className="relative w-80">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search movies, genres, years..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 pr-12 h-9 text-sm"
+          data-testid="movie-search-input"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+            data-testid="movie-search-clear-btn"
+          >
+            Clear
+          </button>
+        )}
+      </div>
 
       {/* Movies Grid or Trash View */}
       {showTrash ? (
