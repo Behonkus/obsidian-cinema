@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { THEMES, applyTheme, THEME_STORAGE_KEY } from "@/components/ThemeSelector";
 import DailyQuote from "@/components/DailyQuote";
+import packageJson from "../../package.json";
 
 var SORT_LABELS = {
   'title-asc': 'A→Z', 'title-desc': 'Z→A',
@@ -187,7 +188,7 @@ export default function StatusBar({ sidebarCollapsed }) {
         {/* Version */}
         <div className="flex items-center gap-1 text-neutral-400" title="Obsidian Cinema version">
           <Monitor className="w-3 h-3 text-neutral-400" />
-          <span>v1.3.7</span>
+          <span>v{packageJson.version}</span>
         </div>
       </div>
     </div>
