@@ -37,6 +37,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import axios from "axios";
 import { THEMES, applyTheme, THEME_STORAGE_KEY } from "@/components/ThemeSelector";
+import { ClapperAnimation } from "@/components/FunEffects";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -417,7 +418,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+        <ClapperAnimation text="Loading settings..." />
       </div>
     );
   }

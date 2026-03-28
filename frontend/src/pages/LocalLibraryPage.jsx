@@ -73,6 +73,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
 import { CollectionAssigner } from "@/components/CollectionAssigner";
+import { PopcornAnimation, ClapperAnimation, FireworksOverlay, useMilestone } from "@/components/FunEffects";
 
 // Check if running in Electron
 const isElectron = () => {
@@ -123,6 +124,7 @@ const GRID_SIZES = {
 // Reusable movie card component
 function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavorite }) {
   var [showConfetti, setShowConfetti] = useState(false);
+  var [showShimmer, setShowShimmer] = useState(false);
 
   var handleFavorite = function(e) {
     if (!isFavorite) {
@@ -130,6 +132,15 @@ function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavor
       setTimeout(function() { setShowConfetti(false); }, 1000);
     }
     onToggleFavorite(e);
+  };
+
+  var handlePosterLoad = function() {
+    var key = 'oc_shimmer_' + movie.id;
+    if (!sessionStorage.getItem(key)) {
+      setShowShimmer(true);
+      sessionStorage.setItem(key, '1');
+      setTimeout(function() { setShowShimmer(false); }, 1000);
+    }
   };
 
   return (
@@ -141,10 +152,11 @@ function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavor
       <Card className="overflow-hidden hover:border-primary/50 transition-colors cursor-pointer" onClick={onClick}>
         <div className="aspect-[2/3] bg-gradient-to-br from-primary/20 to-secondary relative flex items-center justify-center overflow-hidden">
           {movie.poster_path ? (
-            <img src={movie.poster_path} alt={movie.title} className="w-full h-full object-cover" loading="lazy" />
+            <img src={movie.poster_path} alt={movie.title} className="w-full h-full object-cover" loading="lazy" onLoad={handlePosterLoad} />
           ) : (
             <Film className="w-12 h-12 text-primary/50" />
           )}
+          {showShimmer && <div className="poster-shimmer" />}
           {/* Favorite star - top right */}
           <button
             className={'absolute top-1.5 right-1.5 z-10 p-1 rounded-full backdrop-blur-sm transition-all ' + (isFavorite ? 'bg-amber-500/20 animate-[favGlow_2s_ease-in-out_infinite]' : 'bg-black/40 hover:bg-black/60')}
@@ -293,6 +305,7 @@ export default function LocalLibraryPage() {
   const [namingTipDontShow, setNamingTipDontShow] = useState(false);
   const [fetchingCast, setFetchingCast] = useState(false);
   const [castFetchProgress, setCastFetchProgress] = useState(0);
+  const [milestone, dismissMilestone] = useMilestone(movies.length);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -1183,6 +1196,13 @@ export default function LocalLibraryPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Milestone fireworks */}
+      {milestone && <FireworksOverlay onComplete={dismissMilestone} />}
+      {milestone && (
+        <div className="milestone-banner" onClick={dismissMilestone}>
+          {milestone.toLocaleString()} movies in your library! 
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -1538,7 +1558,7 @@ export default function LocalLibraryPage() {
       ) : movies.length === 0 ? (
         <Card className="p-8">
           <div className="text-center space-y-4">
-            <FolderOpen className="w-16 h-16 mx-auto text-muted-foreground" />
+            <PopcornAnimation size="lg" />
             <h2 className="text-xl font-semibold">No Movies Yet</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
               Click "Browse Local Drives" above to scan a folder for video files. 
@@ -2000,9 +2020,8 @@ export default function LocalLibraryPage() {
                     </Button>
                   )}
                   {aiLoading && (
-                    <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground" data-testid="ai-loading">
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span className="text-xs">Finding similar movies...</span>
+                    <div className="py-4" data-testid="ai-loading">
+                      <ClapperAnimation text="Finding similar movies..." />
                     </div>
                   )}
                   {aiError && !aiLoading && (

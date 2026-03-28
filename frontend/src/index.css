@@ -191,3 +191,157 @@ code {
 @keyframes cp19 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(-24px,-18px);opacity:1} 100%{transform:translate(-28px,10px);opacity:0} }
 @keyframes cp20 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(12px,-26px);opacity:1} 100%{transform:translate(16px,4px);opacity:0} }
 
+
+
+/* ── Popcorn Animation ── */
+.popcorn-container { position: relative; margin: 0 auto; }
+.popcorn-kernel-1 { animation: kernelBounce1 1.8s ease-in-out infinite; }
+.popcorn-kernel-2 { animation: kernelBounce2 2.0s ease-in-out infinite 0.15s; }
+.popcorn-kernel-3 { animation: kernelBounce3 1.6s ease-in-out infinite 0.3s; }
+.popcorn-kernel-4 { animation: kernelBounce4 1.9s ease-in-out infinite 0.1s; }
+.popcorn-kernel-5 { animation: kernelBounce5 1.7s ease-in-out infinite 0.25s; }
+.popcorn-kernel-6 { animation: kernelBounce6 2.1s ease-in-out infinite 0.05s; }
+.popcorn-kernel-7 { animation: kernelBounce7 1.85s ease-in-out infinite 0.2s; }
+
+@keyframes kernelBounce1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px) rotate(10deg)} }
+@keyframes kernelBounce2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px) rotate(-8deg)} }
+@keyframes kernelBounce3 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px) rotate(5deg)} }
+@keyframes kernelBounce4 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px) rotate(-12deg)} }
+@keyframes kernelBounce5 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px) rotate(8deg)} }
+@keyframes kernelBounce6 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px) rotate(-5deg)} }
+@keyframes kernelBounce7 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-11px) rotate(7deg)} }
+
+/* ── Clapperboard Animation ── */
+.clapper-container { position: relative; }
+.clapper-top { transform-origin: 15px 44px; animation: clapperSlap 1.5s ease-in-out infinite; }
+@keyframes clapperSlap {
+  0%, 70%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-25deg); }
+  30% { transform: rotate(0deg); }
+  35% { transform: rotate(-3deg); }
+  40% { transform: rotate(0deg); }
+}
+
+/* ── Fireworks Overlay ── */
+.fireworks-overlay {
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  animation: fireworksFade 3s ease-out forwards;
+}
+@keyframes fireworksFade { 0%,80%{opacity:1} 100%{opacity:0} }
+
+.firework {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+}
+
+.firework::before, .firework::after {
+  content: '';
+  position: absolute;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+}
+
+.firework-1 { left: 20%; top: 30%; animation: fw1 1.2s ease-out forwards; }
+.firework-2 { left: 70%; top: 25%; animation: fw2 1.4s ease-out 0.2s forwards; }
+.firework-3 { left: 45%; top: 20%; animation: fw3 1.3s ease-out 0.4s forwards; }
+.firework-4 { left: 30%; top: 40%; animation: fw4 1.1s ease-out 0.6s forwards; }
+.firework-5 { left: 65%; top: 35%; animation: fw5 1.5s ease-out 0.3s forwards; }
+
+@keyframes fw1 {
+  0% { box-shadow: 0 0 0 0 transparent; opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; box-shadow:
+    -20px -30px 0 #f472b6, 20px -25px 0 #fbbf24, 30px 10px 0 #a78bfa,
+    -15px 20px 0 #34d399, 0 -35px 0 #f97316, -30px 5px 0 #67e8f9,
+    25px 25px 0 #fde047, -25px -15px 0 #fb923c, 10px 30px 0 #c084fc,
+    35px -10px 0 #86efac, -10px -40px 0 #fca5a5, 15px -30px 0 #93c5fd;
+  }
+}
+@keyframes fw2 {
+  0% { box-shadow: 0 0 0 0 transparent; opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; box-shadow:
+    -25px -20px 0 #fbbf24, 15px -30px 0 #f472b6, 25px 15px 0 #34d399,
+    -20px 25px 0 #a78bfa, 5px -40px 0 #67e8f9, -30px 10px 0 #fde047,
+    30px 20px 0 #fb923c, -15px -35px 0 #c084fc, 20px 30px 0 #86efac,
+    -35px -5px 0 #fca5a5, 10px -25px 0 #93c5fd, -5px 35px 0 #fbcfe8;
+  }
+}
+@keyframes fw3 {
+  0% { box-shadow: 0 0 0 0 transparent; opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; box-shadow:
+    -30px -25px 0 #67e8f9, 25px -20px 0 #fde047, 20px 20px 0 #f472b6,
+    -10px 30px 0 #fbbf24, 0 -45px 0 #a78bfa, -25px 15px 0 #34d399,
+    35px 5px 0 #fb923c, -20px -30px 0 #c084fc, 15px 25px 0 #86efac,
+    -35px -10px 0 #93c5fd, 30px -15px 0 #fca5a5, 5px -35px 0 #fbcfe8;
+  }
+}
+@keyframes fw4 {
+  0% { box-shadow: 0 0 0 0 transparent; opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; box-shadow:
+    -15px -35px 0 #a78bfa, 20px -15px 0 #34d399, 30px 20px 0 #fbbf24,
+    -25px 10px 0 #f472b6, 10px -30px 0 #67e8f9, -20px 25px 0 #fde047,
+    25px -25px 0 #fb923c, -30px -5px 0 #86efac, 5px 35px 0 #c084fc,
+    15px 15px 0 #fca5a5, -10px -20px 0 #93c5fd, 35px -5px 0 #fbcfe8;
+  }
+}
+@keyframes fw5 {
+  0% { box-shadow: 0 0 0 0 transparent; opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; box-shadow:
+    -20px -20px 0 #fde047, 15px -35px 0 #a78bfa, 25px 10px 0 #67e8f9,
+    -25px 20px 0 #fb923c, 0 -30px 0 #f472b6, -15px 30px 0 #fbbf24,
+    30px 25px 0 #34d399, -30px -15px 0 #c084fc, 20px -10px 0 #86efac,
+    -5px 40px 0 #fca5a5, 10px -40px 0 #93c5fd, -35px 5px 0 #fbcfe8;
+  }
+}
+
+/* ── Sparkle Burst ── */
+.sparkle-burst { position: fixed; pointer-events: none; z-index: 100; }
+.sparkle-burst span {
+  position: absolute;
+  width: 4px; height: 4px;
+  background: currentColor;
+  border-radius: 50%;
+}
+.sparkle-burst span:nth-child(1) { color: #fbbf24; animation: sp1 0.7s ease-out forwards; }
+.sparkle-burst span:nth-child(2) { color: #f472b6; animation: sp2 0.65s ease-out forwards; }
+.sparkle-burst span:nth-child(3) { color: #a78bfa; animation: sp3 0.75s ease-out forwards; }
+.sparkle-burst span:nth-child(4) { color: #34d399; animation: sp4 0.6s ease-out forwards; }
+.sparkle-burst span:nth-child(5) { color: #67e8f9; animation: sp5 0.7s ease-out forwards; }
+.sparkle-burst span:nth-child(6) { color: #fde047; animation: sp6 0.65s ease-out forwards; }
+
+@keyframes sp1 { 0%{transform:translate(0,0) scale(1);opacity:1} 50%{transform:translate(-12px,-18px) scale(1.5);opacity:1} 100%{transform:translate(-16px,4px) scale(0);opacity:0} }
+@keyframes sp2 { 0%{transform:translate(0,0) scale(1);opacity:1} 50%{transform:translate(14px,-16px) scale(1.5);opacity:1} 100%{transform:translate(18px,6px) scale(0);opacity:0} }
+@keyframes sp3 { 0%{transform:translate(0,0) scale(1);opacity:1} 50%{transform:translate(-8px,-22px) scale(1.5);opacity:1} 100%{transform:translate(-10px,2px) scale(0);opacity:0} }
+@keyframes sp4 { 0%{transform:translate(0,0) scale(1);opacity:1} 50%{transform:translate(10px,-20px) scale(1.5);opacity:1} 100%{transform:translate(14px,8px) scale(0);opacity:0} }
+@keyframes sp5 { 0%{transform:translate(0,0) scale(1);opacity:1} 50%{transform:translate(-16px,-10px) scale(1.5);opacity:1} 100%{transform:translate(-20px,10px) scale(0);opacity:0} }
+@keyframes sp6 { 0%{transform:translate(0,0) scale(1);opacity:1} 50%{transform:translate(18px,-8px) scale(1.5);opacity:1} 100%{transform:translate(22px,12px) scale(0);opacity:0} }
+
+/* ── Milestone Banner ── */
+.milestone-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #7c3aed, #db2777, #f59e0b);
+  color: white; font-weight: 700; font-size: 14px;
+  animation: milestoneSlideIn 0.5s ease-out;
+  cursor: pointer;
+}
+.milestone-banner:hover { filter: brightness(1.1); }
+@keyframes milestoneSlideIn { 0%{transform:translateY(-100%)} 100%{transform:translateY(0)} }
+
+/* ── Poster Shimmer (on first load) ── */
+@keyframes posterShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.poster-shimmer {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: linear-gradient(90deg, transparent 0%, rgba(251,191,36,0.15) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: posterShimmer 1s ease-out forwards;
+}
