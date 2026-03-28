@@ -1,6 +1,15 @@
 import { useState, useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, HashRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+
+// Scroll to top on route change
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(function() {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { LicenseProvider, useLicense } from "@/context/LicenseContext";
@@ -149,6 +158,7 @@ function App() {
       <Router>
         <AuthProvider>
           <LicenseProvider>
+            <ScrollToTop />
             <AppRouter />
             <UpdateNotification />
           </LicenseProvider>

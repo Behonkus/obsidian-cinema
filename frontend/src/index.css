@@ -146,50 +146,50 @@ code {
 }
 
 /* Row 1 - burst up and drift down */
-.fav-confetti span:nth-child(1)  { width:4px;height:4px; background:#fbbf24; animation: cp1 0.9s ease-out forwards; }
-.fav-confetti span:nth-child(2)  { width:3px;height:3px; background:#f9a8d4; animation: cp2 0.85s ease-out forwards; }
-.fav-confetti span:nth-child(3)  { width:5px;height:5px; background:#a78bfa; animation: cp3 0.95s ease-out forwards; }
-.fav-confetti span:nth-child(4)  { width:3px;height:3px; background:#6ee7b7; animation: cp4 0.8s ease-out forwards; }
-.fav-confetti span:nth-child(5)  { width:4px;height:4px; background:#93c5fd; animation: cp5 0.9s ease-out forwards; }
-.fav-confetti span:nth-child(6)  { width:3px;height:3px; background:#fde047; animation: cp6 0.85s ease-out forwards; }
-.fav-confetti span:nth-child(7)  { width:4px;height:4px; background:#fb923c; animation: cp7 0.95s ease-out forwards; }
-.fav-confetti span:nth-child(8)  { width:3px;height:3px; background:#f472b6; animation: cp8 0.8s ease-out forwards; }
+.fav-confetti span:nth-child(1)  { width:4px;height:4px; background:#fbbf24; animation: cp1 1.4s ease-out forwards; }
+.fav-confetti span:nth-child(2)  { width:3px;height:3px; background:#f9a8d4; animation: cp2 1.35s ease-out forwards; }
+.fav-confetti span:nth-child(3)  { width:5px;height:5px; background:#a78bfa; animation: cp3 1.5s ease-out forwards; }
+.fav-confetti span:nth-child(4)  { width:3px;height:3px; background:#6ee7b7; animation: cp4 1.3s ease-out forwards; }
+.fav-confetti span:nth-child(5)  { width:4px;height:4px; background:#93c5fd; animation: cp5 1.45s ease-out forwards; }
+.fav-confetti span:nth-child(6)  { width:3px;height:3px; background:#fde047; animation: cp6 1.35s ease-out forwards; }
+.fav-confetti span:nth-child(7)  { width:4px;height:4px; background:#fb923c; animation: cp7 1.5s ease-out forwards; }
+.fav-confetti span:nth-child(8)  { width:3px;height:3px; background:#f472b6; animation: cp8 1.3s ease-out forwards; }
 /* Row 2 */
-.fav-confetti span:nth-child(9)  { width:3px;height:3px; background:#c4b5fd; animation: cp9 0.88s ease-out forwards; }
-.fav-confetti span:nth-child(10) { width:4px;height:4px; background:#86efac; animation: cp10 0.92s ease-out forwards; }
-.fav-confetti span:nth-child(11) { width:3px;height:3px; background:#fca5a5; animation: cp11 0.82s ease-out forwards; }
-.fav-confetti span:nth-child(12) { width:4px;height:4px; background:#67e8f9; animation: cp12 0.9s ease-out forwards; }
-.fav-confetti span:nth-child(13) { width:3px;height:3px; background:#d8b4fe; animation: cp13 0.87s ease-out forwards; }
-.fav-confetti span:nth-child(14) { width:4px;height:4px; background:#fcd34d; animation: cp14 0.93s ease-out forwards; }
-.fav-confetti span:nth-child(15) { width:3px;height:3px; background:#a5f3fc; animation: cp15 0.84s ease-out forwards; }
-.fav-confetti span:nth-child(16) { width:4px;height:4px; background:#fbcfe8; animation: cp16 0.91s ease-out forwards; }
+.fav-confetti span:nth-child(9)  { width:3px;height:3px; background:#c4b5fd; animation: cp9 1.4s ease-out forwards; }
+.fav-confetti span:nth-child(10) { width:4px;height:4px; background:#86efac; animation: cp10 1.45s ease-out forwards; }
+.fav-confetti span:nth-child(11) { width:3px;height:3px; background:#fca5a5; animation: cp11 1.35s ease-out forwards; }
+.fav-confetti span:nth-child(12) { width:4px;height:4px; background:#67e8f9; animation: cp12 1.45s ease-out forwards; }
+.fav-confetti span:nth-child(13) { width:3px;height:3px; background:#d8b4fe; animation: cp13 1.4s ease-out forwards; }
+.fav-confetti span:nth-child(14) { width:4px;height:4px; background:#fcd34d; animation: cp14 1.5s ease-out forwards; }
+.fav-confetti span:nth-child(15) { width:3px;height:3px; background:#a5f3fc; animation: cp15 1.35s ease-out forwards; }
+.fav-confetti span:nth-child(16) { width:4px;height:4px; background:#fbcfe8; animation: cp16 1.45s ease-out forwards; }
 /* Row 3 */
-.fav-confetti span:nth-child(17) { width:3px;height:3px; background:#bef264; animation: cp17 0.86s ease-out forwards; }
-.fav-confetti span:nth-child(18) { width:4px;height:4px; background:#fdba74; animation: cp18 0.94s ease-out forwards; }
-.fav-confetti span:nth-child(19) { width:3px;height:3px; background:#c084fc; animation: cp19 0.83s ease-out forwards; }
-.fav-confetti span:nth-child(20) { width:4px;height:4px; background:#99f6e4; animation: cp20 0.89s ease-out forwards; }
+.fav-confetti span:nth-child(17) { width:3px;height:3px; background:#bef264; animation: cp17 1.4s ease-out forwards; }
+.fav-confetti span:nth-child(18) { width:4px;height:4px; background:#fdba74; animation: cp18 1.5s ease-out forwards; }
+.fav-confetti span:nth-child(19) { width:3px;height:3px; background:#c084fc; animation: cp19 1.35s ease-out forwards; }
+.fav-confetti span:nth-child(20) { width:4px;height:4px; background:#99f6e4; animation: cp20 1.45s ease-out forwards; }
 
-/* Each particle: burst outward then arc down with gravity */
-@keyframes cp1  { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(-16px,-24px);opacity:1} 100%{transform:translate(-20px,8px);opacity:0} }
-@keyframes cp2  { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(14px,-28px);opacity:1} 100%{transform:translate(18px,6px);opacity:0} }
-@keyframes cp3  { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(-22px,-16px);opacity:1} 100%{transform:translate(-26px,12px);opacity:0} }
-@keyframes cp4  { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(20px,-20px);opacity:1} 100%{transform:translate(24px,10px);opacity:0} }
-@keyframes cp5  { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(-8px,-32px);opacity:1} 100%{transform:translate(-10px,4px);opacity:0} }
-@keyframes cp6  { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(24px,-14px);opacity:1} 100%{transform:translate(28px,14px);opacity:0} }
-@keyframes cp7  { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(-18px,-26px);opacity:1} 100%{transform:translate(-22px,2px);opacity:0} }
-@keyframes cp8  { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(10px,-30px);opacity:1} 100%{transform:translate(14px,0px);opacity:0} }
-@keyframes cp9  { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(-26px,-10px);opacity:1} 100%{transform:translate(-30px,16px);opacity:0} }
-@keyframes cp10 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(6px,-34px);opacity:1} 100%{transform:translate(8px,-2px);opacity:0} }
-@keyframes cp11 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(-12px,-20px);opacity:1} 100%{transform:translate(-16px,10px);opacity:0} }
-@keyframes cp12 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(18px,-24px);opacity:1} 100%{transform:translate(22px,6px);opacity:0} }
-@keyframes cp13 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(-4px,-36px);opacity:1} 100%{transform:translate(-6px,-4px);opacity:0} }
-@keyframes cp14 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(26px,-12px);opacity:1} 100%{transform:translate(30px,16px);opacity:0} }
-@keyframes cp15 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(-20px,-22px);opacity:1} 100%{transform:translate(-24px,8px);opacity:0} }
-@keyframes cp16 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(16px,-18px);opacity:1} 100%{transform:translate(20px,12px);opacity:0} }
-@keyframes cp17 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(-14px,-30px);opacity:1} 100%{transform:translate(-18px,0px);opacity:0} }
-@keyframes cp18 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(22px,-16px);opacity:1} 100%{transform:translate(26px,14px);opacity:0} }
-@keyframes cp19 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(-24px,-18px);opacity:1} 100%{transform:translate(-28px,10px);opacity:0} }
-@keyframes cp20 { 0%{transform:translate(0,0);opacity:1} 40%{transform:translate(12px,-26px);opacity:1} 100%{transform:translate(16px,4px);opacity:0} }
+/* Each particle: burst outward then arc down with gravity — long drift */
+@keyframes cp1  { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(-16px,-28px);opacity:1} 100%{transform:translate(-22px,65px);opacity:0} }
+@keyframes cp2  { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(14px,-32px);opacity:1} 100%{transform:translate(20px,70px);opacity:0} }
+@keyframes cp3  { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(-24px,-18px);opacity:1} 100%{transform:translate(-30px,60px);opacity:0} }
+@keyframes cp4  { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(22px,-24px);opacity:1} 100%{transform:translate(28px,75px);opacity:0} }
+@keyframes cp5  { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(-8px,-36px);opacity:1} 100%{transform:translate(-12px,80px);opacity:0} }
+@keyframes cp6  { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(26px,-16px);opacity:1} 100%{transform:translate(32px,55px);opacity:0} }
+@keyframes cp7  { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(-20px,-30px);opacity:1} 100%{transform:translate(-26px,72px);opacity:0} }
+@keyframes cp8  { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(10px,-34px);opacity:1} 100%{transform:translate(16px,68px);opacity:0} }
+@keyframes cp9  { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(-28px,-12px);opacity:1} 100%{transform:translate(-34px,58px);opacity:0} }
+@keyframes cp10 { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(6px,-38px);opacity:1} 100%{transform:translate(10px,85px);opacity:0} }
+@keyframes cp11 { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(-12px,-22px);opacity:1} 100%{transform:translate(-18px,62px);opacity:0} }
+@keyframes cp12 { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(18px,-28px);opacity:1} 100%{transform:translate(24px,78px);opacity:0} }
+@keyframes cp13 { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(-4px,-40px);opacity:1} 100%{transform:translate(-8px,90px);opacity:0} }
+@keyframes cp14 { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(28px,-14px);opacity:1} 100%{transform:translate(34px,52px);opacity:0} }
+@keyframes cp15 { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(-22px,-26px);opacity:1} 100%{transform:translate(-28px,66px);opacity:0} }
+@keyframes cp16 { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(16px,-20px);opacity:1} 100%{transform:translate(22px,74px);opacity:0} }
+@keyframes cp17 { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(-14px,-34px);opacity:1} 100%{transform:translate(-20px,82px);opacity:0} }
+@keyframes cp18 { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(24px,-18px);opacity:1} 100%{transform:translate(30px,56px);opacity:0} }
+@keyframes cp19 { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(-26px,-20px);opacity:1} 100%{transform:translate(-32px,64px);opacity:0} }
+@keyframes cp20 { 0%{transform:translate(0,0);opacity:1} 25%{transform:translate(12px,-30px);opacity:1} 100%{transform:translate(18px,76px);opacity:0} }
 
 
 
