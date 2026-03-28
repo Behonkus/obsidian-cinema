@@ -20,7 +20,7 @@ var QF_LABELS = {
 };
 
 export default function StatusBar({ sidebarCollapsed }) {
-  var [proStatus, setProStatus] = useState(localStorage.getItem('obsidian_cinema_license_status') === 'valid');
+  var [proStatus, setProStatus] = useState(false);
   var [gridSize, setGridSize] = useState(localStorage.getItem('obsidian_cinema_grid_size') || 'medium');
   var [currentTheme, setCurrentTheme] = useState(localStorage.getItem(THEME_STORAGE_KEY) || 'rose');
   var [customColor, setCustomColor] = useState(localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48');
@@ -30,13 +30,33 @@ export default function StatusBar({ sidebarCollapsed }) {
   var quickFilter = searchParams.get('qf') || '';
   var location = useLocation();
 
+  // Check Pro status directly from Electron store on mount
+  useEffect(function() {
+    function checkPro() {
+      // Check electron-store directly
+      if (window.electronAPI && window.electronAPI.getLicense) {
+        window.electronAPI.getLicense().then(function(license) {
+          if (license && license.subscription_tier === 'pro') {
+            setProStatus(true);
+          }
+        }).catch(function() {});
+      }
+      // Also check localStorage as fallback
+      if (localStorage.getItem('obsidian_cinema_license_status') === 'valid') {
+        setProStatus(true);
+      }
+    }
+    checkPro();
+    var interval = setInterval(checkPro, 2000);
+    return function() { clearInterval(interval); };
+  }, []);
+
   // Listen for storage changes (from same window via dispatchEvent and from localStorage writes)
   useEffect(function() {
     var onStorage = function() {
       setGridSize(localStorage.getItem('obsidian_cinema_grid_size') || 'medium');
       setCurrentTheme(localStorage.getItem(THEME_STORAGE_KEY) || 'rose');
       setCustomColor(localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48');
-      setProStatus(localStorage.getItem('obsidian_cinema_license_status') === 'valid');
     };
     window.addEventListener('storage', onStorage);
     // Also poll for same-tab changes that don't trigger storage event
