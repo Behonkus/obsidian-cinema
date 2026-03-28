@@ -12,7 +12,6 @@ import {
 import { THEMES, applyTheme, THEME_STORAGE_KEY } from "@/components/ThemeSelector";
 import DailyQuote from "@/components/DailyQuote";
 import packageJson from "../../package.json";
-import { useLicense } from "@/context/LicenseContext";
 
 var QF_LABELS = {
   'no-poster': 'No Poster', 'no-rating': 'No Rating',
@@ -21,8 +20,7 @@ var QF_LABELS = {
 };
 
 export default function StatusBar({ sidebarCollapsed }) {
-  var { isPro, license, licenseStatus } = useLicense();
-  var showProBadge = isPro || (license && licenseStatus !== 'invalid' && licenseStatus !== 'not_activated' && licenseStatus !== 'free');
+  var [proStatus, setProStatus] = useState(localStorage.getItem('obsidian_cinema_license_status') === 'valid');
   var [gridSize, setGridSize] = useState(localStorage.getItem('obsidian_cinema_grid_size') || 'medium');
   var [currentTheme, setCurrentTheme] = useState(localStorage.getItem(THEME_STORAGE_KEY) || 'rose');
   var [customColor, setCustomColor] = useState(localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48');
@@ -38,6 +36,7 @@ export default function StatusBar({ sidebarCollapsed }) {
       setGridSize(localStorage.getItem('obsidian_cinema_grid_size') || 'medium');
       setCurrentTheme(localStorage.getItem(THEME_STORAGE_KEY) || 'rose');
       setCustomColor(localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48');
+      setProStatus(localStorage.getItem('obsidian_cinema_license_status') === 'valid');
     };
     window.addEventListener('storage', onStorage);
     // Also poll for same-tab changes that don't trigger storage event
@@ -170,7 +169,7 @@ export default function StatusBar({ sidebarCollapsed }) {
         <div className="w-px h-3.5 bg-neutral-600" />
 
         {/* Pro Badge */}
-        {showProBadge && (
+        {proStatus && (
           <>
             <div
               className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide"

@@ -155,6 +155,14 @@ export function LicenseProvider({ children }) {
     setLicenseStatus('free');
   }, []);
 
+  // Sync license status to localStorage so StatusBar can read it directly
+  useEffect(() => {
+    if (licenseStatus && licenseStatus !== 'checking') {
+      localStorage.setItem('obsidian_cinema_license_status', licenseStatus);
+      window.dispatchEvent(new Event('storage'));
+    }
+  }, [licenseStatus]);
+
   const value = {
     license,
     loading,
