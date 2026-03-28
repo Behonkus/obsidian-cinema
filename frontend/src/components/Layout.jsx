@@ -46,7 +46,7 @@ function BackupStatus() {
 
   useEffect(() => {
     var check = function() {
-      var raw = localStorage.getItem('obsidian_cinema_quick_backup');
+      var raw = localStorage.getItem('obsidian_cinema_backup_1');
       if (raw) {
         try {
           var snap = JSON.parse(raw);
