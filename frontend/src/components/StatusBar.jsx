@@ -116,13 +116,6 @@ export default function StatusBar({ sidebarCollapsed }) {
             </div>
           </>
         )}
-
-        <div className="w-px h-3.5 bg-border/40" />
-
-        {/* Movie count */}
-        <span className="text-muted-foreground" title="Total movies in library">
-          {movieCount.toLocaleString()} movies
-        </span>
       </div>
 
       {/* Center — Daily Quote */}

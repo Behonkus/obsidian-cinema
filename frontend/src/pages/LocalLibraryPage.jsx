@@ -1175,6 +1175,9 @@ export default function LocalLibraryPage() {
             <Film className="w-6 h-6 text-primary" />
             Local Library
           </h1>
+          <p className="text-muted-foreground">
+            {movies.length} movies from {directories.length} folders
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
