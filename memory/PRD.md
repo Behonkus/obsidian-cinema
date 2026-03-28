@@ -1,69 +1,73 @@
-# Obsidian Cinema - Product Requirements Document
+# Obsidian Cinema — Product Requirements Document
 
 ## Original Problem Statement
-Build "Obsidian Cinema" — an installable Windows desktop app (Electron) that scans local/network drives for movie files, fetches metadata/posters from TMDB, and allows playback. A companion web app serves as an account portal for Google authentication, Stripe monetization for a Pro tier, and license key generation.
+Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that scans local/network drives for movie files, fetches metadata/posters from TMDB, and allows playback. A companion web app serves as an account portal for Google authentication, Stripe monetization for a Pro tier, and license key generation.
 
-## Architecture
-- **Frontend:** React, Tailwind CSS, Shadcn UI, Recharts
-- **Backend:** FastAPI, MongoDB, official Stripe SDK
-- **Desktop:** Electron with electron-store (localStorage)
-- **External APIs:** TMDB, OpenAI (via Emergent Key), Stripe, SendGrid
-- **Domain:** www.obsidiancinema.com
+## Core Requirements
+- Scan local and shared network directories for movie files (Desktop App)
+- Fetch movie metadata (including cast) and posters from TMDB
+- Provide a statistics page with charts about the movie library
+- Allow manual metadata management (search, URL, local file, edit title/synopsis, reset)
+- Monetize with a "Pro" tier using Stripe, managed through the web app
+- Generate license keys for Pro users
+- Implement an auto-update mechanism for the desktop application
+- Build the installable Windows installer via GitHub Actions
+- Provide AI-based movie recommendations from the user's local library
+- Enable Backup & Restore capabilities (JSON export/import)
 
-## Core Features (Implemented)
-- Directory scanning for movie files (Desktop)
-- TMDB metadata/cast/poster fetching
-- Statistics page with charts and fun stats
-- AI-based movie recommendations (activity-driven)
-- Stripe Pro tier payments ($25 one-time)
-- License key generation and activation
-- Welcome email with license key (SendGrid)
-- Backup & Restore (JSON export/import)
-- Collections management
-- SEO: meta/OG tags, JSON-LD, sitemap.xml, robots.txt
-- GitHub Actions CI/CD for Windows installer
+## Tech Stack
+- **Frontend:** React, Tailwind CSS, Shadcn UI, Recharts, Custom CSS Keyframes
+- **Backend:** FastAPI, official `stripe` Python SDK
+- **Desktop:** Electron, electron-store (localStorage)
+- **External APIs:** TMDB, OpenAI (via Emergent Key), Stripe
+- **CI/CD:** GitHub Actions → Windows `.exe` installer
 
-## Key Technical Notes
-- Babel visual-edits plugin disabled (LocalLibraryPage.jsx exceeds AST depth)
-- Components extracted to avoid Babel overflow: CastRow, CollectionAssigner, FunStats, SuggestForMe
-- Backend MovieSummary uses model_validator to normalize genres
-- Activity tracking: plays * 3 + views scoring for AI suggestions
-- Stripe: PRO_TIER_PRICE=2000 (cents); /api/pricing returns dollars (PRO_TIER_PRICE/100)
-- Stripe key read directly from .env file via _read_env_value() to bypass pod env override
-- Auth: AuthCallback retries 3x with 1s delay; updates AuthContext directly
-- Auth redirect strips "www." from origin for proper display on Emergent auth page
-- "Made with Emergent" badge: platform-level injection, contact support to remove
+## Custom Domain
+- Production: `www.obsidiancinema.com`
 
-## Recent Changes
-### 2026-03-27
-- Compacted SettingsPage.jsx UI: replaced oversized CardHeaders with inline compact headers, reduced padding, removed redundant separators, shortened descriptions. Matches StatsPage compact style.
+## What's Been Implemented
+- Full web app (landing page, account dashboard, Google Auth, Stripe payments)
+- Full desktop app (directory scanning, TMDB metadata/cast, AI recommendations, stats, collections)
+- SEO audit (meta/OG tags, JSON-LD, sitemap.xml, robots.txt)
+- Activity-based AI suggestion engine
+- 10+ fun stats on Stats Page
+- Custom color theme picker (Hex to HSL)
+- Daily movie quotes (179 curated)
+- Persistent bottom StatusBar (version, sort, filter, theme, poster size, PRO badge)
+- Fun Effects (confetti favorites, popcorn empty states, clapperboard loaders, milestone fireworks, poster shimmer)
+- Backup/Restore including Favorites and Activity data
+- File naming convention reminder popup
+- Google Auth reliability improvements (retry loops)
+- Landing page rewrite with screenshots and marketing copy
+- Marketing materials document
 
-### 2026-03-26
-- Added Favorites star to movie posters (persisted to localStorage)
-- Enhanced Sidebar with Quick Filters, Library Health, Mini Stats
-- Refactored Backup & Restore (1 quick backup, timestamped exports)
-- Compacted StatsPage layout
-- Version bumped to 1.2.8
+## v1.3.9 Changes (March 2026)
+- Fixed scroll-to-top on route navigation (ScrollToTop component in App.js)
+- Fixed confetti drift clipping (moved confetti outside overflow-hidden containers)
+- Repositioned "Back to top" button above StatusBar with text label
+- Fixed StatusBar poster resize sync with LocalLibraryPage grid
+- Compacted search bar into header toolbar row (was full-width standalone)
+- Changed search clear from X icon to "Clear" text
 
-### 2026-03-25
-- Fixed Stripe price display: $2000 → $25
-- Fixed Stripe API key: reads directly from .env file
-- Fixed post-payment blank screen: checkout-status no longer requires auth
-- Fixed intermittent Google Auth: AuthCallback retries 3x
-- Fixed auth page "Www" display: strip www. from redirect URL
-- Added welcome email with license key via SendGrid
-- Redesigned payment success screen
-- Removed referral UI from sidebar
+## Known Issues
+- "Made with Emergent" badge on production (platform-level, blocked on Emergent support)
+- LocalLibraryPage.jsx is ~2400 lines (refactoring postponed by user decision)
 
-## Users
-- billrules@gmail.com (Pro) — License: OBSIDIAN-D9FE-BC22-4AE3-ACAA
-- shannan2008@gmail.com (Pro) — License: OBSIDIAN-1CBB-CC18-A8D1-3166
+## Backlog (Prioritized)
+- **P0:** Rebuild/Redeploy v1.3.9 (in progress — user pushing to GitHub)
+- **P1:** Landing Page Demo (demo video or screenshots in hero section)
+- **P2:** Custom Domain Root Redirect (obsidiancinema.com → www.obsidiancinema.com)
+- **P2:** Watch party feature
+- **P2:** Mobile companion app
+- **P2:** Auto-fetch movie trailers
+- **P2:** Parental controls and multi-user profiles
 
-## Backlog
-- P1: Landing page demo video/screenshots
-- P2: Root domain redirect (obsidiancinema.com → www.obsidiancinema.com)
-- P3: Watch party feature
-- P3: Mobile companion app
-- P3: Auto-fetch movie trailers
-- P3: Parental controls & multi-user profiles
-- POSTPONED: LocalLibraryPage.jsx refactor (user decision — stable, high risk/low reward)
+## 3rd Party Integrations
+- OpenAI GPT-4o (Emergent LLM Key)
+- TMDB (User API Key)
+- Stripe Payments (User API Key, official SDK)
+- SendGrid Emails (User API Key)
+
+## Credentials
+- Test User: `billrules@gmail.com`
+- Pro License Key: `OBSIDIAN-D9FE-BC22-4AE3-ACAA`
