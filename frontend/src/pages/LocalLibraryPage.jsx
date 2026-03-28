@@ -376,6 +376,16 @@ export default function LocalLibraryPage() {
     localStorage.setItem(GRID_SIZE_KEY, gridSize);
   }, [gridSize]);
 
+  // Sync grid size from StatusBar changes
+  useEffect(() => {
+    const onStorage = () => {
+      const stored = localStorage.getItem(GRID_SIZE_KEY);
+      if (stored && stored !== gridSize) setGridSize(stored);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [gridSize]);
+
   // Save sort preference
   useEffect(() => {
     localStorage.setItem(SORT_KEY, sortBy);
