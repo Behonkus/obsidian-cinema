@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import {
   Filter,
-  ArrowUpDown,
   Grid3X3,
   Palette,
   Check,
@@ -15,16 +14,6 @@ import DailyQuote from "@/components/DailyQuote";
 import packageJson from "../../package.json";
 import { useLicense } from "@/context/LicenseContext";
 
-var SORT_LABELS = {
-  'title-asc': 'A→Z', 'title-desc': 'Z→A',
-  'year-desc': 'Newest', 'year-asc': 'Oldest',
-  'rating-desc': 'Top Rated', 'rating-asc': 'Low Rated',
-  'added-desc': 'Recent', 'added-asc': 'First Added',
-  'directory': 'Directory', 'filename-asc': 'File A→Z',
-  'filename-desc': 'File Z→A', 'has-poster': 'Has Poster',
-  'no-poster': 'No Poster',
-};
-
 var QF_LABELS = {
   'no-poster': 'No Poster', 'no-rating': 'No Rating',
   'no-year': 'No Year', 'favorites': 'Favorites',
@@ -33,7 +22,6 @@ var QF_LABELS = {
 
 export default function StatusBar({ sidebarCollapsed }) {
   var { isPro } = useLicense();
-  var [sortBy, setSortBy] = useState(localStorage.getItem('obsidian_cinema_sort_by') || 'title-asc');
   var [gridSize, setGridSize] = useState(localStorage.getItem('obsidian_cinema_grid_size') || 'medium');
   var [currentTheme, setCurrentTheme] = useState(localStorage.getItem(THEME_STORAGE_KEY) || 'rose');
   var [customColor, setCustomColor] = useState(localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48');
@@ -46,7 +34,6 @@ export default function StatusBar({ sidebarCollapsed }) {
   // Listen for storage changes (from same window via dispatchEvent and from localStorage writes)
   useEffect(function() {
     var onStorage = function() {
-      setSortBy(localStorage.getItem('obsidian_cinema_sort_by') || 'title-asc');
       setGridSize(localStorage.getItem('obsidian_cinema_grid_size') || 'medium');
       setCurrentTheme(localStorage.getItem(THEME_STORAGE_KEY) || 'rose');
       setCustomColor(localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48');
@@ -100,12 +87,6 @@ export default function StatusBar({ sidebarCollapsed }) {
         </div>
 
         <div className="w-px h-3.5 bg-neutral-600" />
-
-        {/* Active sort */}
-        <div className="flex items-center gap-1 text-neutral-300" title={"Sort: " + (SORT_LABELS[sortBy] || 'A→Z')}>
-          <ArrowUpDown className="w-3 h-3 text-blue-400" />
-          <span>{SORT_LABELS[sortBy] || 'A→Z'}</span>
-        </div>
 
         {/* Active filter */}
         {quickFilter && (
