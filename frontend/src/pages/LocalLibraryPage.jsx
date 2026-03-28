@@ -127,7 +127,7 @@ function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavor
   var handleFavorite = function(e) {
     if (!isFavorite) {
       setShowConfetti(true);
-      setTimeout(function() { setShowConfetti(false); }, 800);
+      setTimeout(function() { setShowConfetti(false); }, 1000);
     }
     onToggleFavorite(e);
   };
@@ -160,7 +160,7 @@ function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavor
             />
             {showConfetti && (
               <div className="fav-confetti" style={{ top: '50%', left: '50%' }}>
-                <span /><span /><span /><span /><span /><span /><span /><span />
+                <span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span />
               </div>
             )}
           </button>
