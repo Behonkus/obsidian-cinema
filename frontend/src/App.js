@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, HashRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { Toaster } from "@/components/ui/sonner";
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -10,7 +11,6 @@ function ScrollToTop() {
   }, [pathname]);
   return null;
 }
-import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { LicenseProvider, useLicense } from "@/context/LicenseContext";
 import { initTheme } from "@/components/ThemeSelector";

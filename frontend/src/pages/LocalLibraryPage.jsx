@@ -147,8 +147,13 @@ function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavor
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="group"
+      className="group relative"
     >
+      {showConfetti && (
+        <div className="fav-confetti" style={{ position: 'absolute', top: '0.75rem', right: '1rem', zIndex: 50 }}>
+          <span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span />
+        </div>
+      )}
       <Card className="overflow-hidden hover:border-primary/50 transition-colors cursor-pointer" onClick={onClick}>
         <div className="aspect-[2/3] bg-gradient-to-br from-primary/20 to-secondary relative flex items-center justify-center overflow-hidden">
           {movie.poster_path ? (
@@ -170,11 +175,6 @@ function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavor
                   : 'text-white/50 hover:text-white/80'
               }`}
             />
-            {showConfetti && (
-              <div className="fav-confetti" style={{ top: '50%', left: '50%' }}>
-                <span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span />
-              </div>
-            )}
           </button>
           {/* Play button - center */}
           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
