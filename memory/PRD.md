@@ -33,28 +33,36 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - 10+ fun stats on Stats Page
 - Custom color theme picker (Hex to HSL)
 - Daily movie quotes (179 curated)
-- Persistent bottom StatusBar (version, sort, filter, theme, poster size, PRO badge)
+- Persistent bottom StatusBar (version, grid size toggle, theme picker, PRO badge, online status, active filter)
 - Fun Effects (confetti favorites, popcorn empty states, clapperboard loaders, milestone fireworks, poster shimmer)
 - Backup/Restore including Favorites and Activity data
 - File naming convention reminder popup
 - Google Auth reliability improvements (retry loops)
-- Landing page rewrite with screenshots and marketing copy
+- Landing page (clean copy + feature cards, no screenshots)
 - Marketing materials document
 
-## v1.3.9 Changes (March 2026)
+## v1.4.1 Changes (March 2026)
 - Fixed scroll-to-top on route navigation (ScrollToTop component in App.js)
 - Fixed confetti drift clipping (moved confetti outside overflow-hidden containers)
-- Repositioned "Back to top" button above StatusBar with text label
-- Fixed StatusBar poster resize sync with LocalLibraryPage grid
-- Compacted search bar into header toolbar row (was full-width standalone)
-- Changed search clear from X icon to "Clear" text
+- Repositioned "Back to top" button above StatusBar with "Back to top" text label
+- Fixed StatusBar poster resize sync with LocalLibraryPage grid (storage event dispatch)
+- Restructured library page header: title + counts inline, search bar relocated below actions above movie grid
+- Renamed "Add Files" to "Add Individual Movies"
+- Search bar clear button changed from X icon to "Clear" text
+- Removed sort indicator from StatusBar (persistent sync issue)
+- Removed screenshot images from landing page for cleaner look
+- Landing page version badge now reads dynamically from package.json
+- PRO badge on StatusBar made more resilient (checks license object, not just server validation)
+- Bumped through versions 1.3.9 → 1.4.0 → 1.4.1
 
 ## Known Issues
 - "Made with Emergent" badge on production (platform-level, blocked on Emergent support)
 - LocalLibraryPage.jsx is ~2400 lines (refactoring postponed by user decision)
 
 ## Backlog (Prioritized)
-- **P0:** Rebuild/Redeploy v1.3.9 (in progress — user pushing to GitHub)
+- **P1:** Admin account/role system (admin flag, protected routes)
+- **P1:** Admin dashboard with member/user list
+- **P1:** License management from admin panel (revoke, reissue, deactivate)
 - **P1:** Landing Page Demo (demo video or screenshots in hero section)
 - **P2:** Custom Domain Root Redirect (obsidiancinema.com → www.obsidiancinema.com)
 - **P2:** Watch party feature
