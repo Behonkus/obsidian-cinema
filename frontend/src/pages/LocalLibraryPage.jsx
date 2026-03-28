@@ -374,6 +374,7 @@ export default function LocalLibraryPage() {
   // Save grid size preference
   useEffect(() => {
     localStorage.setItem(GRID_SIZE_KEY, gridSize);
+    window.dispatchEvent(new Event('storage'));
   }, [gridSize]);
 
   // Sync grid size from StatusBar changes
@@ -389,6 +390,7 @@ export default function LocalLibraryPage() {
   // Save sort preference
   useEffect(() => {
     localStorage.setItem(SORT_KEY, sortBy);
+    window.dispatchEvent(new Event('storage'));
   }, [sortBy]);
 
   // Show scroll-to-top button after scrolling down
