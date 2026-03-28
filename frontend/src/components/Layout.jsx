@@ -23,8 +23,6 @@ import {
   CalendarOff,
   Clock,
   AlertTriangle,
-  Database,
-  HardDrive,
   Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,6 +39,73 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import StatusBar from "@/components/StatusBar";
+
+function BackupStatus() {
+  const [lastBackup, setLastBackup] = useState(null);
+  const [ago, setAgo] = useState('');
+
+  useEffect(() => {
+    var check = function() {
+      var raw = localStorage.getItem('obsidian_cinema_quick_backup');
+      if (raw) {
+        try {
+          var snap = JSON.parse(raw);
+          if (snap.date) {
+            setLastBackup(snap.date);
+          }
+        } catch {}
+      } else {
+        setLastBackup(null);
+      }
+    };
+    check();
+    var interval = setInterval(check, 10000);
+    return function() { clearInterval(interval); };
+  }, []);
+
+  useEffect(() => {
+    if (!lastBackup) { setAgo(''); return; }
+    var update = function() {
+      var diff = Date.now() - new Date(lastBackup).getTime();
+      var mins = Math.floor(diff / 60000);
+      if (mins < 1) setAgo('just now');
+      else if (mins < 60) setAgo(mins + 'm ago');
+      else {
+        var hrs = Math.floor(mins / 60);
+        if (hrs < 24) setAgo(hrs + 'h ' + (mins % 60) + 'm ago');
+        else {
+          var days = Math.floor(hrs / 24);
+          setAgo(days + 'd ago');
+        }
+      }
+    };
+    update();
+    var interval = setInterval(update, 60000);
+    return function() { clearInterval(interval); };
+  }, [lastBackup]);
+
+  if (!lastBackup) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-orange-400">
+        <AlertTriangle className="w-3 h-3" />
+        <span>No backup yet</span>
+      </div>
+    );
+  }
+
+  var d = new Date(lastBackup);
+  var formatted = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+  return (
+    <div className="space-y-0.5">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">Last backup</span>
+        <span className="text-foreground font-medium">{ago}</span>
+      </div>
+      <p className="text-[10px] text-muted-foreground/60">{formatted}</p>
+    </div>
+  );
+}
 
 function SidebarWidgets() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -121,18 +186,11 @@ function SidebarWidgets() {
         </div>
       </div>
 
-      {/* Mini Stats */}
+      {/* Data Backup Status */}
       <div>
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 mb-1.5 px-2">Library</p>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 mb-1.5 px-2">Data Backup</p>
         <div className="px-2 space-y-1">
-          <div className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 text-muted-foreground"><Database className="w-3 h-3" /> Movies</span>
-            <span className="text-foreground font-medium">{stats.total.toLocaleString()}</span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 text-muted-foreground"><HardDrive className="w-3 h-3" /> Directories</span>
-            <span className="text-foreground font-medium">{stats.dirs}</span>
-          </div>
+          <BackupStatus />
         </div>
       </div>
     </div>
