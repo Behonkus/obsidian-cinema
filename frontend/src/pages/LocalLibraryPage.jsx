@@ -1620,11 +1620,12 @@ export default function LocalLibraryPage() {
       {/* Scroll to Top */}
       {showScrollTop && (
         <Button
-          className="fixed bottom-6 right-6 z-40 rounded-full w-10 h-10 p-0 shadow-lg bg-primary hover:bg-primary/90"
+          className="fixed bottom-12 right-6 z-40 rounded-full px-4 h-10 shadow-lg bg-primary hover:bg-primary/90 flex items-center gap-2"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           data-testid="scroll-to-top-btn"
         >
-          <ArrowUp className="w-5 h-5" />
+          <ArrowUp className="w-4 h-4" />
+          <span className="text-sm font-medium">Back to top</span>
         </Button>
       )}
 
