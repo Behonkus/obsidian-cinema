@@ -122,6 +122,16 @@ const GRID_SIZES = {
 
 // Reusable movie card component
 function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavorite }) {
+  var [showConfetti, setShowConfetti] = useState(false);
+
+  var handleFavorite = function(e) {
+    if (!isFavorite) {
+      setShowConfetti(true);
+      setTimeout(function() { setShowConfetti(false); }, 800);
+    }
+    onToggleFavorite(e);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -137,17 +147,22 @@ function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavor
           )}
           {/* Favorite star - top right */}
           <button
-            className="absolute top-1.5 right-1.5 z-10 p-1 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
-            onClick={onToggleFavorite}
+            className={'absolute top-1.5 right-1.5 z-10 p-1 rounded-full backdrop-blur-sm transition-all ' + (isFavorite ? 'bg-amber-500/20 animate-[favGlow_2s_ease-in-out_infinite]' : 'bg-black/40 hover:bg-black/60')}
+            onClick={handleFavorite}
             data-testid={`fav-star-${movie.id}`}
           >
             <Star
               className={`w-4 h-4 transition-all duration-300 ${
                 isFavorite 
-                  ? 'text-amber-400 fill-amber-400 scale-110 animate-[favSpin_0.5s_ease-out]' 
+                  ? 'text-amber-400 fill-amber-400 scale-110 animate-[favSpin_0.7s_ease-out]' 
                   : 'text-white/50 hover:text-white/80'
               }`}
             />
+            {showConfetti && (
+              <div className="fav-confetti" style={{ top: '50%', left: '50%' }}>
+                <span /><span /><span /><span /><span /><span /><span /><span />
+              </div>
+            )}
           </button>
           {/* Play button - center */}
           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
