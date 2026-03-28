@@ -120,39 +120,6 @@ function SidebarWidgets() {
         </div>
       </div>
 
-      {/* Library Health */}
-      {(stats.noPoster > 0 || stats.noRating > 0 || stats.noYear > 0) && (
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 mb-1.5 px-2">Library Health</p>
-          <div className="px-2 space-y-1.5">
-            {stats.noPoster > 0 && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-orange-400">Missing posters</span>
-                <span className="text-muted-foreground">{stats.noPoster}</span>
-              </div>
-            )}
-            {stats.noRating > 0 && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-yellow-400">Missing ratings</span>
-                <span className="text-muted-foreground">{stats.noRating}</span>
-              </div>
-            )}
-            {stats.noYear > 0 && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-red-400">Missing year</span>
-                <span className="text-muted-foreground">{stats.noYear}</span>
-              </div>
-            )}
-            <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden mt-1">
-              <div
-                className="h-full bg-green-500 rounded-full transition-all"
-                style={{ width: Math.round(((stats.total - stats.noPoster - stats.noRating - stats.noYear) / (stats.total * 3)) * 100) + '%' }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Mini Stats */}
       <div>
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 mb-1.5 px-2">Library</p>
