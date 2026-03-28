@@ -40,6 +40,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import StatusBar from "@/components/StatusBar";
 
 function SidebarWidgets() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -376,7 +377,7 @@ export default function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-7">
       <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
       
       <motion.main
@@ -387,6 +388,8 @@ export default function Layout() {
       >
         <Outlet context={{ sidebarCollapsed }} />
       </motion.main>
+
+      <StatusBar sidebarCollapsed={sidebarCollapsed} />
     </div>
   );
 }
