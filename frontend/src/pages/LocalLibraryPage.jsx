@@ -1214,8 +1214,8 @@ export default function LocalLibraryPage() {
         </div>
       )}
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="shrink-0">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Film className="w-6 h-6 text-primary" />
             Local Library
@@ -1224,7 +1224,27 @@ export default function LocalLibraryPage() {
             {movies.length} movies from {directories.length} folders
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {/* Search - constrained */}
+          <div className="relative w-44">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 pr-7 h-9 text-sm"
+              data-testid="movie-search-input"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="movie-search-clear-btn"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
           <Button variant="outline" size="sm" onClick={handleAddFiles} data-testid="add-files-btn" title="Add individual movie files">
             <FilePlus2 className="w-4 h-4 mr-1" />
@@ -1351,27 +1371,6 @@ export default function LocalLibraryPage() {
           </Button>
         </div>
       )}
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search movies..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 pr-8"
-          data-testid="movie-search-input"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            data-testid="movie-search-clear-btn"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
 
       {/* Directory Filter */}
       {directories.length > 1 && (
