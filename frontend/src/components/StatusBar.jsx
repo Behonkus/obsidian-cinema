@@ -13,6 +13,7 @@ import {
 import { THEMES, applyTheme, THEME_STORAGE_KEY } from "@/components/ThemeSelector";
 import DailyQuote from "@/components/DailyQuote";
 import packageJson from "../../package.json";
+import { useLicense } from "@/context/LicenseContext";
 
 var SORT_LABELS = {
   'title-asc': 'A→Z', 'title-desc': 'Z→A',
@@ -31,6 +32,7 @@ var QF_LABELS = {
 };
 
 export default function StatusBar({ sidebarCollapsed }) {
+  var { isPro } = useLicense();
   var [sortBy, setSortBy] = useState(localStorage.getItem('obsidian_cinema_sort_by') || 'title-asc');
   var [gridSize, setGridSize] = useState(localStorage.getItem('obsidian_cinema_grid_size') || 'medium');
   var [currentTheme, setCurrentTheme] = useState(localStorage.getItem(THEME_STORAGE_KEY) || 'rose');
@@ -184,6 +186,26 @@ export default function StatusBar({ sidebarCollapsed }) {
         </div>
 
         <div className="w-px h-3.5 bg-neutral-600" />
+
+        {/* Pro Badge */}
+        {isPro && (
+          <>
+            <div
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide"
+              style={{
+                background: 'linear-gradient(135deg, #b8860b, #ffd700, #b8860b)',
+                color: '#1a1a1a',
+                textShadow: '0 0 2px rgba(255,215,0,0.3)',
+                boxShadow: '0 0 6px rgba(255,215,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)',
+              }}
+              title="Pro License Active"
+              data-testid="statusbar-pro-badge"
+            >
+              PRO
+            </div>
+            <div className="w-px h-3.5 bg-neutral-600" />
+          </>
+        )}
 
         {/* Version */}
         <div className="flex items-center gap-1 text-neutral-400" title="Obsidian Cinema version">
