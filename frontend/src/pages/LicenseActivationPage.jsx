@@ -228,7 +228,7 @@ export default function LicenseActivationPage() {
               onClick={openPurchasePage}
             >
               <ExternalLink className="w-4 h-4 mr-2" />
-              Get a license key ($39.99)
+              Get a license key ($25)
             </Button>
           </div>
         </CardContent>
