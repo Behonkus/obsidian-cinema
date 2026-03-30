@@ -331,9 +331,20 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       const settingsRes = await axios.get(`${API}/settings`);
-      setSettings(settingsRes.data);
+      const serverSettings = settingsRes.data;
+      // Override TMDB status from localStorage (per-user, not shared server)
+      const localTmdbKey = localStorage.getItem('obsidian_cinema_tmdb_key') || '';
+      serverSettings.tmdb_configured = Boolean(localTmdbKey);
+      serverSettings.tmdb_key_masked = localTmdbKey ? '*'.repeat(8) + '...' + localTmdbKey.slice(-4) : null;
+      setSettings(serverSettings);
     } catch (err) {
       console.error("Failed to load settings:", err);
+      // Still show local TMDB status even if server is unreachable
+      const localTmdbKey = localStorage.getItem('obsidian_cinema_tmdb_key') || '';
+      setSettings({
+        tmdb_configured: Boolean(localTmdbKey),
+        tmdb_key_masked: localTmdbKey ? '*'.repeat(8) + '...' + localTmdbKey.slice(-4) : null
+      });
     } finally {
       setLoading(false);
     }
@@ -348,12 +359,14 @@ export default function SettingsPage() {
     setIsTesting(true);
     setTestResult(null);
     try {
-      const response = await axios.post(`${API}/settings/test-tmdb?api_key=${encodeURIComponent(tmdbKey.trim())}`);
-      setTestResult(response.data);
-      if (response.data.valid) {
+      // Test directly against TMDB API — no server needed
+      const resp = await fetch(`https://api.themoviedb.org/3/configuration?api_key=${encodeURIComponent(tmdbKey.trim())}`);
+      if (resp.ok) {
+        setTestResult({ valid: true, message: "API key is valid! Connected to TMDB." });
         toast.success("API key is valid!");
       } else {
-        toast.error(response.data.message || "Invalid API key");
+        setTestResult({ valid: false, message: "Invalid API key — TMDB rejected it." });
+        toast.error("Invalid API key");
       }
     } catch (err) {
       toast.error("Failed to test API key");
@@ -371,24 +384,19 @@ export default function SettingsPage() {
 
     setIsSaving(true);
     try {
-      const response = await axios.post(`${API}/settings`, {
-        tmdb_api_key: tmdbKey.trim()
-      });
-      
-      if (response.data.success) {
-        toast.success("TMDB API key saved successfully!");
-        setTmdbKey("");
-        setTestResult(null);
-        loadData();
-      } else {
-        toast.error(response.data.message || "Failed to save API key");
-      }
+      // Save locally only — never to the shared server
+      localStorage.setItem('obsidian_cinema_tmdb_key', tmdbKey.trim());
+      toast.success("TMDB API key saved locally!");
+      setTmdbKey("");
+      setTestResult(null);
+      // Refresh local settings display
+      setSettings(prev => ({
+        ...prev,
+        tmdb_configured: true,
+        tmdb_key_masked: '*'.repeat(8) + '...' + tmdbKey.trim().slice(-4)
+      }));
     } catch (err) {
-      if (err.response?.data?.detail) {
-        toast.error(err.response.data.detail);
-      } else {
-        toast.error("Failed to save API key");
-      }
+      toast.error("Failed to save API key");
     } finally {
       setIsSaving(false);
     }
