@@ -75,6 +75,13 @@ import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
 import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, useMilestone } from "@/components/FunEffects";
 
+const FREE_TIER_MOVIE_LIMIT = 50;
+const FREE_TIER_COLLECTION_LIMIT = 3;
+
+function isFreeTierUser() {
+  return localStorage.getItem('obsidian_cinema_is_pro') === 'false';
+}
+
 // Check if running in Electron
 const isElectron = () => {
   return typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
@@ -403,6 +410,10 @@ export default function LocalLibraryPage() {
   // Collection helpers
   const createCollection = (name) => {
     if (!name.trim()) return;
+    if (isFreeTierUser() && collections.length >= FREE_TIER_COLLECTION_LIMIT) {
+      toast.error(`Free tier is limited to ${FREE_TIER_COLLECTION_LIMIT} collections. Upgrade to Pro for unlimited!`);
+      return;
+    }
     const col = { id: Date.now().toString(), name: name.trim(), movie_ids: [], created_at: Date.now() };
     setCollections(prev => [...prev, col]);
     setNewCollectionName('');
@@ -830,6 +841,19 @@ export default function LocalLibraryPage() {
     let uniqueNewMovies = newMovies
       .filter(m => !existingPaths.has(m.file_path))
       .map(m => ({ ...m, added_at: now }));
+
+    // Free tier limit — only enforced if user explicitly chose free tier
+    if (isFreeTierUser()) {
+      const slotsLeft = FREE_TIER_MOVIE_LIMIT - movies.length;
+      if (slotsLeft <= 0) {
+        toast.error(`Free tier is limited to ${FREE_TIER_MOVIE_LIMIT} movies. Upgrade to Pro for unlimited!`);
+        return;
+      }
+      if (uniqueNewMovies.length > slotsLeft) {
+        toast.warning(`Free tier limit: only adding ${slotsLeft} of ${uniqueNewMovies.length} movies. Upgrade to Pro for unlimited!`);
+        uniqueNewMovies = uniqueNewMovies.slice(0, slotsLeft);
+      }
+    }
     
     setMovies([...movies, ...uniqueNewMovies]);
     toast.success(`Added ${uniqueNewMovies.length} new movies to library`);
@@ -882,8 +906,21 @@ export default function LocalLibraryPage() {
         });
 
       if (newMovies.length > 0) {
-        setMovies(prev => [...prev, ...newMovies]);
-        toast.success(`Added ${newMovies.length} movie${newMovies.length > 1 ? 's' : ''} to library`);
+        // Free tier limit
+        let moviesToAdd = newMovies;
+        if (isFreeTierUser()) {
+          const slotsLeft = FREE_TIER_MOVIE_LIMIT - movies.length;
+          if (slotsLeft <= 0) {
+            toast.error(`Free tier is limited to ${FREE_TIER_MOVIE_LIMIT} movies. Upgrade to Pro for unlimited!`);
+            return;
+          }
+          if (moviesToAdd.length > slotsLeft) {
+            toast.warning(`Free tier limit: only adding ${slotsLeft} of ${moviesToAdd.length} movies.`);
+            moviesToAdd = moviesToAdd.slice(0, slotsLeft);
+          }
+        }
+        setMovies(prev => [...prev, ...moviesToAdd]);
+        toast.success(`Added ${moviesToAdd.length} movie${moviesToAdd.length > 1 ? 's' : ''} to library`);
       } else {
         toast.info('Selected files are already in your library');
       }

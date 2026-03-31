@@ -24,6 +24,7 @@ export default function LicenseActivationPage() {
     setIsActivating(false);
 
     if (result.success) {
+      localStorage.setItem('obsidian_cinema_is_pro', 'true');
       toast.success(result.message);
       setLicenseKey("");
       navigate("/");
@@ -34,6 +35,7 @@ export default function LicenseActivationPage() {
 
   const handleContinueFree = () => {
     // Set free tier mode and continue to app
+    localStorage.setItem('obsidian_cinema_is_pro', 'false');
     if (setFreeTier) {
       setFreeTier();
     }
