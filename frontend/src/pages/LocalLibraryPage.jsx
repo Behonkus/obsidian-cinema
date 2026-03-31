@@ -254,8 +254,22 @@ const BACKEND_API = process.env.REACT_APP_BACKEND_URL + '/api';
 export default function LocalLibraryPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isPro, isFreeTier } = useLicense();
+  const { isPro: contextIsPro } = useLicense();
+  const [isProUser, setIsProUser] = useState(false);
   const [movies, setMovies] = useState([]);
+
+  // Check Pro status directly from Electron store (reliable, no context timing issues)
+  useEffect(() => {
+    if (window.electronAPI && window.electronAPI.getLicense) {
+      window.electronAPI.getLicense().then(function(license) {
+        if (license && license.subscription_tier === 'pro') {
+          setIsProUser(true);
+        }
+      }).catch(function() {});
+    }
+    // Also trust context if it says Pro
+    if (contextIsPro) setIsProUser(true);
+  }, [contextIsPro]);
   const [directories, setDirectories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [quickFilter, setQuickFilter] = useState(() => searchParams.get('qf') || null);
@@ -408,7 +422,7 @@ export default function LocalLibraryPage() {
   const createCollection = (name) => {
     if (!name.trim()) return;
     // Enforce free tier limit (3 collections)
-    if (!isPro && collections.length >= 3) {
+    if (!isProUser && collections.length >= 3) {
       toast.error('Free tier is limited to 3 collections. Upgrade to Pro for unlimited!');
       return;
     }
@@ -841,7 +855,7 @@ export default function LocalLibraryPage() {
       .map(m => ({ ...m, added_at: now }));
 
     // Enforce free tier limit
-    if (!isPro) {
+    if (!isProUser) {
       const slotsLeft = FREE_TIER_MOVIE_LIMIT - movies.length;
       if (slotsLeft <= 0) {
         toast.error(`Free tier is limited to ${FREE_TIER_MOVIE_LIMIT} movies. Upgrade to Pro for unlimited!`);
@@ -906,7 +920,7 @@ export default function LocalLibraryPage() {
       if (newMovies.length > 0) {
         // Enforce free tier limit
         let moviesToAdd = newMovies;
-        if (!isPro) {
+        if (!isProUser) {
           const slotsLeft = FREE_TIER_MOVIE_LIMIT - movies.length;
           if (slotsLeft <= 0) {
             toast.error(`Free tier is limited to ${FREE_TIER_MOVIE_LIMIT} movies. Upgrade to Pro for unlimited!`);
@@ -954,7 +968,7 @@ export default function LocalLibraryPage() {
       }
       if (newMovies.length > 0) {
         let moviesToAdd = newMovies;
-        if (!isPro) {
+        if (!isProUser) {
           const slotsLeft = FREE_TIER_MOVIE_LIMIT - updated.length;
           if (slotsLeft > 0) {
             if (moviesToAdd.length > slotsLeft) {
@@ -1021,7 +1035,7 @@ export default function LocalLibraryPage() {
       }
       if (newMovies.length > 0) {
         let moviesToAdd = newMovies;
-        if (!isPro) {
+        if (!isProUser) {
           const slotsLeft = FREE_TIER_MOVIE_LIMIT - updated.length;
           if (slotsLeft > 0) {
             if (moviesToAdd.length > slotsLeft) {
