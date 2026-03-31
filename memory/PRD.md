@@ -12,38 +12,27 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - **Custom Domain:** `www.obsidiancinema.com`
 
 ## What's Been Implemented (Complete)
-- Full web app (landing page, account dashboard, Google Auth, Stripe payments)
+- Full web app (landing page, account dashboard, Google Auth, Stripe payments at $25)
 - Full desktop app (scanning, TMDB metadata/cast, AI recommendations, stats, collections)
 - SEO (meta/OG tags, JSON-LD, sitemap.xml, robots.txt)
 - Custom color theme picker, daily movie quotes, StatusBar, Fun Effects
 - Backup/Restore, file naming popup, Google Auth retry improvements
-- Marketing materials, landing page copy
-- Free tier enforcement (50 movies, 3 collections)
+- Marketing materials, landing page copy (no screenshots, clean look)
+- Free tier enforcement (50 movies, 3 collections) via activation page localStorage flag
 - TMDB key stored per-user locally (not shared server)
-- Auto-download & install updates from Settings page
+- Auto-download & install updates in Settings page (UI done, needs debugging)
 - License key tied to machine ID (anti-sharing)
+- Landing page version badge reads dynamically from package.json
 
-## v1.4.8 Changes (March 2026)
-- Fixed scroll-to-top on route navigation
-- Fixed confetti drift clipping
-- "Back to top" button repositioned with text label
-- StatusBar poster resize sync, sort indicator removed
-- Library page header restructured (title+counts inline, search relocated above grid)
-- Renamed "Add Files" → "Add Individual Movies", search placeholder updated
-- Landing page screenshots removed, version badge dynamic from package.json
-- PRO badge: reads from electron-store directly + localStorage polling
-- TMDB API key: fully local per-user storage (no server sharing)
-- Free tier limits: 50 movies, 3 collections, enforced at all entry points
-- Pro status: stored in `obsidian_cinema_is_pro` localStorage, set during license init, polled by LocalLibraryPage every 300ms
-- Auto-download updates in Settings page with progress bar and "Restart & Install" button
-- Price corrected to $25 on activation page and account dashboard
-- Versions bumped 1.3.9 → 1.4.8
+## Current Version: 1.5.0
 
-## Known Issues
-- "Made with Emergent" badge on production (platform-level, blocked on Emergent support)
-- LocalLibraryPage.jsx ~2500 lines (refactoring postponed by user)
+## Known Issues to Fix Next Session
+- **P0: StatusBar PRO badge** — Still not showing for Pro users. LicenseContext `isPro` has persistent timing issues in Electron. StatusBar reads from electron-store directly but still not working.
+- **P1: Settings auto-updater** — "Check for Updates" fails saying no release published even though release exists on GitHub. Likely electron-updater config or release tag format mismatch.
+- **P1: LicenseContext `isPro`** — The React context `isPro` value never resolves to `true` in Electron. Root cause still unknown. All downstream features relying on it had to be rewritten to use localStorage or direct electron-store checks.
 
 ## Backlog (Prioritized)
+- **P0:** Fix StatusBar PRO badge, Settings auto-updater, LicenseContext isPro
 - **P1:** Admin account/role system (admin flag, protected routes)
 - **P1:** Admin dashboard with member/user list
 - **P1:** License management from admin panel (revoke, reissue, deactivate)
@@ -53,6 +42,11 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - **P2:** Mobile companion app
 - **P2:** Auto-fetch movie trailers
 - **P2:** Parental controls and multi-user profiles
+
+## Key Architecture Decisions
+- **Free tier enforcement:** Uses `localStorage.getItem('obsidian_cinema_is_pro') === 'false'` check. Only restricts users who explicitly clicked "Continue with Free" on the activation page. Pro users and existing users are never blocked.
+- **TMDB key:** Stored entirely in localStorage per-user. No server involvement.
+- **Pro status for StatusBar:** Attempted via useLicense context, electron-store direct read, localStorage polling — all failed. Needs Electron-environment debugging.
 
 ## 3rd Party Integrations
 - OpenAI GPT-4o (Emergent LLM Key)
