@@ -3,68 +3,52 @@
 ## Original Problem Statement
 Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that scans local/network drives for movie files, fetches metadata/posters from TMDB, and allows playback. A companion web app serves as an account portal for Google authentication, Stripe monetization for a Pro tier, and license key generation.
 
-## Core Requirements
-- Scan local and shared network directories for movie files (Desktop App)
-- Fetch movie metadata (including cast) and posters from TMDB
-- Provide a statistics page with charts about the movie library
-- Allow manual metadata management (search, URL, local file, edit title/synopsis, reset)
-- Monetize with a "Pro" tier using Stripe, managed through the web app
-- Generate license keys for Pro users
-- Implement an auto-update mechanism for the desktop application
-- Build the installable Windows installer via GitHub Actions
-- Provide AI-based movie recommendations from the user's local library
-- Enable Backup & Restore capabilities (JSON export/import)
-
 ## Tech Stack
 - **Frontend:** React, Tailwind CSS, Shadcn UI, Recharts, Custom CSS Keyframes
 - **Backend:** FastAPI, official `stripe` Python SDK
 - **Desktop:** Electron, electron-store (localStorage)
 - **External APIs:** TMDB, OpenAI (via Emergent Key), Stripe
 - **CI/CD:** GitHub Actions → Windows `.exe` installer
+- **Custom Domain:** `www.obsidiancinema.com`
 
-## Custom Domain
-- Production: `www.obsidiancinema.com`
-
-## What's Been Implemented
+## What's Been Implemented (Complete)
 - Full web app (landing page, account dashboard, Google Auth, Stripe payments)
-- Full desktop app (directory scanning, TMDB metadata/cast, AI recommendations, stats, collections)
-- SEO audit (meta/OG tags, JSON-LD, sitemap.xml, robots.txt)
-- Activity-based AI suggestion engine
-- 10+ fun stats on Stats Page
-- Custom color theme picker (Hex to HSL)
-- Daily movie quotes (179 curated)
-- Persistent bottom StatusBar (version, grid size toggle, theme picker, PRO badge, online status, active filter)
-- Fun Effects (confetti favorites, popcorn empty states, clapperboard loaders, milestone fireworks, poster shimmer)
-- Backup/Restore including Favorites and Activity data
-- File naming convention reminder popup
-- Google Auth reliability improvements (retry loops)
-- Landing page (clean copy + feature cards, no screenshots)
-- Marketing materials document
+- Full desktop app (scanning, TMDB metadata/cast, AI recommendations, stats, collections)
+- SEO (meta/OG tags, JSON-LD, sitemap.xml, robots.txt)
+- Custom color theme picker, daily movie quotes, StatusBar, Fun Effects
+- Backup/Restore, file naming popup, Google Auth retry improvements
+- Marketing materials, landing page copy
+- Free tier enforcement (50 movies, 3 collections)
+- TMDB key stored per-user locally (not shared server)
+- Auto-download & install updates from Settings page
+- License key tied to machine ID (anti-sharing)
 
-## v1.4.1 Changes (March 2026)
-- Fixed scroll-to-top on route navigation (ScrollToTop component in App.js)
-- Fixed confetti drift clipping (moved confetti outside overflow-hidden containers)
-- Repositioned "Back to top" button above StatusBar with "Back to top" text label
-- Fixed StatusBar poster resize sync with LocalLibraryPage grid (storage event dispatch)
-- Restructured library page header: title + counts inline, search bar relocated below actions above movie grid
-- Renamed "Add Files" to "Add Individual Movies"
-- Search bar clear button changed from X icon to "Clear" text
-- Removed sort indicator from StatusBar (persistent sync issue)
-- Removed screenshot images from landing page for cleaner look
-- Landing page version badge now reads dynamically from package.json
-- PRO badge on StatusBar made more resilient (checks license object, not just server validation)
-- Bumped through versions 1.3.9 → 1.4.0 → 1.4.1
+## v1.4.8 Changes (March 2026)
+- Fixed scroll-to-top on route navigation
+- Fixed confetti drift clipping
+- "Back to top" button repositioned with text label
+- StatusBar poster resize sync, sort indicator removed
+- Library page header restructured (title+counts inline, search relocated above grid)
+- Renamed "Add Files" → "Add Individual Movies", search placeholder updated
+- Landing page screenshots removed, version badge dynamic from package.json
+- PRO badge: reads from electron-store directly + localStorage polling
+- TMDB API key: fully local per-user storage (no server sharing)
+- Free tier limits: 50 movies, 3 collections, enforced at all entry points
+- Pro status: stored in `obsidian_cinema_is_pro` localStorage, set during license init, polled by LocalLibraryPage every 300ms
+- Auto-download updates in Settings page with progress bar and "Restart & Install" button
+- Price corrected to $25 on activation page and account dashboard
+- Versions bumped 1.3.9 → 1.4.8
 
 ## Known Issues
 - "Made with Emergent" badge on production (platform-level, blocked on Emergent support)
-- LocalLibraryPage.jsx is ~2400 lines (refactoring postponed by user decision)
+- LocalLibraryPage.jsx ~2500 lines (refactoring postponed by user)
 
 ## Backlog (Prioritized)
 - **P1:** Admin account/role system (admin flag, protected routes)
 - **P1:** Admin dashboard with member/user list
 - **P1:** License management from admin panel (revoke, reissue, deactivate)
-- **P1:** Landing Page Demo (demo video or screenshots in hero section)
-- **P2:** Custom Domain Root Redirect (obsidiancinema.com → www.obsidiancinema.com)
+- **P1:** Landing Page Demo (demo video or screenshots)
+- **P2:** Custom Domain Root Redirect (obsidiancinema.com → www)
 - **P2:** Watch party feature
 - **P2:** Mobile companion app
 - **P2:** Auto-fetch movie trailers
@@ -72,7 +56,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 
 ## 3rd Party Integrations
 - OpenAI GPT-4o (Emergent LLM Key)
-- TMDB (User API Key)
+- TMDB (User API Key, stored locally per-user)
 - Stripe Payments (User API Key, official SDK)
 - SendGrid Emails (User API Key)
 
