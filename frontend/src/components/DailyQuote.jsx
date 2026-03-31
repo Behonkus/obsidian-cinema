@@ -198,6 +198,7 @@ export default function DailyQuote() {
       <p className="text-xs text-white/80 italic leading-relaxed truncate">
         {quote.text}
       </p>
+      <Quote className="w-3 h-3 text-primary/60 shrink-0" />
       <span className="text-xs not-italic text-yellow-400/80 shrink-0 whitespace-nowrap">— {quote.film}</span>
     </div>
   );
