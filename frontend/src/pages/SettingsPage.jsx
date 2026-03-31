@@ -84,6 +84,7 @@ export default function SettingsPage() {
   const [appVersion, setAppVersion] = useState(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const [castFetching, setCastFetching] = useState(false);
   const [castProgress, setCastProgress] = useState(0);
   const [castTotal, setCastTotal] = useState(0);
@@ -313,7 +314,15 @@ export default function SettingsPage() {
         setIsCheckingUpdate(false);
         
         if (status === 'available') {
-          toast.success(`Update v${data.version} is available!`);
+          toast.success(`Update v${data.version} is available! Downloading...`);
+          // Auto-trigger download
+          if (window.electronAPI.downloadUpdate) {
+            window.electronAPI.downloadUpdate();
+          }
+        } else if (status === 'downloading' && data) {
+          setDownloadProgress(data.percent || 0);
+        } else if (status === 'downloaded') {
+          toast.success("Update downloaded! Ready to install.");
         } else if (status === 'not-available') {
           toast.info("You're running the latest version!");
         } else if (status === 'error') {
@@ -777,8 +786,10 @@ export default function SettingsPage() {
                 {/* Update Status */}
                 {updateStatus && (
                   <div className={`p-3 rounded-lg ${
-                    updateStatus.status === 'available' 
+                    updateStatus.status === 'available' || updateStatus.status === 'downloading'
                       ? 'bg-purple-500/10 border border-purple-500/20' 
+                      : updateStatus.status === 'downloaded'
+                      ? 'bg-green-500/10 border border-green-500/20'
                       : updateStatus.status === 'not-available'
                       ? 'bg-green-500/10 border border-green-500/20'
                       : 'bg-secondary/30 border border-border'
@@ -787,8 +798,17 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2">
                         <Download className="w-4 h-4 text-purple-400" />
                         <span className="text-sm text-purple-300">
-                          Update v{updateStatus.data?.version} available!
+                          Update v{updateStatus.data?.version} available — downloading...
                         </span>
+                      </div>
+                    )}
+                    {updateStatus.status === 'downloading' && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-purple-300">Downloading update...</span>
+                          <span className="font-medium text-purple-300">{Math.round(downloadProgress)}%</span>
+                        </div>
+                        <Progress value={downloadProgress} className="h-2" />
                       </div>
                     )}
                     {updateStatus.status === 'not-available' && (
@@ -800,11 +820,21 @@ export default function SettingsPage() {
                       </div>
                     )}
                     {updateStatus.status === 'downloaded' && (
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                        <span className="text-sm text-green-300">
-                          Update downloaded! Restart to install.
-                        </span>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <span className="text-sm text-green-300">
+                            Update downloaded! Ready to install.
+                          </span>
+                        </div>
+                        <Button
+                          onClick={() => window.electronAPI.installUpdate()}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white mt-2"
+                          size="sm"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Restart & Install Update
+                        </Button>
                       </div>
                     )}
                     {updateStatus.status === 'error' && (
