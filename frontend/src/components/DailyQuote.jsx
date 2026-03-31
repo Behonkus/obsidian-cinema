@@ -185,19 +185,20 @@ const QUOTES = [
 function getDailyIndex() {
   var now = new Date();
   var dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
-  return (dayOfYear + now.getFullYear()) % QUOTES.length;
+  // Pseudo-random scatter using prime multiplier to avoid clustering
+  var seed = (dayOfYear + now.getFullYear()) * 2654435761;
+  return Math.abs(seed) % QUOTES.length;
 }
 
 export default function DailyQuote() {
   var quote = QUOTES[getDailyIndex()];
   return (
-    <div className="flex items-start gap-2 px-1 pb-1" data-testid="daily-quote">
-      <Quote className="w-3.5 h-3.5 text-primary/60 mt-0.5 shrink-0 rotate-180" />
-      <p className="text-xs text-white/80 italic leading-relaxed">
+    <div className="flex items-center gap-2 px-1 pb-1 min-w-0" data-testid="daily-quote">
+      <Quote className="w-3.5 h-3.5 text-primary/60 shrink-0 rotate-180" />
+      <p className="text-xs text-white/80 italic leading-relaxed truncate">
         {quote.text}
-        <Quote className="w-2.5 h-2.5 text-primary/60 inline-block ml-0.5 mb-0.5" />
-        <span className="not-italic text-yellow-400/80 ml-1.5">— {quote.film}</span>
       </p>
+      <span className="text-xs not-italic text-yellow-400/80 shrink-0 whitespace-nowrap">— {quote.film}</span>
     </div>
   );
 }
