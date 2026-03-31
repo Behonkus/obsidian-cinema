@@ -255,34 +255,13 @@ export default function LocalLibraryPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isPro: contextIsPro } = useLicense();
-  const [isProUser, setIsProUser] = useState(true); // Default to true — restrict only when confirmed free
+  const [isProUser, setIsProUser] = useState(() => localStorage.getItem('obsidian_cinema_is_pro') === 'true');
   const [movies, setMovies] = useState([]);
 
-  // Determine if user is free tier (reverse logic: assume Pro unless confirmed free)
+  // Keep in sync if context or localStorage updates
   useEffect(() => {
-    var confirmed = false;
-    // Check 1: Electron store
-    if (window.electronAPI && window.electronAPI.getLicense) {
-      window.electronAPI.getLicense().then(function(license) {
-        if (!license) {
-          // No license at all — not activated, but don't restrict until they choose free
-          return;
-        }
-        if (license.subscription_tier === 'free' && !license.license_key) {
-          // Explicitly chose free tier
-          setIsProUser(false);
-          confirmed = true;
-        } else {
-          // Has a license (pro or any non-free) — they're Pro
-          setIsProUser(true);
-          confirmed = true;
-        }
-      }).catch(function() {});
-    }
-    // Check 2: Context says Pro
-    if (contextIsPro) { setIsProUser(true); confirmed = true; }
-    // Check 3: localStorage flag
-    if (localStorage.getItem('obsidian_cinema_license_status') === 'valid') { setIsProUser(true); confirmed = true; }
+    if (contextIsPro) setIsProUser(true);
+    if (localStorage.getItem('obsidian_cinema_is_pro') === 'true') setIsProUser(true);
   }, [contextIsPro]);
   const [directories, setDirectories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');

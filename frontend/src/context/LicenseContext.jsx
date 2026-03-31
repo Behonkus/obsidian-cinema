@@ -35,13 +35,16 @@ export function LicenseProvider({ children }) {
           if (storedLicense.subscription_tier === 'free') {
             setIsFreeTier(true);
             setLicenseStatus('free');
+            localStorage.setItem('obsidian_cinema_is_pro', 'false');
           } else {
             setLicense(storedLicense);
+            localStorage.setItem('obsidian_cinema_is_pro', 'true');
             // Validate with server
             await validateLicenseWithServer(storedLicense.license_key, id);
           }
         } else {
           setLicenseStatus('not_activated');
+          localStorage.setItem('obsidian_cinema_is_pro', 'false');
         }
       }
       setLoading(false);
@@ -107,6 +110,7 @@ export function LicenseProvider({ children }) {
         setLicense(licenseData);
         setLicenseStatus('valid');
         setIsFreeTier(false);
+        localStorage.setItem('obsidian_cinema_is_pro', 'true');
         
         return { success: true, message: response.data.message };
       } else {
@@ -132,6 +136,7 @@ export function LicenseProvider({ children }) {
       setLicense(null);
       setLicenseStatus('not_activated');
       setIsFreeTier(false);
+      localStorage.setItem('obsidian_cinema_is_pro', 'false');
       
       return { success: true, message: 'License deactivated from this device.' };
     } catch (err) {
@@ -153,6 +158,7 @@ export function LicenseProvider({ children }) {
     await window.electronAPI.setLicense(freeTierData);
     setIsFreeTier(true);
     setLicenseStatus('free');
+    localStorage.setItem('obsidian_cinema_is_pro', 'false');
   }, []);
 
   // Sync license status to localStorage so StatusBar can read it directly
