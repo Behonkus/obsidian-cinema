@@ -258,11 +258,17 @@ export default function LocalLibraryPage() {
   const [isProUser, setIsProUser] = useState(() => localStorage.getItem('obsidian_cinema_is_pro') === 'true');
   const [movies, setMovies] = useState([]);
 
-  // Keep in sync if context or localStorage updates
+  // Poll localStorage until Pro status is confirmed (same pattern as StatusBar grid/theme)
   useEffect(() => {
-    if (contextIsPro) setIsProUser(true);
-    if (localStorage.getItem('obsidian_cinema_is_pro') === 'true') setIsProUser(true);
-  }, [contextIsPro]);
+    if (isProUser) return; // Already confirmed Pro, no need to poll
+    var interval = setInterval(function() {
+      if (localStorage.getItem('obsidian_cinema_is_pro') === 'true' || contextIsPro) {
+        setIsProUser(true);
+        clearInterval(interval);
+      }
+    }, 300);
+    return function() { clearInterval(interval); };
+  }, [contextIsPro, isProUser]);
   const [directories, setDirectories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [quickFilter, setQuickFilter] = useState(() => searchParams.get('qf') || null);
