@@ -20,6 +20,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Marketing materials, landing page copy (no screenshots, clean look)
 - Free tier enforcement (50 movies, 3 collections) via activation page localStorage flag
 - TMDB key stored per-user locally (not shared server)
+- TMDB setup guide on Landing page (collapsible) and Settings page (collapsible) with step-by-step instructions and suggested form answers
 - Auto-download & install updates in Settings page (UI done, needs debugging)
 - License key tied to machine ID (anti-sharing)
 - Landing page version badge reads dynamically from package.json

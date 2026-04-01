@@ -28,6 +28,9 @@ import {
   Users,
   Lock,
   Quote,
+  Key,
+  ExternalLink,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -117,6 +120,106 @@ const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: 0.45 } },
 };
+
+
+function TmdbSetupSection() {
+  const [open, setOpen] = useState(false);
+  const steps = [
+    { num: "1", text: <>Go to <a href="https://www.themoviedb.org/signup" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">themoviedb.org</a> and create a free account.</> },
+    { num: "2", text: <>After logging in, navigate to <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Settings &gt; API</a>.</> },
+    { num: "3", text: 'Click "Create" or "Request an API Key" and select "Developer".' },
+    { num: "4", text: "Accept the terms of use." },
+    { num: "5", lines: [
+      "Fill in the required fields:",
+      { label: "Application Name", value: "Personal Movie Library" },
+      { label: "Application URL", value: "N/A" },
+      { label: "Application Summary", value: "Personal app for my movie collection." },
+    ]},
+    { num: "6", text: 'Copy the "API Key (v3 auth)" and paste it into Obsidian Cinema\'s Settings page.' },
+  ];
+
+  return (
+    <section className="py-16 md:py-20 px-6 border-t border-border/30" data-testid="tmdb-setup-section">
+      <div className="max-w-3xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          className="text-center mb-8"
+        >
+          <h2 className="text-base md:text-lg font-[Outfit] font-semibold text-primary mb-2">
+            Quick setup
+          </h2>
+          <p className="text-2xl sm:text-3xl font-[Outfit] font-bold tracking-tight">
+            Get your free TMDB API key
+          </p>
+          <p className="text-sm text-muted-foreground mt-3 max-w-lg mx-auto">
+            Obsidian Cinema uses The Movie Database (TMDB) to fetch posters, ratings, and cast data. Getting a key takes less than 2 minutes — it's completely free with no credit card required.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="bg-card border border-border rounded-xl overflow-hidden"
+        >
+          <button
+            onClick={() => setOpen(!open)}
+            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-secondary/30 transition-colors"
+            data-testid="tmdb-landing-guide-toggle"
+          >
+            <span className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <Key className="w-4 h-4 text-primary" />
+              </div>
+              <span className="font-[Outfit] font-semibold text-foreground">Step-by-step TMDB setup guide</span>
+            </span>
+            <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+          </button>
+
+          {open && (
+            <div className="px-5 pb-5 pt-1 border-t border-border/40 space-y-4" data-testid="tmdb-landing-guide-content">
+              {steps.map((s) => (
+                <div key={s.num} className="flex gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/15 text-primary text-sm font-bold flex items-center justify-center mt-0.5">{s.num}</span>
+                  <div className="text-sm text-muted-foreground pt-1">
+                    {s.text && <span>{s.text}</span>}
+                    {s.lines && (
+                      <>
+                        <span>{s.lines[0]}</span>
+                        <div className="mt-2 space-y-1.5 bg-secondary/40 rounded-lg px-3 py-2.5 border border-border/30">
+                          {s.lines.slice(1).map((item, idx) => (
+                            <div key={idx} className="flex flex-col sm:flex-row sm:gap-2">
+                              <span className="text-foreground font-medium whitespace-nowrap">{item.label}:</span>
+                              <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs font-mono">{item.value}</code>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div className="flex items-center gap-2 pt-2 pl-10">
+                <a
+                  href="https://www.themoviedb.org/signup"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Create your TMDB account
+                </a>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -323,6 +426,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── TMDB Setup Guide ── */}
+      <TmdbSetupSection />
 
       {/* ── Pricing ── */}
       <section id="pricing" className="py-20 md:py-28 px-6 border-t border-border/30">

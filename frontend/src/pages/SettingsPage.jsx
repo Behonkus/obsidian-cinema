@@ -21,7 +21,8 @@ import {
   Users,
   FolderArchive,
   Upload,
-  Clock
+  Clock,
+  ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,46 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const isElectron = () => {
   return typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
 };
+
+function TmdbSetupGuide() {
+  const [open, setOpen] = useState(false);
+  const steps = [
+    { num: 1, text: <>Go to <a href="https://www.themoviedb.org/signup" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">themoviedb.org/signup</a> and create a free account.</> },
+    { num: 2, text: <>After logging in, go to <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Settings &gt; API</a>.</> },
+    { num: 3, text: 'Click "Create" or "Request an API Key" and select "Developer".' },
+    { num: 4, text: "Accept the terms of use." },
+    { num: 5, text: <>Fill in the required fields:<ul className="mt-1.5 ml-4 space-y-1 list-disc text-muted-foreground"><li><span className="text-foreground">Application Name:</span> Personal Movie Library</li><li><span className="text-foreground">Application URL:</span> N/A</li><li><span className="text-foreground">Application Summary:</span> Personal app for my movie collection.</li></ul></> },
+    { num: 6, text: 'Copy the "API Key (v3 auth)" value and paste it in the field above.' },
+  ];
+
+  return (
+    <div className="border border-border/50 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+        data-testid="tmdb-setup-guide-toggle"
+      >
+        <span className="flex items-center gap-1.5">
+          <Info className="w-3.5 h-3.5" />
+          How to get your free TMDB API key
+        </span>
+        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="px-3 pb-3 pt-1 border-t border-border/30 space-y-2" data-testid="tmdb-setup-guide-content">
+          {steps.map((s) => (
+            <div key={s.num} className="flex gap-2.5 text-sm">
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs font-semibold flex items-center justify-center mt-0.5">{s.num}</span>
+              <span className="text-muted-foreground">{s.text}</span>
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground/70 mt-2 pl-7">The TMDB API is completely free for personal use. No credit card required.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -591,6 +632,9 @@ export default function SettingsPage() {
                   Get a free TMDB API key
                 </a>
               </div>
+              
+              {/* TMDB Setup Guide */}
+              <TmdbSetupGuide />
               
               {/* Cached posters info */}
               {settings?.cached_posters > 0 && (
