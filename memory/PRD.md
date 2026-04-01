@@ -25,7 +25,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - License key tied to machine ID (anti-sharing)
 - Landing page version badge reads dynamically from package.json
 
-## Current Version: 1.5.0
+## Current Version: 1.5.1
 
 ## Known Issues to Fix Next Session
 - **P0: StatusBar PRO badge** — Still not showing for Pro users. LicenseContext `isPro` has persistent timing issues in Electron. StatusBar reads from electron-store directly but still not working.
