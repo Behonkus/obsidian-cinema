@@ -655,7 +655,7 @@ function computeStats(movies, directories, trashedMovies) {
     }
   }
   chameleonActors.sort(function(a, b) { return b.genreCount - a.genreCount; });
-  var topChameleons = chameleonActors.slice(0, 5);
+  var topChameleons = chameleonActors.slice(0, 10);
   var moviesWithCast = 0;
   for (i = 0; i < movies.length; i++) {
     if (movies[i].cast && movies[i].cast.length > 0) moviesWithCast++;

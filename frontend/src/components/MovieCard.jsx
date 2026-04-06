@@ -246,14 +246,17 @@ export default function MovieCard({ movie, onClick, onUpdate, index = 0 }) {
         </div>
         {movie.genres && movie.genres.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
-            {movie.genres.slice(0, 2).map((genre) => (
-              <span
-                key={genre}
-                className="px-2 py-0.5 text-[10px] rounded-full bg-secondary text-secondary-foreground"
-              >
-                {genre}
-              </span>
-            ))}
+            {movie.genres.slice(0, 2).map((genre, i) => {
+              const name = typeof genre === 'object' && genre.name ? genre.name : String(genre);
+              return (
+                <span
+                  key={name + i}
+                  className="px-2 py-0.5 text-[10px] rounded-full bg-secondary text-secondary-foreground"
+                >
+                  {name}
+                </span>
+              );
+            })}
           </div>
         )}
       </div>
