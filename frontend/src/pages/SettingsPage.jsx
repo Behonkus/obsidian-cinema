@@ -22,7 +22,8 @@ import {
   FolderArchive,
   Upload,
   Clock,
-  ChevronDown
+  ChevronDown,
+  Tag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,6 +131,10 @@ export default function SettingsPage() {
   const [castProgress, setCastProgress] = useState(0);
   const [castTotal, setCastTotal] = useState(0);
   const [castStatusText, setCastStatusText] = useState('');
+  const [genreFetching, setGenreFetching] = useState(false);
+  const [genreProgress, setGenreProgress] = useState(0);
+  const [genreTotal, setGenreTotal] = useState(0);
+  const [genreStatusText, setGenreStatusText] = useState('');
   const [backups, setBackups] = useState([]);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(null);
   const [lastExportDate, setLastExportDate] = useState(() => localStorage.getItem('obsidian_cinema_last_export') || null);
@@ -1050,6 +1055,80 @@ export default function SettingsPage() {
                     <Users className="w-4 h-4 mr-2" />
                   )}
                   {castFetching ? 'Fetching... (' + castProgress + '/' + castTotal + ')' : 'Fetch Cast Data'}
+                </Button>
+              </div>
+
+              {/* Fetch Genre Data */}
+              <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
+                <div>
+                  <p className="font-medium text-foreground text-sm">Genre Data</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {genreFetching
+                      ? 'Fetching genres... ' + genreProgress + ' of ' + genreTotal + ' movies'
+                      : genreStatusText || (function() {
+                        var saved = localStorage.getItem('obsidian_cinema_local_movies');
+                        var all = saved ? JSON.parse(saved) : [];
+                        var withGenre = all.filter(function(m) { return m.genres && m.genres.length > 0; }).length;
+                        var needGenre = all.filter(function(m) { return m.tmdb_id && (!m.genres || m.genres.length === 0); }).length;
+                        if (needGenre > 0) return withGenre + ' movies have genre data. ' + needGenre + ' can be fetched from TMDB.';
+                        if (withGenre > 0) return 'All ' + withGenre + ' movies with TMDB data have genre info.';
+                        return 'No genre data available. Fetch posters first to get TMDB IDs.';
+                      })()
+                    }
+                  </p>
+                  {genreFetching && genreTotal > 0 && (
+                    <div className="mt-2 w-full bg-secondary rounded-full h-2 overflow-hidden" data-testid="genre-progress-bar">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all duration-300"
+                        style={{ width: Math.round((genreProgress / genreTotal) * 100) + '%' }}
+                      />
+                    </div>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  disabled={genreFetching}
+                  onClick={async function() {
+                    var tmdbKey = localStorage.getItem('obsidian_cinema_tmdb_key');
+                    if (!tmdbKey) { toast.error('Add your TMDB API key first'); return; }
+                    var saved = localStorage.getItem('obsidian_cinema_local_movies');
+                    var all = saved ? JSON.parse(saved) : [];
+                    var need = all.filter(function(m) { return m.tmdb_id && (!m.genres || m.genres.length === 0); });
+                    if (need.length === 0) { toast.info('All movies with TMDB data already have genre info'); return; }
+                    setGenreFetching(true);
+                    setGenreProgress(0);
+                    setGenreTotal(need.length);
+                    setGenreStatusText('');
+                    var fetched = 0;
+                    for (var i = 0; i < need.length; i++) {
+                      try {
+                        var resp = await fetch('https://api.themoviedb.org/3/movie/' + need[i].tmdb_id + '?api_key=' + tmdbKey);
+                        var data = await resp.json();
+                        if (data.genres && data.genres.length > 0) {
+                          need[i].genres = data.genres.map(function(g) { return g.name; });
+                          fetched++;
+                        }
+                      } catch (e) {}
+                      setGenreProgress(i + 1);
+                      if (i < need.length - 1) await new Promise(function(r) { setTimeout(r, 250); });
+                    }
+                    var updated = all.map(function(m) {
+                      var match = need.find(function(n) { return n.id === m.id; });
+                      return match ? match : m;
+                    });
+                    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated));
+                    setGenreFetching(false);
+                    setGenreStatusText('Done! Genres fetched for ' + fetched + ' of ' + need.length + ' movies.');
+                    toast.success('Genres fetched for ' + fetched + ' movies');
+                  }}
+                  data-testid="settings-fetch-genre-btn"
+                >
+                  {genreFetching ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Tag className="w-4 h-4 mr-2" />
+                  )}
+                  {genreFetching ? 'Fetching... (' + genreProgress + '/' + genreTotal + ')' : 'Fetch Genre Data'}
                 </Button>
               </div>
 

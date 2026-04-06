@@ -460,9 +460,12 @@ export default function LocalLibraryPage() {
           rating: result.vote_average,
           release_date: result.release_date
         };
-        // Also fetch cast
+        // Also fetch cast and genres
         try {
-          const credResp = await fetch(`${TMDB_API}/movie/${result.id}/credits?api_key=${tmdbApiKey}`);
+          const [credResp, detailResp] = await Promise.all([
+            fetch(`${TMDB_API}/movie/${result.id}/credits?api_key=${tmdbApiKey}`),
+            fetch(`${TMDB_API}/movie/${result.id}?api_key=${tmdbApiKey}`)
+          ]);
           const credData = await credResp.json();
           if (credData.cast) {
             movieData.cast = credData.cast.slice(0, 5).map(c => ({
@@ -471,7 +474,11 @@ export default function LocalLibraryPage() {
               profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null,
             }));
           }
-        } catch (_) { /* cast fetch is optional */ }
+          const detailData = await detailResp.json();
+          if (detailData.genres && detailData.genres.length > 0) {
+            movieData.genres = detailData.genres.map(g => g.name);
+          }
+        } catch (_) { /* cast/genre fetch is optional */ }
         return movieData;
       }
     } catch (err) {
