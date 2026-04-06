@@ -18,7 +18,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Custom color theme picker, daily movie quotes, StatusBar, Fun Effects
 - Backup/Restore, file naming popup, Google Auth retry improvements
 - Marketing materials, landing page copy (no screenshots, clean look)
-- Free tier enforcement (50 movies, 3 collections) via activation page localStorage flag
+- Free tier enforcement (100 movies, 3 collections) via activation page localStorage flag
 - TMDB key stored per-user locally (not shared server)
 - TMDB setup guide on Landing page (collapsible) and Settings page (collapsible) with step-by-step instructions and suggested form answers
 - Auto-download & install updates in Settings page (UI done, needs debugging)

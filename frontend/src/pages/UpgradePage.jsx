@@ -37,7 +37,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Free tier feature list
 const FREE_FEATURES = [
-  "Up to 50 movies",
+  "Up to 100 movies",
   "Up to 3 collections",
   "Basic features"
 ];
@@ -192,7 +192,7 @@ function LicenseKeyCard({ user }) {
                 <ul className="space-y-1 text-muted-foreground">
                   <li>• Launch Obsidian Cinema</li>
                   <li>• Click "Continue with Free" to start</li>
-                  <li>• Free tier supports up to 50 movies and 3 collections</li>
+                  <li>• Free tier supports up to 100 movies and 3 collections</li>
                 </ul>
               </div>
 

@@ -39,7 +39,7 @@ export default function LicenseActivationPage() {
     if (setFreeTier) {
       setFreeTier();
     }
-    toast.success("Welcome! You're using the free tier (50 movies, 3 collections)");
+    toast.success("Welcome! You're using the free tier (100 movies, 3 collections)");
     navigate("/");
   };
 
@@ -156,7 +156,7 @@ export default function LicenseActivationPage() {
               <span className="text-xs text-muted-foreground">No license needed</span>
             </div>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Up to 50 movies</li>
+              <li>• Up to 100 movies</li>
               <li>• Up to 3 collections</li>
               <li>• Full local drive access</li>
             </ul>

@@ -156,7 +156,7 @@ export default function AccountDashboard() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Film className="w-4 h-4 text-muted-foreground" />
-                      <span>Up to 50 movies</span>
+                      <span>Up to 100 movies</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <FolderOpen className="w-4 h-4 text-muted-foreground" />

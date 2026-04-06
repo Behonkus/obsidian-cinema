@@ -98,7 +98,7 @@ const FEATURES = [
 ];
 
 const FREE_LIMITS = [
-  "Up to 50 movies",
+  "Up to 100 movies",
   "Up to 3 collections",
   "All core features",
   "TMDB posters & metadata",
@@ -319,7 +319,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Free tier supports up to 50 movies in your library. No credit card required.
+            Free tier supports up to 100 movies in your library. No credit card required.
           </p>
         </motion.div>
 
