@@ -18,7 +18,8 @@ import {
   Hourglass,
   Sparkles,
   Users,
-  ChevronDown
+  ChevronDown,
+  Tag
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -249,34 +250,39 @@ function LowestRatedList({ movies }) {
   );
 }
 
-function GenreChart({ data }) {
-  if (!data || data.length === 0) return null;
-  const legend = data.slice(0, 8).map(function(item, i) {
-    return (
-      <div key={item.name} className="flex items-center gap-2">
-        <div className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
-        <span className="text-xs text-muted-foreground flex-1 truncate">{item.name}</span>
-        <span className="text-xs font-medium text-foreground">{item.value}</span>
-      </div>
-    );
-  });
+function GenreTotals({ data }) {
+  const total = data ? data.reduce((sum, d) => sum + d.value, 0) : 0;
+  const display = data ? data.slice(0, 12) : [];
   return (
     <Card>
       <CardHeader className="pb-1 pt-3 px-4">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Genre Distribution</CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <Tag className="w-3.5 h-3.5" />
+          Genre Totals
+          {data && data.length > 0 && <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{data.length} genres</Badge>}
+        </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-3">
-        <div className="flex gap-4">
-          <ResponsiveContainer width="50%" height={160}>
-            <PieChart>
-              <Pie data={data.slice(0, 8)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} innerRadius={30} paddingAngle={2}>
-                {data.slice(0, 8).map(function(_, i) { return <Cell key={i} fill={COLORS[i % COLORS.length]} />; })}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex-1 space-y-1.5">{legend}</div>
-        </div>
+        {display.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-4 text-center">No genre data yet. Fetch metadata from TMDB to see genre stats.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {display.map((item, i) => {
+              const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+              return (
+                <div key={item.name} className="flex items-center gap-2 text-xs">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
+                  <span className="flex-1 truncate text-muted-foreground">{item.name}</span>
+                  <span className="font-medium text-foreground tabular-nums">{item.value.toLocaleString()}</span>
+                  <span className="text-muted-foreground/60 tabular-nums w-8 text-right">{pct}%</span>
+                </div>
+              );
+            })}
+            {data.length > 12 && (
+              <p className="text-[10px] text-muted-foreground/50 pt-1">+{data.length - 12} more genres</p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -796,7 +802,7 @@ export default function StatsPage() {
           <RatingChart data={stats.ratingData} />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <GenreChart data={stats.genreData} />
+          <GenreTotals data={stats.genreData} />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
           <GrowthChart data={stats.growthData} />
