@@ -314,8 +314,6 @@ export default function LocalLibraryPage() {
   const [namingTipDontShow, setNamingTipDontShow] = useState(false);
   const [fetchingCast, setFetchingCast] = useState(false);
   const [castFetchProgress, setCastFetchProgress] = useState(0);
-  const [fetchingGenres, setFetchingGenres] = useState(false);
-  const [genreFetchProgress, setGenreFetchProgress] = useState(0);
   const [milestone, dismissMilestone] = useMilestone(movies.length);
 
   // Load from localStorage on mount
@@ -754,47 +752,6 @@ export default function LocalLibraryPage() {
     }
     setFetchingCast(false);
     toast.success('Cast data fetched for ' + fetched + ' movies');
-  };
-
-  // Fetch genres only for a movie that already has tmdb_id
-  const fetchGenresForMovie = async (movie) => {
-    if (!tmdbApiKey || !movie.tmdb_id) return null;
-    try {
-      const resp = await fetch(`${TMDB_API}/movie/${movie.tmdb_id}?api_key=${tmdbApiKey}`);
-      const data = await resp.json();
-      if (data.genres && data.genres.length > 0) {
-        return data.genres.map(g => g.name);
-      }
-    } catch (_) {}
-    return null;
-  };
-
-  // Bulk fetch genres for movies that have tmdb_id but no genre data
-  const fetchAllGenres = async () => {
-    if (!tmdbApiKey) {
-      toast.error('Please add your TMDB API key in Settings first');
-      return;
-    }
-    const needGenres = movies.filter(m => m.tmdb_id && (!m.genres || m.genres.length === 0));
-    if (needGenres.length === 0) {
-      toast.info('All movies with TMDB data already have genre info');
-      return;
-    }
-    setFetchingGenres(true);
-    setGenreFetchProgress(0);
-    let fetched = 0;
-    for (let i = 0; i < needGenres.length; i++) {
-      const movie = needGenres[i];
-      const genres = await fetchGenresForMovie(movie);
-      if (genres) {
-        setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, genres } : m));
-      }
-      fetched++;
-      setGenreFetchProgress(Math.round((fetched / needGenres.length) * 100));
-      if (i < needGenres.length - 1) await new Promise(r => setTimeout(r, 250));
-    }
-    setFetchingGenres(false);
-    toast.success('Genre data fetched for ' + fetched + ' movies');
   };
 
 
@@ -1267,6 +1224,7 @@ export default function LocalLibraryPage() {
       if (quickFilter === 'no-poster' && movie.poster_path) return false;
       if (quickFilter === 'no-rating' && movie.rating) return false;
       if (quickFilter === 'no-year' && movie.year) return false;
+      if (quickFilter === 'no-genre' && movie.genres && movie.genres.length > 0) return false;
       if (quickFilter === 'favorites' && !favorites.includes(movie.id)) return false;
       if (quickFilter === 'recent' && !recentIds.has(movie.id)) return false;
       // Genre filter
@@ -1368,30 +1326,6 @@ export default function LocalLibraryPage() {
                 : (function() {
                     var missing = movies.filter(function(m) { return !m.poster_path; }).length;
                     return missing > 0 ? 'Fetch Posters (' + missing + ')' : 'Fetch Posters';
-                  })()
-              }
-              </span>
-            </Button>
-          )}
-          {movies.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchAllGenres}
-              disabled={fetchingGenres}
-              data-testid="fetch-genres-btn"
-            >
-              {fetchingGenres ? (
-                <RefreshCw className="w-4 h-4 mr-1.5 animate-spin" />
-              ) : (
-                <Tag className="w-4 h-4 mr-1.5" />
-              )}
-              <span className="text-xs">
-              {fetchingGenres
-                ? `Genres ${genreFetchProgress}%`
-                : (function() {
-                    var missing = movies.filter(function(m) { return m.tmdb_id && (!m.genres || !m.genres.length); }).length;
-                    return missing > 0 ? 'Fetch Genres (' + missing + ')' : 'Fetch Genres';
                   })()
               }
               </span>

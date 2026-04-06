@@ -23,7 +23,8 @@ import {
   CalendarOff,
   Clock,
   AlertTriangle,
-  Star
+  Star,
+  TagsIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,6 +130,7 @@ function SidebarWidgets() {
         noPoster: movies.filter(m => !m.poster_path).length,
         noRating: movies.filter(m => !m.rating).length,
         noYear: movies.filter(m => !m.year).length,
+        noGenre: movies.filter(m => !m.genres || m.genres.length === 0).length,
         recentCount: recentIds.size,
         recentIds: recentIds,
         favCount: favList.length,
@@ -182,6 +184,7 @@ function SidebarWidgets() {
           {qfBtn("No Poster", <ImageOff className="w-3.5 h-3.5" />, "no-poster", stats.noPoster)}
           {qfBtn("No Rating", <StarOff className="w-3.5 h-3.5" />, "no-rating", stats.noRating)}
           {qfBtn("No Year", <CalendarOff className="w-3.5 h-3.5" />, "no-year", stats.noYear)}
+          {qfBtn("No Genre", <TagsIcon className="w-3.5 h-3.5" />, "no-genre", stats.noGenre)}
           {qfBtn("Recently Added", <Clock className="w-3.5 h-3.5" />, "recent", stats.recentCount)}
         </div>
       </div>
