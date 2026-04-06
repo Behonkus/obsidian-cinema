@@ -33,7 +33,8 @@ import {
   Users,
   RotateCcw,
   X,
-  Star
+  Star,
+  Tag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -273,6 +274,7 @@ export default function LocalLibraryPage() {
   const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false);
   const [gridSize, setGridSize] = useState(() => localStorage.getItem(GRID_SIZE_KEY) || 'medium');
   const [sortBy, setSortBy] = useState(() => localStorage.getItem(SORT_KEY) || 'added-desc');
+  const [selectedGenre, setSelectedGenre] = useState(null);
   const [posterMode, setPosterMode] = useState(null); // 'search' | 'url' | null
   const [posterSearch, setPosterSearch] = useState('');
   const [posterResults, setPosterResults] = useState([]);
@@ -1194,6 +1196,20 @@ export default function LocalLibraryPage() {
     recentIds = new Set(recentSorted.slice(0, 100).map(function(m) { return m.id; }));
   }
 
+  // Compute available genres from all movies
+  const availableGenres = (() => {
+    const genreCount = {};
+    movies.forEach(m => {
+      if (m.genres && Array.isArray(m.genres)) {
+        m.genres.forEach(g => {
+          const name = typeof g === 'object' && g.name ? g.name : String(g);
+          if (name) genreCount[name] = (genreCount[name] || 0) + 1;
+        });
+      }
+    });
+    return Object.entries(genreCount).sort((a, b) => b[1] - a[1]);
+  })();
+
   const filteredMovies = sortMovies(
     movies.filter(movie => {
       // Quick filter
@@ -1202,6 +1218,11 @@ export default function LocalLibraryPage() {
       if (quickFilter === 'no-year' && movie.year) return false;
       if (quickFilter === 'favorites' && !favorites.includes(movie.id)) return false;
       if (quickFilter === 'recent' && !recentIds.has(movie.id)) return false;
+      // Genre filter
+      if (selectedGenre) {
+        const movieGenres = (movie.genres || []).map(g => typeof g === 'object' && g.name ? g.name : String(g));
+        if (!movieGenres.includes(selectedGenre)) return false;
+      }
       // Directory filter
       if (activeDirectory) {
         if (!movie.file_path?.startsWith(activeDirectory)) return false;
@@ -1224,7 +1245,7 @@ export default function LocalLibraryPage() {
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(100);
-  }, [activeDirectory, activeCollection, searchQuery, sortBy, quickFilter]);
+  }, [activeDirectory, activeCollection, searchQuery, sortBy, quickFilter, selectedGenre]);
 
   // Sync quickFilter with URL search params
   useEffect(() => {
@@ -1302,6 +1323,32 @@ export default function LocalLibraryPage() {
             </Button>
           )}
           <div className="flex-1" />
+          {/* Genre Filter */}
+          {availableGenres.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant={selectedGenre ? "default" : "outline"} size="sm" className="gap-1.5" data-testid="genre-dropdown">
+                  <Tag className="w-3.5 h-3.5" />
+                  <span className="text-xs">{selectedGenre || 'Genre'}</span>
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 max-h-80 overflow-y-auto">
+                <DropdownMenuLabel>Filter by Genre</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setSelectedGenre(null)} className={!selectedGenre ? 'bg-accent' : ''}>
+                  All Genres
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {availableGenres.map(([genre, count]) => (
+                  <DropdownMenuItem key={genre} onClick={() => setSelectedGenre(selectedGenre === genre ? null : genre)} className={selectedGenre === genre ? 'bg-accent' : ''}>
+                    <span className="flex-1">{genre}</span>
+                    <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-2">{count}</Badge>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {/* Sort Options */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
