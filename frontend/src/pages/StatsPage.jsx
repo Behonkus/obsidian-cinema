@@ -330,12 +330,13 @@ function RandomPicker({ movies }) {
   }
 
   return (
-    <Card>
-      <CardContent className="p-4 space-y-3">
+    <Card className="h-full">
+      <CardContent className="p-4 space-y-3 h-full flex flex-col">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Dice5 className="w-4 h-4 text-purple-400" />
           <span className="text-sm font-medium">What Should I Watch?</span>
         </div>
+        <div className="flex-1" />
         <Button variant="outline" className="w-full gap-2" onClick={rollRandom} disabled={spinning} data-testid="random-picker-btn">
           <Sparkles className={"w-4 h-4 " + (spinning ? 'animate-spin' : '')} />
           {spinning ? 'Picking...' : 'Pick a Random Movie'}
@@ -786,11 +787,10 @@ export default function StatsPage() {
       )}
 
       {/* Fun Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3" style={{ alignItems: 'start' }}>
         <BingeScore movies={movies} />
         <AverageMovieAge movies={movies} />
         <RarestDecade decadeData={stats.decadeData} />
-        <MarathonMode total={stats.total} />
         <RatingPersonality avgRating={stats.avgRating} movies={movies} />
       </div>
 
@@ -807,8 +807,11 @@ export default function StatsPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
           <GrowthChart data={stats.growthData} />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-          <FormatChart data={stats.formatData} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.37 }} className="md:col-span-2">
+          <MarathonMode total={stats.total} />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="flex flex-col">
+          <div className="flex-1"><FormatChart data={stats.formatData} /></div>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
           <DirectoryChart data={stats.dirData} />
@@ -857,11 +860,11 @@ export default function StatsPage() {
         </motion.div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-3">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-          <RandomPicker movies={movies} />
+      <div className="grid md:grid-cols-2 gap-3 items-stretch">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="flex">
+          <div className="flex-1 flex flex-col"><RandomPicker movies={movies} /></div>
         </motion.div>
-        <SuggestForMe movies={movies} />
+        <div className="flex flex-col"><SuggestForMe movies={movies} /></div>
       </div>
 
       {/* Cast Stats */}
