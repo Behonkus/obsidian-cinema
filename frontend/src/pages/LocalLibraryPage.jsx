@@ -1689,7 +1689,15 @@ export default function LocalLibraryPage() {
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
              onClick={closeDetail}>
           <Card className="max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-6 space-y-4 relative">
+              {/* Close X */}
+              <button
+                onClick={closeDetail}
+                className="absolute top-3 right-3 p-1 rounded-full hover:bg-destructive/10 transition-colors z-10"
+                data-testid="detail-close-x"
+              >
+                <X className="w-5 h-5 text-red-500" />
+              </button>
               <div className="flex gap-4">
                 <div 
                   className="w-24 h-36 rounded-lg overflow-hidden bg-secondary flex items-center justify-center cursor-pointer group relative shrink-0"
