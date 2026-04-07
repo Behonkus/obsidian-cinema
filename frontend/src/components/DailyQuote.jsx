@@ -195,7 +195,7 @@ export default function DailyQuote() {
   return (
     <div className="flex items-center gap-2 px-1 pb-1 min-w-0" data-testid="daily-quote">
       <Quote className="w-3.5 h-3.5 text-primary/60 shrink-0 rotate-180" />
-      <p className="text-xs text-white/80 italic leading-relaxed truncate">
+      <p className="text-xs text-white/80 italic leading-relaxed line-clamp-2">
         {quote.text}
       </p>
       <Quote className="w-3 h-3 text-primary/60 shrink-0" />

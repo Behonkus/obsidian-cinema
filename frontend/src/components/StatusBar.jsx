@@ -122,7 +122,7 @@ export default function StatusBar({ sidebarCollapsed }) {
 
       {/* Center — Daily Quote */}
       <div className="hidden lg:flex flex-1 justify-center px-6 overflow-hidden">
-        <div className="max-w-md truncate">
+        <div className="max-w-2xl">
           <DailyQuote />
         </div>
       </div>
