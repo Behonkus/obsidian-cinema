@@ -1484,23 +1484,6 @@ export default function LocalLibraryPage() {
         </div>
       )}
 
-      {/* Scanned Directories */}
-      {directories.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {directories.map((dir, i) => (
-            <Badge
-              key={i}
-              variant="secondary"
-              className="gap-1"
-              data-testid={`dir-badge-${i}`}
-            >
-              <HardDrive className="w-3 h-3" />
-              {dir.length > 40 ? '...' + dir.slice(-40) : dir}
-            </Badge>
-          ))}
-        </div>
-      )}
-
       {/* Search */}
       <div className="relative w-80">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
