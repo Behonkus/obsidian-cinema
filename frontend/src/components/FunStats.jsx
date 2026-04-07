@@ -349,8 +349,15 @@ export function SuggestForMe({ movies }) {
         candidateMap[s.movie.id] = { item: toItem(s.movie), score: s.score };
       });
       var entries = Object.values(candidateMap);
-      entries.sort(function(a, b) { return b.score - a.score; });
-      var candidates = entries.slice(0, 200).map(function(e) { return e.item; });
+      // Prioritize unwatched movies — put unplayed/unbrowsed first, then fill with watched
+      var unwatched = entries.filter(function(e) { return e.score === 0; });
+      var watched = entries.filter(function(e) { return e.score > 0; });
+      // Shuffle unwatched so we get variety each time
+      for (var si = unwatched.length - 1; si > 0; si--) {
+        var sj = Math.floor(Math.random() * (si + 1));
+        var tmp = unwatched[si]; unwatched[si] = unwatched[sj]; unwatched[sj] = tmp;
+      }
+      var candidates = unwatched.slice(0, 150).concat(watched.slice(0, 50)).map(function(e) { return e.item; });
       var resp = await fetch(BACKEND_API + '/ai/suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -361,7 +368,7 @@ export function SuggestForMe({ movies }) {
             overview: seed.overview || null, rating: seed.rating || null,
           },
           library_movies: candidates,
-          activity_context: activityContext,
+          activity_context: activityContext + ' IMPORTANT: Suggest movies the user has NOT yet watched or browsed — help them discover hidden gems in their library.',
         }),
       });
       if (!resp.ok) { var err = await resp.json().catch(function() { return {}; }); throw new Error(err.detail || 'Failed to get suggestions'); }
