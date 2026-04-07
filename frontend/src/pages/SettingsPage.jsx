@@ -940,7 +940,8 @@ export default function SettingsPage() {
                 Library Management
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-3 space-y-3">
+            <CardContent className="px-4 pb-3">
+              <div className="grid md:grid-cols-2 gap-3">
               {/* Recently Deleted */}
               <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
                 <div>
@@ -959,26 +960,52 @@ export default function SettingsPage() {
                 </Button>
               </div>
 
-              {/* Poster Management */}
+              {/* Collection Management */}
               <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
                 <div>
-                  <p className="font-medium text-foreground text-sm">Poster Cache</p>
+                  <p className="font-medium text-foreground text-sm">Collections</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {posterCount > 0
-                      ? `${posterCount} posters cached. Clearing removes URLs only — movies and metadata remain.`
-                      : 'No poster data cached.'}
+                    {collectionsList.length > 0
+                      ? `${collectionsList.length} collection${collectionsList.length > 1 ? 's' : ''} in your library.`
+                      : 'No collections created.'}
                   </p>
                 </div>
-                {posterCount > 0 && (
-                  <Button
-                    variant="outline"
-                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                    onClick={function() { setShowClearPostersConfirm(true); }}
-                    data-testid="settings-clear-posters-btn"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Clear All Posters ({posterCount})
-                  </Button>
+                {collectionsList.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      {collectionsList.map(function(col) {
+                        return (
+                          <div key={col.id} className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary border border-border text-xs">
+                            <span>{col.name}</span>
+                            <span className="text-muted-foreground">({col.movie_ids?.length || 0})</span>
+                            <button
+                              onClick={function() {
+                                var updated = collectionsList.filter(function(c) { return c.id !== col.id; });
+                                setCollectionsList(updated);
+                                localStorage.setItem('obsidian_cinema_collections', JSON.stringify(updated));
+                                toast.success('Collection "' + col.name + '" deleted');
+                              }}
+                              className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                              title={'Delete ' + col.name}
+                              data-testid={'settings-delete-col-' + col.id}
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={function() { setShowClearCollectionsConfirm(true); }}
+                      data-testid="settings-clear-collections-btn"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete All Collections
+                    </Button>
+                  </div>
                 )}
               </div>
 
@@ -1132,8 +1159,8 @@ export default function SettingsPage() {
                 </Button>
               </div>
 
-              {/* Backup & Restore */}
-              <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
+              {/* Backup & Restore — spans full width */}
+              <div className="md:col-span-2 p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
                 <div>
                   <p className="font-medium text-foreground text-sm flex items-center gap-2">
                     <FolderArchive className="w-4 h-4" /> Backup & Restore
@@ -1193,56 +1220,30 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Collection Management */}
-              <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
+              {/* Poster Cache — critical */}
+              <div className="p-3 rounded-lg border border-destructive/20 bg-secondary/30 space-y-2">
                 <div>
-                  <p className="font-medium text-foreground text-sm">Collections</p>
+                  <p className="font-medium text-foreground text-sm">Poster Cache</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {collectionsList.length > 0
-                      ? `${collectionsList.length} collection${collectionsList.length > 1 ? 's' : ''} in your library.`
-                      : 'No collections created.'}
+                    {posterCount > 0
+                      ? `${posterCount} posters cached. Clearing removes URLs only — movies and metadata remain.`
+                      : 'No poster data cached.'}
                   </p>
                 </div>
-                {collectionsList.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2">
-                      {collectionsList.map(function(col) {
-                        return (
-                          <div key={col.id} className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary border border-border text-xs">
-                            <span>{col.name}</span>
-                            <span className="text-muted-foreground">({col.movie_ids?.length || 0})</span>
-                            <button
-                              onClick={function() {
-                                var updated = collectionsList.filter(function(c) { return c.id !== col.id; });
-                                setCollectionsList(updated);
-                                localStorage.setItem('obsidian_cinema_collections', JSON.stringify(updated));
-                                toast.success('Collection "' + col.name + '" deleted');
-                              }}
-                              className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
-                              title={'Delete ' + col.name}
-                              data-testid={'settings-delete-col-' + col.id}
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={function() { setShowClearCollectionsConfirm(true); }}
-                      data-testid="settings-clear-collections-btn"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete All Collections
-                    </Button>
-                  </div>
+                {posterCount > 0 && (
+                  <Button
+                    variant="outline"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={function() { setShowClearPostersConfirm(true); }}
+                    data-testid="settings-clear-posters-btn"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Clear All Posters ({posterCount})
+                  </Button>
                 )}
               </div>
 
-              {/* Reset Library */}
+              {/* Reset Library — most critical */}
               <div className="p-3 rounded-lg border border-destructive/20 bg-destructive/5 space-y-2">
                 <div>
                   <p className="font-medium text-destructive text-sm">Reset Entire Library</p>
@@ -1260,6 +1261,7 @@ export default function SettingsPage() {
                 >
                   Reset Library Database
                 </Button>
+              </div>
               </div>
             </CardContent>
           </Card>
