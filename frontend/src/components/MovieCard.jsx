@@ -163,6 +163,23 @@ export default function MovieCard({ movie, onClick, onUpdate, index = 0 }) {
           </div>
         )}
         
+        {/* Genre badges on poster face */}
+        {movie.genres && movie.genres.length > 0 && (
+          <div className="absolute bottom-8 left-2 flex flex-wrap gap-1 max-w-[85%] z-10">
+            {movie.genres.slice(0, 2).map((genre, i) => {
+              const name = typeof genre === 'object' && genre.name ? genre.name : String(genre);
+              return (
+                <span
+                  key={name + i}
+                  className="px-1.5 py-0.5 text-[9px] font-medium rounded bg-black/60 text-white/90 backdrop-blur-sm"
+                >
+                  {name}
+                </span>
+              );
+            })}
+          </div>
+        )}
+        
         {/* Hover overlay */}
         <div className="poster-overlay absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
           {/* Main actions */}
@@ -244,21 +261,6 @@ export default function MovieCard({ movie, onClick, onUpdate, index = 0 }) {
             </>
           )}
         </div>
-        {movie.genres && movie.genres.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {movie.genres.slice(0, 2).map((genre, i) => {
-              const name = typeof genre === 'object' && genre.name ? genre.name : String(genre);
-              return (
-                <span
-                  key={name + i}
-                  className="px-2 py-0.5 text-[10px] rounded-full bg-secondary text-secondary-foreground"
-                >
-                  {name}
-                </span>
-              );
-            })}
-          </div>
-        )}
       </div>
     </motion.div>
   );

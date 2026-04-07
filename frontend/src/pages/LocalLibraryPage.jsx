@@ -105,6 +105,15 @@ const FAVORITES_KEY = 'obsidian_cinema_favorites';
 // 30 days in milliseconds
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
+// Standard TMDB genre list
+const TMDB_GENRES = [
+  'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary',
+  'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music',
+  'Mystery', 'Romance', 'Science Fiction', 'TV Movie', 'Thriller',
+  'War', 'Western'
+];
+
+
 // Sort options
 const SORT_OPTIONS = {
   'title-asc':      { label: 'Title A → Z',         group: 'title' },
@@ -1901,6 +1910,59 @@ export default function LocalLibraryPage() {
                   </Button>
                 </div>
               )}
+
+              {/* Genre Editor */}
+              <div className="space-y-1.5" data-testid="genre-editor">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">Genres</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(selectedMovie.genres || []).map((g, i) => {
+                    const name = typeof g === 'object' && g.name ? g.name : String(g);
+                    return (
+                      <span key={name + i} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-primary/15 text-primary border border-primary/20">
+                        {name}
+                        <button
+                          className="hover:text-destructive transition-colors"
+                          onClick={() => {
+                            const updated = (selectedMovie.genres || []).filter((_, idx) => idx !== i);
+                            setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, genres: updated } : m));
+                            setSelectedMovie(prev => ({ ...prev, genres: updated }));
+                          }}
+                          data-testid={`remove-genre-${name}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors" data-testid="add-genre-btn">
+                        <Plus className="w-3 h-3" /> Add
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-44 max-h-60 overflow-y-auto">
+                      <DropdownMenuLabel className="text-xs">Select Genre</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {TMDB_GENRES.filter(g => {
+                        const current = (selectedMovie.genres || []).map(x => typeof x === 'object' && x.name ? x.name : String(x));
+                        return !current.includes(g);
+                      }).map(g => (
+                        <DropdownMenuItem key={g} onClick={() => {
+                          const updated = [...(selectedMovie.genres || []), g];
+                          setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, genres: updated } : m));
+                          setSelectedMovie(prev => ({ ...prev, genres: updated }));
+                          toast.success(g + ' added');
+                        }}>
+                          {g}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
 
               {/* Cast Section */}
               {selectedMovie.cast && selectedMovie.cast.length > 0 ? (
