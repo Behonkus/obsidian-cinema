@@ -695,14 +695,24 @@ export default function LocalLibraryPage() {
     setAiSuggestions([]);
     try {
       const toGenreStrings = (genres) => (genres || []).map(g => typeof g === 'object' && g.name ? g.name : String(g));
-      const libraryMovies = movies.map(m => ({
-        id: m.id,
-        title: m.title || m.file_name,
-        year: m.year || null,
-        genres: toGenreStrings(m.genres),
-        overview: m.overview ? m.overview.substring(0, 100) : null,
-        rating: m.rating || null,
-      }));
+      // Build full library list, excluding the selected movie
+      const allCandidates = movies
+        .filter(m => m.id !== movie.id)
+        .map(m => ({
+          id: m.id,
+          title: m.title || m.file_name,
+          year: m.year || null,
+          genres: toGenreStrings(m.genres),
+          overview: m.overview ? m.overview.substring(0, 100) : null,
+          rating: m.rating || null,
+        }));
+      // Shuffle to get a diverse sample from the entire library
+      for (let i = allCandidates.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allCandidates[i], allCandidates[j]] = [allCandidates[j], allCandidates[i]];
+      }
+      // Send a capped, randomized sample
+      const libraryMovies = allCandidates.slice(0, 300);
       const resp = await fetch(BACKEND_API + '/ai/suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
