@@ -33,7 +33,7 @@ export default function StatusBar({ sidebarCollapsed }) {
   // Check Pro status using multiple signals for reliability
   useEffect(function() {
     function checkPro() {
-      // 1. Check localStorage (set earliest in the flow by LicenseContext)
+      // 1. Check localStorage (set earliest in the flow by LicenseContext, persists across sessions)
       if (localStorage.getItem('obsidian_cinema_is_pro') === 'true') {
         setProStatus(true);
         return;
@@ -57,10 +57,12 @@ export default function StatusBar({ sidebarCollapsed }) {
     checkPro();
 
     // Listen for custom event from LicenseContext (immediate notification)
+    // Only downgrade Pro status on explicit deactivation, not transient errors
     function onProStatusChange(e) {
       if (e.detail && e.detail.isPro) {
         setProStatus(true);
-      } else {
+      } else if (e.detail && (e.detail.status === 'not_activated' || e.detail.status === 'free' || e.detail.status === 'invalid')) {
+        // Only remove badge for explicit non-pro states, not transient errors
         setProStatus(false);
       }
     }

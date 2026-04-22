@@ -75,19 +75,22 @@ export function LicenseProvider({ children }) {
           await window.electronAPI.clearLicense();
         }
         setLicense(null);
+        localStorage.setItem('obsidian_cinema_is_pro', 'false');
+        window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'invalid' } }));
         return false;
       }
     } catch (err) {
       console.error('License validation error:', err);
-      // If server is unreachable, allow offline use if we have a stored license
-      if (license) {
-        setLicenseStatus('valid'); // Trust local license when offline
+      // If server is unreachable, trust the local license (we have a key stored locally)
+      // Always trust local license on network errors — the user paid, don't punish them for being offline
+      if (licenseKey) {
+        setLicenseStatus('valid');
         return true;
       }
       setLicenseStatus('invalid');
       return false;
     }
-  }, [license]);
+  }, []);
 
   const activateLicense = useCallback(async (licenseKey) => {
     if (!isElectron()) {
