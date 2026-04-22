@@ -291,6 +291,8 @@ export default function LocalLibraryPage() {
   const [posterUrl, setPosterUrl] = useState('');
   const [editingYear, setEditingYear] = useState(false);
   const [yearInput, setYearInput] = useState('');
+  const [editingRating, setEditingRating] = useState(false);
+  const [ratingInput, setRatingInput] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const [editingSynopsis, setEditingSynopsis] = useState(false);
@@ -637,6 +639,7 @@ export default function LocalLibraryPage() {
     setPosterResults([]);
     setPosterUrl('');
     setEditingYear(false);
+    setEditingRating(false);
     setEditingTitle(false);
     setEditingSynopsis(false);
     setAiSuggestions([]);
@@ -1835,8 +1838,70 @@ export default function LocalLibraryPage() {
                       <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   )}
-                  {selectedMovie.rating && (
-                    <p className="text-amber-400">★ {selectedMovie.rating.toFixed(1)}</p>
+                  {editingRating ? (
+                    <div className="flex items-center gap-1.5" data-testid="edit-rating-input-wrapper">
+                      <span className="text-amber-400">★</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="10"
+                        step="0.1"
+                        value={ratingInput}
+                        onChange={(e) => setRatingInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const val = ratingInput.trim();
+                            const parsed = val === '' ? null : parseFloat(val);
+                            if (val !== '' && (isNaN(parsed) || parsed < 0 || parsed > 10)) {
+                              toast.error('Please enter a rating between 0 and 10');
+                              return;
+                            }
+                            setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, rating: parsed } : m));
+                            setSelectedMovie(prev => ({ ...prev, rating: parsed }));
+                            setEditingRating(false);
+                            toast.success(parsed !== null ? `Rating set to ${parsed.toFixed(1)}` : 'Rating removed');
+                          }
+                          if (e.key === 'Escape') setEditingRating(false);
+                        }}
+                        className="h-7 w-20 text-sm"
+                        autoFocus
+                        placeholder="0–10"
+                        data-testid="edit-rating-input"
+                      />
+                      <Button
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => {
+                          const val = ratingInput.trim();
+                          const parsed = val === '' ? null : parseFloat(val);
+                          if (val !== '' && (isNaN(parsed) || parsed < 0 || parsed > 10)) {
+                            toast.error('Please enter a rating between 0 and 10');
+                            return;
+                          }
+                          setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, rating: parsed } : m));
+                          setSelectedMovie(prev => ({ ...prev, rating: parsed }));
+                          setEditingRating(false);
+                          toast.success(parsed !== null ? `Rating set to ${parsed.toFixed(1)}` : 'Rating removed');
+                        }}
+                        data-testid="confirm-rating-btn"
+                      >
+                        <Check className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div
+                      className="group flex items-center gap-1.5 cursor-pointer"
+                      onClick={() => {
+                        setRatingInput(selectedMovie.rating ? String(selectedMovie.rating) : '');
+                        setEditingRating(true);
+                      }}
+                      data-testid="edit-rating-btn"
+                    >
+                      <p className="text-amber-400">
+                        ★ {selectedMovie.rating ? selectedMovie.rating.toFixed(1) : 'No rating'}
+                      </p>
+                      <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
                   )}
                 </div>
               </div>
