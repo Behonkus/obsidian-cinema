@@ -1219,7 +1219,8 @@ export default function LocalLibraryPage() {
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
       return movie.title?.toLowerCase().includes(query) || 
-             movie.file_name?.toLowerCase().includes(query);
+             movie.file_name?.toLowerCase().includes(query) ||
+             (movie.cast && movie.cast.some(c => c.name?.toLowerCase().includes(query)));
     })
   );
 
