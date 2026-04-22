@@ -208,6 +208,46 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   // Check if running in Electron
   const desktopMode = typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
   
+  // Desktop Pro status (from license key, not Google Auth)
+  const [desktopPro, setDesktopPro] = useState(false);
+  useEffect(function() {
+    if (!desktopMode) return;
+    function checkDesktopPro() {
+      if (localStorage.getItem('obsidian_cinema_is_pro') === 'true') {
+        setDesktopPro(true);
+        return;
+      }
+      if (localStorage.getItem('obsidian_cinema_license_status') === 'valid') {
+        setDesktopPro(true);
+        return;
+      }
+      if (window.electronAPI && window.electronAPI.getLicense) {
+        window.electronAPI.getLicense().then(function(license) {
+          if (license && license.subscription_tier === 'pro') {
+            setDesktopPro(true);
+          }
+        }).catch(function() {});
+      }
+    }
+    checkDesktopPro();
+    function onProChange(e) {
+      if (e.detail && e.detail.isPro) {
+        setDesktopPro(true);
+      } else if (e.detail && (e.detail.status === 'not_activated' || e.detail.status === 'free' || e.detail.status === 'invalid')) {
+        setDesktopPro(false);
+      }
+    }
+    window.addEventListener('obsidian-pro-status-change', onProChange);
+    var interval = setInterval(checkDesktopPro, 3000);
+    return function() {
+      window.removeEventListener('obsidian-pro-status-change', onProChange);
+      clearInterval(interval);
+    };
+  }, [desktopMode]);
+
+  // Unified Pro check: web auth OR desktop license
+  const isProUser = isPro || desktopPro;
+  
   // Different nav items for web vs desktop
   const isAdmin = user?.email === 'billrules@gmail.com';
   const baseNavItems = desktopMode 
@@ -304,7 +344,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         ))}
         
         {/* Upgrade to Pro button (for free users) */}
-        {user && !isPro && (
+        {user && !isProUser && (
           <NavLink
             to="/upgrade"
             className={({ isActive }) =>
@@ -374,7 +414,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                         <p className="text-sm font-medium text-foreground truncate max-w-[120px]">
                           {user.name || "User"}
                         </p>
-                        {isPro && (
+                        {isProUser && (
                           <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs px-1.5 py-0">
                             <Crown className="w-3 h-3 mr-0.5" />
                             Pro
@@ -395,7 +435,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 <p className="text-xs text-muted-foreground">{user.email}</p>
               </div>
               <DropdownMenuSeparator />
-              {isPro ? (
+              {isProUser ? (
                 <>
                   <DropdownMenuItem onClick={() => navigate("/upgrade")}>
                     <Key className="w-4 h-4 mr-2 text-amber-400" />
@@ -425,11 +465,34 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="p-3 rounded-lg bg-secondary/50 border border-border/50 mt-4"
+                className="space-y-3 mt-4"
               >
-                <p className="text-xs text-muted-foreground">
-                  Powered by TMDB
-                </p>
+                {/* Desktop Pro badge (when not logged in via Google) */}
+                {desktopPro && (
+                  <div className="px-3 py-2.5 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold tracking-wide"
+                        style={{
+                          background: 'linear-gradient(135deg, #b8860b, #ffd700, #b8860b)',
+                          color: '#1a1a1a',
+                          textShadow: '0 0 2px rgba(255,215,0,0.3)',
+                          boxShadow: '0 0 6px rgba(255,215,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)',
+                        }}
+                        data-testid="sidebar-pro-badge"
+                      >
+                        <Crown className="w-3 h-3" />
+                        PRO
+                      </div>
+                      <span className="text-xs text-amber-400 font-medium">License Active</span>
+                    </div>
+                  </div>
+                )}
+                <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
+                  <p className="text-xs text-muted-foreground">
+                    Powered by TMDB
+                  </p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
