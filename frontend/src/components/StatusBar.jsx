@@ -30,10 +30,20 @@ export default function StatusBar({ sidebarCollapsed }) {
   var quickFilter = searchParams.get('qf') || '';
   var location = useLocation();
 
-  // Check Pro status directly from Electron store on mount
+  // Check Pro status using multiple signals for reliability
   useEffect(function() {
     function checkPro() {
-      // Check electron-store directly
+      // 1. Check localStorage (set earliest in the flow by LicenseContext)
+      if (localStorage.getItem('obsidian_cinema_is_pro') === 'true') {
+        setProStatus(true);
+        return;
+      }
+      // 2. Check license_status in localStorage (set after server validation)
+      if (localStorage.getItem('obsidian_cinema_license_status') === 'valid') {
+        setProStatus(true);
+        return;
+      }
+      // 3. Check electron-store directly via IPC
       if (window.electronAPI && window.electronAPI.getLicense) {
         window.electronAPI.getLicense().then(function(license) {
           if (license && license.subscription_tier === 'pro') {
@@ -41,14 +51,28 @@ export default function StatusBar({ sidebarCollapsed }) {
           }
         }).catch(function() {});
       }
-      // Also check localStorage as fallback
-      if (localStorage.getItem('obsidian_cinema_license_status') === 'valid') {
+    }
+
+    // Run immediately on mount
+    checkPro();
+
+    // Listen for custom event from LicenseContext (immediate notification)
+    function onProStatusChange(e) {
+      if (e.detail && e.detail.isPro) {
         setProStatus(true);
+      } else {
+        setProStatus(false);
       }
     }
-    checkPro();
-    var interval = setInterval(checkPro, 2000);
-    return function() { clearInterval(interval); };
+    window.addEventListener('obsidian-pro-status-change', onProStatusChange);
+
+    // Fallback polling every 3 seconds (handles edge cases)
+    var interval = setInterval(checkPro, 3000);
+
+    return function() {
+      window.removeEventListener('obsidian-pro-status-change', onProStatusChange);
+      clearInterval(interval);
+    };
   }, []);
 
   // Listen for storage changes (from same window via dispatchEvent and from localStorage writes)

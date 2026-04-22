@@ -36,15 +36,19 @@ export function LicenseProvider({ children }) {
             setIsFreeTier(true);
             setLicenseStatus('free');
             localStorage.setItem('obsidian_cinema_is_pro', 'false');
+            window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'free' } }));
           } else {
             setLicense(storedLicense);
             localStorage.setItem('obsidian_cinema_is_pro', 'true');
+            // Dispatch early so StatusBar picks up immediately, before server validation
+            window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'pending-validation' } }));
             // Validate with server
             await validateLicenseWithServer(storedLicense.license_key, id);
           }
         } else {
           setLicenseStatus('not_activated');
           localStorage.setItem('obsidian_cinema_is_pro', 'false');
+          window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'not_activated' } }));
         }
       }
       setLoading(false);
@@ -111,6 +115,7 @@ export function LicenseProvider({ children }) {
         setLicenseStatus('valid');
         setIsFreeTier(false);
         localStorage.setItem('obsidian_cinema_is_pro', 'true');
+        window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
         
         return { success: true, message: response.data.message };
       } else {
@@ -137,6 +142,7 @@ export function LicenseProvider({ children }) {
       setLicenseStatus('not_activated');
       setIsFreeTier(false);
       localStorage.setItem('obsidian_cinema_is_pro', 'false');
+      window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'not_activated' } }));
       
       return { success: true, message: 'License deactivated from this device.' };
     } catch (err) {
@@ -159,12 +165,17 @@ export function LicenseProvider({ children }) {
     setIsFreeTier(true);
     setLicenseStatus('free');
     localStorage.setItem('obsidian_cinema_is_pro', 'false');
+    window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'free' } }));
   }, []);
 
   // Sync license status to localStorage so StatusBar can read it directly
   useEffect(() => {
     if (licenseStatus && licenseStatus !== 'checking') {
       localStorage.setItem('obsidian_cinema_license_status', licenseStatus);
+      // Dispatch custom event for immediate cross-component notification
+      window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', {
+        detail: { isPro: licenseStatus === 'valid', status: licenseStatus }
+      }));
       window.dispatchEvent(new Event('storage'));
     }
   }, [licenseStatus]);

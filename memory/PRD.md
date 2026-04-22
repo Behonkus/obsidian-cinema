@@ -28,7 +28,8 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 ## Current Version: 1.5.5
 
 ## Known Issues
-- **P2: StatusBar PRO badge** — Intermittent display due to Electron IPC timing. Deferred by user.
+- ~~P2: StatusBar PRO badge — Intermittent display due to Electron IPC timing.~~ **FIXED** (custom event + multi-signal approach)
+- ~~P1: Settings auto-updater — Fails with cryptic GitHub error.~~ **FIXED** (categorized errors + manual download fallback)
 - **P2: LicenseContext `isPro`** — React context value timing issues in Electron. Downstream features use localStorage/electron-store direct reads as workaround.
 
 ## Backlog (Prioritized)
