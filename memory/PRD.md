@@ -25,7 +25,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - License key tied to machine ID (anti-sharing)
 - Landing page version badge reads dynamically from package.json
 
-## Current Version: 1.5.5
+## Current Version: 1.5.6
 
 ## Known Issues
 - ~~P2: StatusBar PRO badge — Intermittent display due to Electron IPC timing.~~ **FIXED** (custom event + multi-signal approach)
