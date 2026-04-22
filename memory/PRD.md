@@ -8,7 +8,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - **Backend:** FastAPI, official `stripe` Python SDK
 - **Desktop:** Electron, electron-store (localStorage)
 - **External APIs:** TMDB, OpenAI (via Emergent Key), Stripe
-- **CI/CD:** GitHub Actions → Windows `.exe` installer
+- **CI/CD:** GitHub Actions → Windows `.exe` installer (auto-builds on push to main)
 - **Custom Domain:** `www.obsidiancinema.com`
 
 ## What's Been Implemented (Complete)

@@ -1,24 +1,19 @@
-name: Build Windows App
+name: Build & Release Windows App
 
 on:
-  # Build when you create a release
-  release:
-    types: [created]
-  
-  # Or manually trigger from GitHub Actions tab
+  # Auto-build when you push to main (i.e., "Save to GitHub")
+  push:
+    branches: [main]
+
+  # Or manually trigger from the GitHub Actions tab
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version number (e.g., 1.0.0)'
-        required: false
-        default: '1.0.0'
 
 jobs:
   build-windows:
     runs-on: windows-latest
     permissions:
       contents: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,6 +25,14 @@ jobs:
 
       - name: Install Yarn
         run: npm install -g yarn
+
+      - name: Read version from package.json
+        id: version
+        run: |
+          $version = (Get-Content frontend/package.json | ConvertFrom-Json).version
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          echo "Building version: $version"
+        shell: pwsh
 
       - name: Install frontend dependencies
         run: |
@@ -43,68 +46,37 @@ jobs:
           yarn build
         shell: bash
         env:
-          # CI=false prevents ESLint warnings from failing the build
           CI: false
           REACT_APP_BACKEND_URL: https://www.obsidiancinema.com
 
       - name: Copy Electron files to build output
         run: |
           cd frontend
-          REM Copy electron main process file
           copy electron.js build\electron.js
-          REM Copy preload script directory
           xcopy electron build\electron\ /E /I /Y
         shell: cmd
 
       - name: Verify build output
         run: |
           cd frontend
-          echo "=== Build directory ==="
           dir build\electron.js
           dir build\electron\preload.js
-          echo "=== Verified: electron.js and preload.js present ==="
+          echo "Verified: electron.js and preload.js present"
         shell: cmd
 
-      - name: Build Electron installer
+      - name: Build Electron installer and publish to GitHub Releases
         run: |
           cd frontend
-          npx electron-builder --win --publish never
+          npx electron-builder --win --publish always
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Zip installer for release
-        run: |
-          cd frontend/dist
-          powershell Compress-Archive -Path *.exe -DestinationPath Obsidian-Cinema-Setup.zip
-        shell: cmd
-
-      - name: Upload installer artifact
+      - name: Upload installer as build artifact (backup)
         uses: actions/upload-artifact@v4
         with:
-          name: obsidian-cinema-windows-installer
-          path: frontend/dist/*.exe
+          name: obsidian-cinema-v${{ steps.version.outputs.VERSION }}
+          path: |
+            frontend/dist/*.exe
+            frontend/dist/latest.yml
           retention-days: 30
-
-      - name: Upload to Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            frontend/dist/Obsidian-Cinema-Setup.zip
-            frontend/dist/latest.yml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create Release (manual trigger)
-        if: github.event_name == 'workflow_dispatch'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ github.event.inputs.version }}
-          name: Obsidian Cinema v${{ github.event.inputs.version }}
-          files: |
-            frontend/dist/Obsidian-Cinema-Setup.zip
-            frontend/dist/latest.yml
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
