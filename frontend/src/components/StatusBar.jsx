@@ -20,7 +20,11 @@ var QF_LABELS = {
 };
 
 export default function StatusBar({ sidebarCollapsed }) {
-  var [proStatus, setProStatus] = useState(false);
+  // Initialize Pro status synchronously from localStorage
+  var [proStatus, setProStatus] = useState(function() {
+    return localStorage.getItem('obsidian_cinema_is_pro') === 'true' ||
+           localStorage.getItem('obsidian_cinema_license_status') === 'valid';
+  });
   var [gridSize, setGridSize] = useState(localStorage.getItem('obsidian_cinema_grid_size') || 'medium');
   var [currentTheme, setCurrentTheme] = useState(localStorage.getItem(THEME_STORAGE_KEY) || 'rose');
   var [customColor, setCustomColor] = useState(localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48');

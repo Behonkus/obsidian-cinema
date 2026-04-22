@@ -209,15 +209,18 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   const desktopMode = typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
   
   // Desktop Pro status (from license key, not Google Auth)
-  const [desktopPro, setDesktopPro] = useState(false);
+  // Initialize synchronously from localStorage to avoid flash of missing badge
+  const [desktopPro, setDesktopPro] = useState(function() {
+    if (!desktopMode) return false;
+    return localStorage.getItem('obsidian_cinema_is_pro') === 'true' ||
+           localStorage.getItem('obsidian_cinema_license_status') === 'valid';
+  });
   useEffect(function() {
     if (!desktopMode) return;
+    // Also check electron-store directly (ground truth) and keep polling
     function checkDesktopPro() {
-      if (localStorage.getItem('obsidian_cinema_is_pro') === 'true') {
-        setDesktopPro(true);
-        return;
-      }
-      if (localStorage.getItem('obsidian_cinema_license_status') === 'valid') {
+      if (localStorage.getItem('obsidian_cinema_is_pro') === 'true' ||
+          localStorage.getItem('obsidian_cinema_license_status') === 'valid') {
         setDesktopPro(true);
         return;
       }
@@ -225,6 +228,8 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         window.electronAPI.getLicense().then(function(license) {
           if (license && license.subscription_tier === 'pro') {
             setDesktopPro(true);
+            // Also fix localStorage so next mount is instant
+            localStorage.setItem('obsidian_cinema_is_pro', 'true');
           }
         }).catch(function() {});
       }

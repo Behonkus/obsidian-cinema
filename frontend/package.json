@@ -104,7 +104,8 @@
     "publish": {
       "provider": "github",
       "owner": "Behonkus",
-      "repo": "obsidian-cinema"
+      "repo": "obsidian-cinema",
+      "releaseType": "release"
     }
   },
   "browserslist": {
