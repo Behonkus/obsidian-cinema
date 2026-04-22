@@ -2814,6 +2814,19 @@ async def admin_reset_machine(request: Request, session_token: Optional[str] = C
         raise HTTPException(status_code=404, detail="License key not found")
     return {"success": True, "message": f"Machine lock cleared for {key}"}
 
+@api_router.post("/admin/licenses/delete")
+async def admin_delete_license(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    await require_admin(request, session_token)
+    body = await request.json()
+    key = body.get("license_key")
+    if not key:
+        raise HTTPException(status_code=400, detail="license_key required")
+    result = await db.license_keys.delete_one({"license_key": key})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="License key not found")
+    return {"success": True, "message": f"License {key} permanently deleted"}
+
+
 @api_router.post("/admin/licenses/gift")
 async def admin_gift_license(request: Request, session_token: Optional[str] = Cookie(default=None)):
     await require_admin(request, session_token)

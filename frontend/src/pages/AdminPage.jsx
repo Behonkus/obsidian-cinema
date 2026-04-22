@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Users, Key, Gift, DollarSign, RefreshCw, Shield, ShieldOff,
-  Monitor, Copy, Search, TrendingUp, UserCheck, UserX
+  Monitor, Copy, Search, TrendingUp, UserCheck, UserX, Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
@@ -311,6 +311,13 @@ export default function AdminPage() {
                                 <Monitor className="w-3 h-3 mr-1" /> Reset Machine
                               </Button>
                             )}
+                            <Button
+                              variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                              onClick={() => setConfirmAction({ type: 'delete', key: l.license_key })}
+                              data-testid={`delete-license-${i}`}
+                            >
+                              <Trash2 className="w-3 h-3 mr-1" /> Delete
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -380,11 +387,13 @@ export default function AdminPage() {
               {confirmAction?.type === 'revoke' && 'Revoke License?'}
               {confirmAction?.type === 'reactivate' && 'Reactivate License?'}
               {confirmAction?.type === 'reset-machine' && 'Reset Machine Lock?'}
+              {confirmAction?.type === 'delete' && 'Permanently Delete License?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction?.type === 'revoke' && `This will deactivate license ${confirmAction?.key}. The user will lose Pro access.`}
               {confirmAction?.type === 'reactivate' && `This will reactivate license ${confirmAction?.key}.`}
               {confirmAction?.type === 'reset-machine' && `This will clear the machine lock on ${confirmAction?.key}, allowing it to be activated on a different machine.`}
+              {confirmAction?.type === 'delete' && `This will permanently remove license ${confirmAction?.key} from the database. This cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -394,6 +403,7 @@ export default function AdminPage() {
               doAction(confirmAction.type, { license_key: confirmAction.key },
                 confirmAction.type === 'revoke' ? 'License revoked' :
                 confirmAction.type === 'reactivate' ? 'License reactivated' :
+                confirmAction.type === 'delete' ? 'License permanently deleted' :
                 'Machine lock cleared'
               );
             }}>
