@@ -24,6 +24,7 @@ import LoginPage from "@/pages/LoginPage";
 import AuthCallback from "@/pages/AuthCallback";
 import UpgradePage from "@/pages/UpgradePage";
 import LicenseActivationPage from "@/pages/LicenseActivationPage";
+import EulaPage from "@/pages/EulaPage";
 import LocalLibraryPage from "@/pages/LocalLibraryPage";
 import StatsPage from "@/pages/StatsPage";
 import AdminPage from "@/pages/AdminPage";
@@ -67,15 +68,33 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+import packageJson from "../package.json";
+
 // Protected route wrapper for desktop (uses License)
 function DesktopProtectedRoute({ children }) {
   const { isPro, loading, licenseStatus, isFreeTier } = useLicense();
+  const [eulaAccepted, setEulaAccepted] = useState(() => {
+    return localStorage.getItem('obsidian_cinema_eula_accepted') === packageJson.version;
+  });
   
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <RefreshCw className="w-8 h-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  // Show EULA before anything else on each new version
+  if (!eulaAccepted) {
+    return (
+      <EulaPage
+        appVersion={packageJson.version}
+        onAccept={() => {
+          localStorage.setItem('obsidian_cinema_eula_accepted', packageJson.version);
+          setEulaAccepted(true);
+        }}
+      />
     );
   }
 
