@@ -2424,7 +2424,7 @@ export default function LocalLibraryPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Manage Directories</AlertDialogTitle>
             <AlertDialogDescription>
-              Rename directory paths or remove directories from your library.
+              Rename directory paths or remove directories from your library. Your actual files and folders on disk are never modified.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2 max-h-64 overflow-y-auto px-1">
