@@ -1511,7 +1511,7 @@ export default function LocalLibraryPage() {
       <div className="relative w-80">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Search movies, years..."
+          placeholder="Search movies, years, actors..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-9 pr-12 h-9 text-sm"
