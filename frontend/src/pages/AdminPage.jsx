@@ -437,15 +437,22 @@ function GiftEmailTemplate({ gift, onClose }) {
 
 Hey there,
 
-Great news — you've just been gifted a complimentary Obsidian Cinema Pro license! Consider this your all-access pass to the full cinematic experience.
+Great news — the free tier has been expanded to 500 movies with release 1.5.5 but...
+
+You've just been gifted a complimentary Obsidian Cinema PRO license! Consider this your all-access pass to the full cinematic experience.
 
 Your Pro License Key:
 ${gift.key}
 
 Here's how to activate it:
-1. Open Obsidian Cinema
-2. Go to the Activation page (or Settings > License)
-3. Paste the key above and hit Activate
+
+If you haven't grabbed the latest Obsidian Cinema yet, download v1.5.5 here:
+https://www.obsidiancinema.com
+
+1. Download and Install the newest version of Obsidian Cinema
+2. Open Obsidian Cinema
+3. Go to the Activation page (or Settings > License)
+4. Paste the key above and hit Activate
 
 What you're unlocking:
 - Unlimited movies in your library (no more caps)
@@ -455,14 +462,10 @@ What you're unlocking:
 
 This key is yours alone — it locks to your machine on first activation, so no one else can use it.
 
-If you haven't grabbed Obsidian Cinema yet, download it here:
-https://www.obsidiancinema.com
-
 Welcome to the Pro side. Enjoy the show.
 
 Cheers,
-Obsidian Cinema
-obsidiancinemaplus@gmail.com`;
+The Obsidian Cinema Team`;
 
   const copyEmail = () => {
     navigator.clipboard?.writeText(emailText);
