@@ -5,6 +5,7 @@ import {
   Film, 
   FolderOpen, 
   Settings, 
+  Shield,
   Menu, 
   X,
   ChevronLeft,
@@ -208,7 +209,8 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   const desktopMode = typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
   
   // Different nav items for web vs desktop
-  const navItems = desktopMode 
+  const isAdmin = user?.email === 'billrules@gmail.com';
+  const baseNavItems = desktopMode 
     ? [
         { path: "/", icon: Film, label: "Library" },
         { path: "/stats", icon: BarChart3, label: "Stats" },
@@ -219,6 +221,9 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         { path: "/", icon: Film, label: "Dashboard" },
         { path: "/settings", icon: Settings, label: "Settings" },
       ];
+  const navItems = isAdmin
+    ? [...baseNavItems, { path: "/admin", icon: Shield, label: "Admin" }]
+    : baseNavItems;
 
   const handleLogout = async () => {
     await logout();

@@ -26,6 +26,7 @@ import UpgradePage from "@/pages/UpgradePage";
 import LicenseActivationPage from "@/pages/LicenseActivationPage";
 import LocalLibraryPage from "@/pages/LocalLibraryPage";
 import StatsPage from "@/pages/StatsPage";
+import AdminPage from "@/pages/AdminPage";
 import LandingPage from "@/pages/LandingPage";
 import UpdateNotification from "@/components/UpdateNotification";
 import { RefreshCw } from "lucide-react";
@@ -131,6 +132,7 @@ function AppRouter() {
         <Route path="directories" element={desktopMode ? <LocalLibraryPage /> : <AccountDashboard />} />
         <Route path="collections" element={desktopMode ? <CollectionsPage /> : <AccountDashboard />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="admin" element={<AdminPage />} />
       </Route>
       <Route
         path="/upgrade"

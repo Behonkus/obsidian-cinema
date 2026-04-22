@@ -2935,8 +2935,134 @@ async def get_ai_suggestions(request: Request):
         logging.error(f"AI suggestion error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
 
-# Include the router
+# Include the router (moved below admin endpoints)
+
+# ── Admin Panel ──────────────────────────────────────────────
+ADMIN_EMAIL = "billrules@gmail.com"
+
+async def require_admin(request: Request, session_token: Optional[str] = Cookie(default=None)) -> User:
+    user = await require_user(request, session_token)
+    if user.email != ADMIN_EMAIL:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
+@api_router.get("/admin/users")
+async def admin_get_users(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    await require_admin(request, session_token)
+    users = await db.users.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    for u in users:
+        if isinstance(u.get("created_at"), datetime):
+            u["created_at"] = u["created_at"].isoformat()
+    return {"users": users}
+
+@api_router.get("/admin/licenses")
+async def admin_get_licenses(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    await require_admin(request, session_token)
+    licenses = await db.license_keys.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    for lic in licenses:
+        for field in ["created_at", "activated_at"]:
+            if isinstance(lic.get(field), datetime):
+                lic[field] = lic[field].isoformat()
+    return {"licenses": licenses}
+
+@api_router.post("/admin/licenses/revoke")
+async def admin_revoke_license(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    await require_admin(request, session_token)
+    body = await request.json()
+    key = body.get("license_key")
+    if not key:
+        raise HTTPException(status_code=400, detail="license_key required")
+    result = await db.license_keys.update_one({"license_key": key}, {"$set": {"is_active": False}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="License key not found")
+    return {"success": True, "message": f"License {key} revoked"}
+
+@api_router.post("/admin/licenses/reactivate")
+async def admin_reactivate_license(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    await require_admin(request, session_token)
+    body = await request.json()
+    key = body.get("license_key")
+    if not key:
+        raise HTTPException(status_code=400, detail="license_key required")
+    result = await db.license_keys.update_one({"license_key": key}, {"$set": {"is_active": True}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="License key not found")
+    return {"success": True, "message": f"License {key} reactivated"}
+
+@api_router.post("/admin/licenses/reset-machine")
+async def admin_reset_machine(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    await require_admin(request, session_token)
+    body = await request.json()
+    key = body.get("license_key")
+    if not key:
+        raise HTTPException(status_code=400, detail="license_key required")
+    result = await db.license_keys.update_one(
+        {"license_key": key},
+        {"$set": {"activated_machine_id": None, "activated_at": None}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="License key not found")
+    return {"success": True, "message": f"Machine lock cleared for {key}"}
+
+@api_router.post("/admin/licenses/gift")
+async def admin_gift_license(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    await require_admin(request, session_token)
+    body = await request.json()
+    email = body.get("email", "gift@obsidiancinema.com")
+    note = body.get("note", "")
+    license_key = generate_license_key()
+    license_doc = {
+        "license_key": license_key,
+        "user_id": "admin_gift",
+        "email": email,
+        "is_active": True,
+        "activated_machine_id": None,
+        "activated_at": None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "gift": True,
+        "gift_note": note,
+    }
+    await db.license_keys.insert_one(license_doc)
+    return {"success": True, "license_key": license_key, "email": email}
+
+@api_router.get("/admin/stats")
+async def admin_get_stats(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    await require_admin(request, session_token)
+    total_users = await db.users.count_documents({})
+    pro_users = await db.users.count_documents({"subscription_tier": "pro"})
+    free_users = total_users - pro_users
+    total_licenses = await db.license_keys.count_documents({})
+    active_licenses = await db.license_keys.count_documents({"is_active": True})
+    gift_licenses = await db.license_keys.count_documents({"gift": True})
+    total_revenue = await db.payment_transactions.count_documents({"payment_status": "paid"})
+    revenue_pipeline = db.payment_transactions.aggregate([
+        {"$match": {"payment_status": "paid"}},
+        {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
+    ])
+    revenue_total = 0
+    async for doc in revenue_pipeline:
+        revenue_total = doc.get("total", 0)
+    recent_txns = await db.payment_transactions.find(
+        {"payment_status": "paid"}, {"_id": 0}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    for t in recent_txns:
+        if isinstance(t.get("created_at"), datetime):
+            t["created_at"] = t["created_at"].isoformat()
+    return {
+        "total_users": total_users,
+        "pro_users": pro_users,
+        "free_users": free_users,
+        "total_licenses": total_licenses,
+        "active_licenses": active_licenses,
+        "gift_licenses": gift_licenses,
+        "total_transactions": total_revenue,
+        "total_revenue": revenue_total,
+        "recent_transactions": recent_txns,
+    }
+
+# Include the router after all endpoints are defined
 app.include_router(api_router)
+
 
 app.add_middleware(
     CORSMiddleware,
