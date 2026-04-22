@@ -23,7 +23,8 @@ import {
   Upload,
   Clock,
   ChevronDown,
-  Tag
+  Tag,
+  Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,6 +97,137 @@ function TmdbSetupGuide() {
     </div>
   );
 }
+
+
+function DuplicateDetector() {
+  const [duplicates, setDuplicates] = useState(null);
+  const [scanning, setScanning] = useState(false);
+
+  const scan = () => {
+    setScanning(true);
+    var saved = localStorage.getItem('obsidian_cinema_local_movies');
+    var movies = saved ? JSON.parse(saved) : [];
+    var groups = [];
+
+    // 1. Exact TMDB ID duplicates (strongest signal)
+    var tmdbMap = {};
+    movies.forEach(function(m) {
+      if (m.tmdb_id) {
+        if (!tmdbMap[m.tmdb_id]) tmdbMap[m.tmdb_id] = [];
+        tmdbMap[m.tmdb_id].push(m);
+      }
+    });
+    Object.entries(tmdbMap).forEach(function([tmdbId, group]) {
+      if (group.length > 1) {
+        groups.push({ type: 'tmdb', label: group[0].title || group[0].file_name, tmdbId: tmdbId, movies: group });
+      }
+    });
+
+    // 2. Exact file name duplicates (same name, different directories)
+    var nameMap = {};
+    movies.forEach(function(m) {
+      var name = (m.file_name || '').replace(/\.[^.]+$/, '').toLowerCase().trim();
+      if (!name) return;
+      if (!nameMap[name]) nameMap[name] = [];
+      nameMap[name].push(m);
+    });
+    var tmdbGroupedIds = new Set();
+    groups.forEach(function(g) { g.movies.forEach(function(m) { tmdbGroupedIds.add(m.id); }); });
+    Object.entries(nameMap).forEach(function([name, group]) {
+      if (group.length > 1) {
+        // Skip if all movies in this group are already caught by TMDB matching
+        var uncaught = group.filter(function(m) { return !tmdbGroupedIds.has(m.id); });
+        if (uncaught.length > 1 || (uncaught.length >= 1 && group.length > uncaught.length)) {
+          // Only add if not already fully covered by TMDB groups
+          var allCovered = group.every(function(m) { return tmdbGroupedIds.has(m.id); });
+          if (!allCovered) {
+            groups.push({ type: 'filename', label: group[0].file_name, movies: group });
+          }
+        }
+      }
+    });
+
+    setDuplicates(groups);
+    setScanning(false);
+  };
+
+  const removeMovie = (movieId) => {
+    var saved = localStorage.getItem('obsidian_cinema_local_movies');
+    var movies = saved ? JSON.parse(saved) : [];
+    var updated = movies.filter(function(m) { return m.id !== movieId; });
+    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated));
+    // Re-scan to refresh the list
+    setDuplicates(function(prev) {
+      if (!prev) return prev;
+      var newGroups = prev.map(function(g) {
+        return { ...g, movies: g.movies.filter(function(m) { return m.id !== movieId; }) };
+      }).filter(function(g) { return g.movies.length > 1; });
+      return newGroups;
+    });
+    toast.success('Movie removed from library');
+  };
+
+  return (
+    <div className="md:col-span-2 p-3 rounded-lg border border-border bg-secondary/30 space-y-2" data-testid="duplicate-detector">
+      <div>
+        <p className="font-medium text-foreground text-sm flex items-center gap-2">
+          <Copy className="w-4 h-4" /> Duplicate Detection
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Scan for duplicate movies by matching exact TMDB IDs or identical file names across different directories.
+        </p>
+      </div>
+
+      <Button variant="outline" onClick={scan} disabled={scanning} data-testid="scan-duplicates-btn">
+        {scanning ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />}
+        {scanning ? 'Scanning...' : 'Scan for Duplicates'}
+      </Button>
+
+      {duplicates !== null && duplicates.length === 0 && (
+        <p className="text-xs text-emerald-400 font-medium py-2" data-testid="no-duplicates-msg">No duplicates found — your library is clean!</p>
+      )}
+
+      {duplicates !== null && duplicates.length > 0 && (
+        <div className="space-y-3 mt-2" data-testid="duplicate-results">
+          <p className="text-xs text-amber-400 font-medium">{duplicates.length} duplicate group{duplicates.length > 1 ? 's' : ''} found</p>
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {duplicates.map(function(group, gi) {
+              return (
+                <div key={gi} className="p-2.5 rounded-lg bg-background border border-border/50 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-[10px]">
+                      {group.type === 'tmdb' ? 'Same TMDB ID' : 'Same Filename'}
+                    </Badge>
+                    <span className="text-sm font-medium truncate">{group.label}</span>
+                  </div>
+                  {group.movies.map(function(m, mi) {
+                    var path = m.file_path || m.file_name || 'Unknown';
+                    if (path.length > 70) path = '...' + path.slice(-70);
+                    return (
+                      <div key={m.id} className="flex items-center gap-2 text-xs pl-2">
+                        <span className="flex-1 text-muted-foreground truncate font-mono" title={m.file_path}>{path}</span>
+                        {mi > 0 && (
+                          <Button
+                            variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-destructive hover:text-destructive"
+                            onClick={function() { removeMovie(m.id); }}
+                            data-testid={'remove-dup-' + gi + '-' + mi}
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" /> Remove
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 
 export default function SettingsPage() {
@@ -1158,6 +1290,9 @@ export default function SettingsPage() {
                   {genreFetching ? 'Fetching... (' + genreProgress + '/' + genreTotal + ')' : 'Fetch Genre Data'}
                 </Button>
               </div>
+
+              {/* Duplicate Detection — spans full width */}
+              <DuplicateDetector />
 
               {/* Backup & Restore — spans full width */}
               <div className="md:col-span-2 p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
