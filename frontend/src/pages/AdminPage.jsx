@@ -461,7 +461,8 @@ https://www.obsidiancinema.com
 Welcome to the Pro side. Enjoy the show.
 
 Cheers,
-The Obsidian Cinema Team`;
+Obsidian Cinema
+obsidiancinemaplus@gmail.com`;
 
   const copyEmail = () => {
     navigator.clipboard?.writeText(emailText);
@@ -505,11 +506,11 @@ The Obsidian Cinema Team`;
           onClick={() => {
             const subject = encodeURIComponent("You've been upgraded to Obsidian Cinema Pro!");
             const body = encodeURIComponent(emailText.replace(/^Subject:.*\n\n/, ''));
-            window.open(`mailto:${gift.email}?subject=${subject}&body=${body}`);
+            window.open(`mailto:${gift.email}?subject=${subject}&body=${body}`, '_blank');
           }}
           data-testid="open-mailto-btn"
         >
-          Open in Email Client
+          Open in Email Client (obsidiancinemaplus@gmail.com)
         </Button>
       </div>
     </div>
