@@ -23,8 +23,19 @@ Obsidian Cinema sits between a file manager and a full media server. Point it at
 - **One-click playback** in your default media player (VLC, MPC, Windows Media Player — your choice).
 - **Favorites** — star movies with an animated confetti burst. Persists across sessions and survives updates.
 - **Custom collections** — group movies however you want and browse them from the sidebar.
-- **Advanced sorting & filtering** with 13 sort options plus quick filters for missing posters, missing ratings, favorites, and recently added.
-- **Library statistics & insights** — visual charts (movies by decade, rating distribution, genre breakdown), collection health, fun stats (binge score, marathon mode, average movie age), and most viewed/played tracking.
+- **Advanced sorting & filtering** with 13 sort options plus quick filters for missing posters, missing ratings, missing genres, favorites, and recently added.
+- **Genre filtering** — filter your library by genre via a dropdown, with movie counts per genre.
+- **Genre badges on posters** — see up to 2 genres displayed directly on each movie poster at a glance.
+- **Manual genre editor** — add or remove genres on any movie card from the full TMDB genre list.
+- **Library statistics & insights** — visual charts (movies by decade, rating distribution, genre totals), collection health, fun stats (binge score, marathon mode, average movie age, rating personality), and most viewed/played tracking.
+- **Cast Insights** — most appearing actors, top-rated actors, and genre chameleons (actors spanning 5+ genres) with up to 10 results each.
+- **Search by actor** — the library search bar matches titles, years, and actor names from cast metadata.
+- **Editable ratings** — click any movie's rating to manually set or correct it (0–10 scale).
+- **Duplicate detection** — scan for duplicate movies by exact TMDB ID or identical file names across directories, with one-click removal.
+- **Bulk genre & cast fetch** — fetch genre or cast data for your entire library from TMDB in one click from the Settings page, without overwriting existing metadata.
+- **TMDB setup guide** — step-by-step instructions for getting a free TMDB API key, both on the landing page and in Settings.
+- **Admin panel** — web-based admin dashboard for user management, license management (revoke, reactivate, reset machine lock, delete), gift key generation with email templates, and revenue overview.
+- **EULA** — End User License Agreement displayed on first launch of each new version, must be scrolled and accepted to proceed.
 - **18+ color themes plus a custom color picker** — solid, pastel, animated rainbow, or pick any color you want.
 - **Backup & restore** — export your entire library to a timestamped JSON file and restore it anytime. Includes favorites, activity data, collections, and all settings.
 - **Daily movie quotes** — a rotating selection of 179 iconic movie quotes greets you each day.

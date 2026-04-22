@@ -152,6 +152,19 @@ ipcMain.handle('fs:pathExists', (event, checkPath) => {
 autoUpdater.autoDownload = false; // Don't auto-download, let user decide
 autoUpdater.autoInstallOnAppQuit = true;
 
+// Set GH_TOKEN if available (prevents rate limiting, enables private repos)
+if (process.env.GH_TOKEN) {
+  autoUpdater.requestHeaders = { Authorization: `token ${process.env.GH_TOKEN}` };
+}
+
+// Log the update feed URL for debugging
+autoUpdater.logger = {
+  info: (...args) => console.log('[AutoUpdater]', ...args),
+  warn: (...args) => console.warn('[AutoUpdater]', ...args),
+  error: (...args) => console.error('[AutoUpdater]', ...args),
+  debug: (...args) => console.log('[AutoUpdater:debug]', ...args),
+};
+
 // Update state
 let updateAvailable = null;
 let downloadProgress = 0;
@@ -180,7 +193,29 @@ autoUpdater.on('update-not-available', (info) => {
 
 autoUpdater.on('error', (err) => {
   console.error('Update error:', err);
-  sendUpdateStatus('error', { message: err.message });
+  // Parse error to provide actionable guidance
+  const msg = err.message || '';
+  let errorType = 'unknown';
+  let userMessage = msg;
+
+  if (msg.includes('404') || msg.includes('Not Found') || msg.includes('No published versions')) {
+    errorType = 'no-release';
+    userMessage = 'No published release found on GitHub. The developer needs to publish a release using electron-builder.';
+  } else if (msg.includes('latest.yml') || msg.includes('latest-mac.yml') || msg.includes('RELEASES')) {
+    errorType = 'missing-artifact';
+    userMessage = 'The GitHub release is missing required update files (latest.yml). The developer needs to rebuild and re-publish the release with electron-builder.';
+  } else if (msg.includes('rate limit') || msg.includes('403')) {
+    errorType = 'rate-limit';
+    userMessage = 'GitHub API rate limit reached. Try again in a few minutes, or set a GH_TOKEN for higher limits.';
+  } else if (msg.includes('ENOTFOUND') || msg.includes('ECONNREFUSED') || msg.includes('ETIMEDOUT') || msg.includes('network')) {
+    errorType = 'network';
+    userMessage = 'Could not connect to GitHub. Check your internet connection and try again.';
+  } else if (msg.includes('ERR_CONNECTION') || msg.includes('getaddrinfo')) {
+    errorType = 'network';
+    userMessage = 'Network error — unable to reach GitHub servers. Check your internet connection.';
+  }
+
+  sendUpdateStatus('error', { message: userMessage, errorType, raw: msg });
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
@@ -222,7 +257,27 @@ ipcMain.handle('update:check', async () => {
     return { status: 'checking', result };
   } catch (err) {
     console.error('Failed to check for updates:', err);
-    return { status: 'error', message: err.message };
+    const msg = err.message || '';
+    let errorType = 'unknown';
+    let userMessage = msg;
+
+    if (msg.includes('404') || msg.includes('Not Found') || msg.includes('No published versions')) {
+      errorType = 'no-release';
+      userMessage = 'No published release found on GitHub.';
+    } else if (msg.includes('latest.yml') || msg.includes('RELEASES')) {
+      errorType = 'missing-artifact';
+      userMessage = 'GitHub release is missing update files (latest.yml).';
+    } else if (msg.includes('rate limit') || msg.includes('403')) {
+      errorType = 'rate-limit';
+      userMessage = 'GitHub API rate limit reached. Try again later.';
+    } else if (msg.includes('ENOTFOUND') || msg.includes('ECONNREFUSED') || msg.includes('ETIMEDOUT') || msg.includes('ERR_CONNECTION') || msg.includes('getaddrinfo')) {
+      errorType = 'network';
+      userMessage = 'Could not connect to GitHub. Check your internet connection.';
+    }
+
+    // Also send through the event channel so the UI listener picks it up
+    sendUpdateStatus('error', { message: userMessage, errorType, raw: msg });
+    return { status: 'error', message: userMessage, errorType };
   }
 });
 
@@ -534,7 +589,8 @@ function createWindow() {
     if (!isDev) {
       setTimeout(() => {
         autoUpdater.checkForUpdates().catch(err => {
-          console.error('Auto-update check failed:', err);
+          console.error('Auto-update check on startup failed:', err.message);
+          // Don't sendUpdateStatus on startup failure — only manual checks show errors
         });
       }, 3000);
     }

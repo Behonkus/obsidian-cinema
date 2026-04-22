@@ -489,22 +489,29 @@ export default function SettingsPage() {
       // Listen for update status
       window.electronAPI.onUpdateStatus(({ status, data }) => {
         setUpdateStatus({ status, data });
-        setIsCheckingUpdate(false);
         
         if (status === 'available') {
+          setIsCheckingUpdate(false);
           toast.success(`Update v${data.version} is available! Downloading...`);
           // Auto-trigger download
           if (window.electronAPI.downloadUpdate) {
             window.electronAPI.downloadUpdate();
           }
         } else if (status === 'downloading' && data) {
+          setIsCheckingUpdate(false);
           setDownloadProgress(data.percent || 0);
         } else if (status === 'downloaded') {
+          setIsCheckingUpdate(false);
           toast.success("Update downloaded! Ready to install.");
         } else if (status === 'not-available') {
+          setIsCheckingUpdate(false);
           toast.info("You're running the latest version!");
         } else if (status === 'error') {
-          toast.error("Failed to check for updates");
+          setIsCheckingUpdate(false);
+          // Toast is handled by handleCheckForUpdates if triggered from button
+          // This covers auto-check on startup
+        } else {
+          setIsCheckingUpdate(false);
         }
       });
       
@@ -601,11 +608,22 @@ export default function SettingsPage() {
         toast.info("Update checks are not available in development mode");
         setIsCheckingUpdate(false);
       } else if (result?.status === 'error') {
-        toast.error(result.message || "Could not reach update server. Make sure a GitHub release exists.");
+        setUpdateStatus({ status: 'error', data: { message: result.message, errorType: result.errorType } });
+        if (result.errorType === 'no-release' || result.errorType === 'missing-artifact') {
+          toast.error("No update available to download from GitHub.");
+        } else if (result.errorType === 'rate-limit') {
+          toast.error("GitHub rate limit reached. Try again in a few minutes.");
+        } else if (result.errorType === 'network') {
+          toast.error("Network error — check your internet connection.");
+        } else {
+          toast.error(result.message || "Could not check for updates.");
+        }
         setIsCheckingUpdate(false);
       }
+      // If status is 'checking', the onUpdateStatus listener will handle subsequent updates
     } catch (err) {
-      toast.error("Could not check for updates. Ensure a release has been published on GitHub.");
+      toast.error("Could not check for updates.");
+      setUpdateStatus({ status: 'error', data: { message: err.message, errorType: 'unknown' } });
       setIsCheckingUpdate(false);
     }
   };
@@ -1019,11 +1037,46 @@ export default function SettingsPage() {
                       </div>
                     )}
                     {updateStatus.status === 'error' && (
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-orange-400" />
-                        <span className="text-sm text-orange-300">
-                          Could not check for updates. Ensure a release has been published on GitHub.
-                        </span>
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                          <div className="space-y-1">
+                            <span className="text-sm text-orange-300 block">
+                              {updateStatus.data?.errorType === 'no-release' && 'No published release found on GitHub.'}
+                              {updateStatus.data?.errorType === 'missing-artifact' && 'GitHub release is missing update files.'}
+                              {updateStatus.data?.errorType === 'rate-limit' && 'GitHub API rate limit reached.'}
+                              {updateStatus.data?.errorType === 'network' && 'Could not connect to GitHub.'}
+                              {(!updateStatus.data?.errorType || updateStatus.data?.errorType === 'unknown') && (updateStatus.data?.message || 'Could not check for updates.')}
+                            </span>
+                            {(updateStatus.data?.errorType === 'no-release' || updateStatus.data?.errorType === 'missing-artifact') && (
+                              <p className="text-xs text-muted-foreground">
+                                The developer needs to publish a release with <code className="text-orange-300/70">electron-builder</code> to enable auto-updates.
+                              </p>
+                            )}
+                            {updateStatus.data?.errorType === 'rate-limit' && (
+                              <p className="text-xs text-muted-foreground">Try again in a few minutes.</p>
+                            )}
+                            {updateStatus.data?.errorType === 'network' && (
+                              <p className="text-xs text-muted-foreground">Check your internet connection and try again.</p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-xs"
+                          onClick={() => {
+                            if (isElectron()) {
+                              window.electronAPI.openExternal('https://github.com/Behonkus/obsidian-cinema/releases');
+                            } else {
+                              window.open('https://github.com/Behonkus/obsidian-cinema/releases', '_blank');
+                            }
+                          }}
+                          data-testid="manual-download-btn"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                          Download Manually from GitHub
+                        </Button>
                       </div>
                     )}
                   </div>

@@ -21,24 +21,17 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Free tier enforcement (500 movies, 3 collections) via activation page localStorage flag
 - TMDB key stored per-user locally (not shared server)
 - TMDB setup guide on Landing page (collapsible) and Settings page (collapsible) with step-by-step instructions and suggested form answers
-- Auto-download & install updates in Settings page (UI done, needs debugging)
+- Auto-updater in Settings page with categorized error handling, manual download fallback, and GH_TOKEN support
 - License key tied to machine ID (anti-sharing)
 - Landing page version badge reads dynamically from package.json
 
 ## Current Version: 1.5.5
 
-## Known Issues to Fix Next Session
-- **P0: StatusBar PRO badge** — Still not showing for Pro users. LicenseContext `isPro` has persistent timing issues in Electron. StatusBar reads from electron-store directly but still not working.
-- **P1: Settings auto-updater** — "Check for Updates" fails saying no release published even though release exists on GitHub. Likely electron-updater config or release tag format mismatch.
-- **P1: LicenseContext `isPro`** — The React context `isPro` value never resolves to `true` in Electron. Root cause still unknown. All downstream features relying on it had to be rewritten to use localStorage or direct electron-store checks.
+## Known Issues
+- **P2: StatusBar PRO badge** — Intermittent display due to Electron IPC timing. Deferred by user.
+- **P2: LicenseContext `isPro`** — React context value timing issues in Electron. Downstream features use localStorage/electron-store direct reads as workaround.
 
 ## Backlog (Prioritized)
-- **P0:** Fix StatusBar PRO badge, Settings auto-updater, LicenseContext isPro
-- **P1:** Admin account/role system (admin flag, protected routes)
-- **P1:** Admin dashboard with member/user list
-- **P1:** License management from admin panel (revoke, reissue, deactivate)
-- **P1:** Landing Page Demo (demo video or screenshots)
-- **P2:** Custom Domain Root Redirect (obsidiancinema.com → www)
 - **P2:** Watch party feature
 - **P2:** Mobile companion app
 - **P2:** Auto-fetch movie trailers
@@ -53,7 +46,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - OpenAI GPT-4o (Emergent LLM Key)
 - TMDB (User API Key, stored locally per-user)
 - Stripe Payments (User API Key, official SDK)
-- SendGrid Emails (User API Key)
+- SendGrid: REMOVED (manual email templates via Admin Panel)
 
 ## Credentials
 - Test User: `billrules@gmail.com`

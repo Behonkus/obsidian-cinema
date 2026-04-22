@@ -35,6 +35,8 @@ export default function UpdateNotification() {
         setDownloadProgress(data.percent || 0);
       } else if (status === 'downloaded') {
         setUpdateData(data);
+      } else if (status === 'error') {
+        setUpdateData(data); // Capture error details (message, errorType)
       }
     });
 
@@ -82,13 +84,13 @@ export default function UpdateNotification() {
   if (!isElectron() || dismissed) return null;
 
   // Don't show for non-actionable states
-  if (!updateStatus || updateStatus === 'not-available' || updateStatus === 'dev-mode') {
+  if (!updateStatus || updateStatus === 'not-available' || updateStatus === 'dev-mode' || updateStatus === 'checking') {
     return null;
   }
 
   return (
     <AnimatePresence>
-      {(updateStatus === 'available' || updateStatus === 'downloading' || updateStatus === 'downloaded') && (
+      {(updateStatus === 'available' || updateStatus === 'downloading' || updateStatus === 'downloaded' || updateStatus === 'error') && (
         <motion.div
           initial={{ opacity: 0, y: 50, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -192,16 +194,34 @@ export default function UpdateNotification() {
               {updateStatus === 'error' && (
                 <div className="space-y-2">
                   <p className="text-sm text-destructive">
-                    Failed to check for updates
+                    {updateData?.errorType === 'no-release' && 'No published release found on GitHub.'}
+                    {updateData?.errorType === 'missing-artifact' && 'GitHub release is missing update files.'}
+                    {updateData?.errorType === 'rate-limit' && 'GitHub rate limit hit. Try later.'}
+                    {updateData?.errorType === 'network' && 'Network error — check your connection.'}
+                    {(!updateData?.errorType || updateData?.errorType === 'unknown') && 'Failed to check for updates'}
                   </p>
-                  <Button 
-                    onClick={handleCheckForUpdates}
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                  >
-                    Try Again
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleCheckForUpdates}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Try Again
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (window.electronAPI?.openExternal) {
+                          window.electronAPI.openExternal('https://github.com/Behonkus/obsidian-cinema/releases');
+                        }
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Manual Download
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
