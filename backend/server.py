@@ -55,7 +55,7 @@ PRO_TIER_PRICE = 2500  # in cents ($25.00)
 PRO_TIER_CURRENCY = "usd"
 
 # Free tier limits
-FREE_TIER_MOVIE_LIMIT = 100
+FREE_TIER_MOVIE_LIMIT = 500
 FREE_TIER_COLLECTION_LIMIT = 3
 
 # Emergent Auth Configuration

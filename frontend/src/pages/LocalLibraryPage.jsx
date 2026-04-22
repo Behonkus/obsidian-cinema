@@ -76,7 +76,7 @@ import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
 import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, useMilestone } from "@/components/FunEffects";
 
-const FREE_TIER_MOVIE_LIMIT = 100;
+const FREE_TIER_MOVIE_LIMIT = 500;
 const FREE_TIER_COLLECTION_LIMIT = 3;
 
 function isFreeTierUser() {

@@ -93,7 +93,7 @@ export default function DesktopAppBanner({ onDismiss, isPro, hasLicense }) {
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground text-center">
-                  Free: 100 movies • <span className="text-purple-400 cursor-pointer hover:underline" onClick={() => window.location.href = '/upgrade'}>Upgrade for unlimited</span>
+                  Free: 500 movies • <span className="text-purple-400 cursor-pointer hover:underline" onClick={() => window.location.href = '/upgrade'}>Upgrade for unlimited</span>
                 </p>
               )}
             </div>

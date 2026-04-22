@@ -35,7 +35,7 @@ Obsidian Cinema sits between a file manager and a full media server. Point it at
 
 #### Pricing
 
-Obsidian Cinema is free to use with up to 100 movies and 3 collections — including TMDB posters, stats, and all core features. For power users, the **Pro** tier removes all limits for a **one-time payment of $25** — no subscriptions, no recurring charges. Your license key is emailed to you instantly after purchase.
+Obsidian Cinema is free to use with up to 500 movies and 3 collections — including TMDB posters, stats, and all core features. For power users, the **Pro** tier removes all limits for a **one-time payment of $25** — no subscriptions, no recurring charges. Your license key is emailed to you instantly after purchase.
 
 #### Getting Started
 
@@ -59,7 +59,7 @@ Obsidian Cinema scans your local and network drives, automatically fetches movie
 ### Key Facts
 - **Platform:** Windows (Electron-based desktop app)
 - **Version:** 1.5.4
-- **Price:** Free (100 movies, 3 collections) / Pro $25 one-time (unlimited)
+- **Price:** Free (500 movies, 3 collections) / Pro $25 one-time (unlimited)
 - **Data Source:** TMDB for posters, metadata, and cast data
 - **AI Engine:** GPT-4o for personalized movie recommendations
 - **Playback:** Uses system default media player (VLC, MPC, etc.)
@@ -124,7 +124,7 @@ It's a lightweight Windows desktop app that:
 
 Everything stays local. No cloud, no streaming, no server process running in the background. Your files stay exactly where they are — this just makes them look nice. Each Pro license is machine-locked for security.
 
-Free tier handles up to 100 movies. Pro is a one-time $25 for unlimited (no subscription). There's also collections, a stats page with charts and fun insights, 18+ themes with a custom color picker, and a 30-day trash/restore feature.
+Free tier handles up to 500 movies. Pro is a one-time $25 for unlimited (no subscription). There's also collections, a stats page with charts and fun insights, 18+ themes with a custom color picker, and a 30-day trash/restore feature.
 
 Would appreciate any feedback from this community. You're the exact people I built it for.
 
@@ -153,7 +153,7 @@ That's what Obsidian Cinema does:
 
 Think of it as a pretty frontend for your filesystem's movie folders. If you've got Plex or Jellyfin handling your streaming and just want something lightweight for local browsing, this might be useful.
 
-Free for up to 100 movies. One-time $25 removes the limit. Windows only for now.
+Free for up to 500 movies. One-time $25 removes the limit. Windows only for now.
 
 Link: www.obsidiancinema.com
 
@@ -189,7 +189,7 @@ I built a desktop app for managing local movie collections. If you have movies o
 - Doesn't modify or move your files
 - Doesn't require an internet connection after initial setup (except for TMDB fetches)
 
-Free tier: 100 movies, 3 collections, all core features. Pro: one-time $25, unlimited everything plus AI recommendations.
+Free tier: 500 movies, 3 collections, all core features. Pro: one-time $25, unlimited everything plus AI recommendations.
 
 Happy to answer questions or take feature requests.
 
@@ -219,7 +219,7 @@ Features:
 - 30-day recycle bin for removed movies
 - Auto-updates with one-click install
 
-It's free for up to 100 movies. If you need more, Pro is a one-time $25 — no subscription. License is machine-locked to your PC for security.
+It's free for up to 500 movies. If you need more, Pro is a one-time $25 — no subscription. License is machine-locked to your PC for security.
 
 No server required, everything runs and stores locally. Would love feedback.
 
@@ -253,7 +253,7 @@ What it does:
 
 It's a standalone Windows app — no server process, no Docker, no configuration. Install and point it at your folders. License is machine-locked for security.
 
-Free for 100 movies. One-time $25 for unlimited.
+Free for 500 movies. One-time $25 for unlimited.
 
 If any of you run an HTPC primarily for local playback, I'd love to hear if this fits your workflow.
 
@@ -283,7 +283,7 @@ I find it useful for:
 - When I just want something simpler and faster
 - Getting AI suggestions for what to watch next from my own collection
 
-It's not a media server. It's more like a really nice file browser specifically for movies, with AI smarts and detailed stats. Free for up to 100 movies, one-time $25 for unlimited Pro.
+It's not a media server. It's more like a really nice file browser specifically for movies, with AI smarts and detailed stats. Free for up to 500 movies, one-time $25 for unlimited Pro.
 
 Curious if anyone else has this "I just want to browse and play" use case.
 
@@ -310,7 +310,7 @@ Also has:
 - Library stats and charts
 - 179 daily rotating movie quotes
 
-Free for up to 100 movies, $25 one-time for unlimited. Windows only.
+Free for up to 500 movies, $25 one-time for unlimited. Windows only.
 
 Link: www.obsidiancinema.com
 
@@ -333,7 +333,7 @@ Why it's useful for this community:
 - **AI recommendations** — suggests what to watch next based on your browsing and play activity
 - **Track what you've watched** — activity tracking, favorites, and stats help you remember what you've seen
 
-Free for 100 movies. One-time $25 for unlimited. No subscription. License is machine-locked to your device.
+Free for 500 movies. One-time $25 for unlimited. No subscription. License is machine-locked to your device.
 
 It's basically a beautiful catalog for your local movie collection. Makes it way easier to decide what to watch tonight.
 
@@ -362,7 +362,7 @@ Key points:
 - **Never modifies, renames, or moves your files**
 - **No cloud uploads, no accounts, everything local**
 
-Free tier: 100 movies, 3 collections. Pro: $25 one-time, unlimited everything. No subscription.
+Free tier: 500 movies, 3 collections. Pro: $25 one-time, unlimited everything. No subscription.
 
 If you've got hundreds (or thousands) of movies sitting in folders, this makes it actually enjoyable to browse through them.
 
@@ -390,7 +390,7 @@ It's a standalone Windows desktop app (no server needed). Here's what makes it r
 
 Everything local, no cloud dependency. Each Pro license is machine-locked for security.
 
-Free for 100 movies. $25 one-time for unlimited.
+Free for 500 movies. $25 one-time for unlimited.
 
 Link: www.obsidiancinema.com
 
@@ -414,7 +414,7 @@ I built Obsidian Cinema to fix that. It's a Windows desktop app that:
 
 No server. No transcoding. No monthly fees. Everything on your machine.
 
-Free for 100 movies. One-time $25 for unlimited. No subscription ever.
+Free for 500 movies. One-time $25 for unlimited. No subscription ever.
 
 If you've been looking for a simple way to browse your local movie files without setting up Plex or Jellyfin, give it a try.
 
@@ -439,7 +439,7 @@ What makes it nice for home theater setups:
 - **18+ themes** — dark themes look great on a TV
 - **Stats page** — fun for movie nights ("we've watched 47% of our collection!")
 
-Free for 100 movies. $25 one-time for unlimited. Windows only for now.
+Free for 500 movies. $25 one-time for unlimited. Windows only for now.
 
 Link: www.obsidiancinema.com
 
@@ -467,7 +467,7 @@ Useful for:
 - A second catalog alongside Jellyfin for different folders
 - Getting AI suggestions on what to watch
 
-Free for 100 movies, $25 one-time for unlimited.
+Free for 500 movies, $25 one-time for unlimited.
 
 Link: www.obsidiancinema.com
 
@@ -490,7 +490,7 @@ I built Obsidian Cinema for that. It's a standalone Windows app that:
 
 No add-ons, no configuration files, no skin setups. Install, point at folders, done.
 
-Free for 100 movies. $25 one-time for unlimited.
+Free for 500 movies. $25 one-time for unlimited.
 
 Link: www.obsidiancinema.com
 
@@ -514,7 +514,7 @@ A few things movie lovers might appreciate:
 
 It doesn't stream anything — it just organizes what's already on your drives and plays files in your default player (VLC, MPC, etc.).
 
-Free for 100 movies. $25 one-time for unlimited. Windows app.
+Free for 500 movies. $25 one-time for unlimited. Windows app.
 
 Link: www.obsidiancinema.com
 
@@ -540,7 +540,7 @@ Sharing a Windows app I built for managing local movie collections. If you've go
 - 30-day trash
 - Auto-updates
 
-Free (100 movies, 3 collections). Pro: $25 one-time, unlimited. No subscription.
+Free (500 movies, 3 collections). Pro: $25 one-time, unlimited. No subscription.
 
 Link: www.obsidiancinema.com
 
@@ -565,7 +565,7 @@ I started this project because I had thousands of movie files across multiple dr
 - GitHub Actions for CI/CD (auto-builds Windows installer on push)
 
 **Business model:**
-- Free tier: 100 movies, 3 collections
+- Free tier: 500 movies, 3 collections
 - Pro: $25 one-time payment, unlimited everything
 - Machine-locked license keys (one key per device, server-validated)
 
@@ -598,7 +598,7 @@ Highlights:
 - Full backup & restore
 - Auto-updates
 
-Free for 100 movies. $25 one-time for unlimited. No subscription.
+Free for 500 movies. $25 one-time for unlimited. No subscription.
 
 Link: www.obsidiancinema.com
 
@@ -624,7 +624,7 @@ Link: www.obsidiancinema.com
 > - Full backup & restore
 > - Never moves, renames, or modifies your files
 >
-> Free for up to 100 movies. One-time $25 for unlimited (no subscription). Everything stays local on your machine.
+> Free for up to 500 movies. One-time $25 for unlimited (no subscription). Everything stays local on your machine.
 >
 > www.obsidiancinema.com
 
@@ -632,19 +632,19 @@ Link: www.obsidiancinema.com
 
 **Shorter version for quick replies:**
 
-> Check out **Obsidian Cinema** — free Windows app that scans your movie folders, auto-fetches TMDB posters and metadata, and shows everything in a poster grid. One-click playback, AI recommendations, favorites, stats. Free for 100 movies, $25 one-time for unlimited. www.obsidiancinema.com
+> Check out **Obsidian Cinema** — free Windows app that scans your movie folders, auto-fetches TMDB posters and metadata, and shows everything in a poster grid. One-click playback, AI recommendations, favorites, stats. Free for 500 movies, $25 one-time for unlimited. www.obsidiancinema.com
 
 ---
 
 **For torrent-specific contexts:**
 
-> If you've got a big download folder full of movies, check out **Obsidian Cinema**. It scans your folders, matches files to TMDB for posters and metadata, and turns the mess into a browsable poster grid. Handles messy filenames, never touches your files, everything stays local. AI recommendations tell you what to watch next. Free for 100 movies, $25 one-time for unlimited. www.obsidiancinema.com
+> If you've got a big download folder full of movies, check out **Obsidian Cinema**. It scans your folders, matches files to TMDB for posters and metadata, and turns the mess into a browsable poster grid. Handles messy filenames, never touches your files, everything stays local. AI recommendations tell you what to watch next. Free for 500 movies, $25 one-time for unlimited. www.obsidiancinema.com
 
 ---
 
 **For "Plex is too heavy" contexts:**
 
-> If Plex feels like overkill, try **Obsidian Cinema**. It's just a lightweight desktop app — no server, no Docker, no transcoding. Point it at your movie folders, it fetches TMDB posters, and you get a poster grid with one-click playback. Plus AI recommendations and library stats. Free for 100 movies, $25 one-time for unlimited. www.obsidiancinema.com
+> If Plex feels like overkill, try **Obsidian Cinema**. It's just a lightweight desktop app — no server, no Docker, no transcoding. Point it at your movie folders, it fetches TMDB posters, and you get a poster grid with one-click playback. Plus AI recommendations and library stats. Free for 500 movies, $25 one-time for unlimited. www.obsidiancinema.com
 
 ---
 
@@ -659,7 +659,7 @@ Link: www.obsidiancinema.com
 ### Product Hunt
 **Tagline:** "Your movie library, beautifully organized. AI recommendations included."
 
-**Description:** Obsidian Cinema scans your local and network drives for movie files, automatically fetches posters, metadata, and cast data from TMDB, and displays your collection in a beautiful poster grid. Get AI-powered movie suggestions based on your viewing activity. Star favorites, create custom collections, track detailed library stats with charts, and play any movie with one click. Backup & restore your entire library. 18+ themes with a custom color picker. Free for up to 100 movies, $25 one-time for unlimited Pro. No subscriptions. No servers. Everything stays local. Machine-locked licenses for security.
+**Description:** Obsidian Cinema scans your local and network drives for movie files, automatically fetches posters, metadata, and cast data from TMDB, and displays your collection in a beautiful poster grid. Get AI-powered movie suggestions based on your viewing activity. Star favorites, create custom collections, track detailed library stats with charts, and play any movie with one click. Backup & restore your entire library. 18+ themes with a custom color picker. Free for up to 500 movies, $25 one-time for unlimited Pro. No subscriptions. No servers. Everything stays local. Machine-locked licenses for security.
 
 ### Product Hunt (Maker Comment)
 Hey everyone! I built Obsidian Cinema because I had thousands of movie files across multiple drives and NAS shares, and I was tired of browsing them through Windows Explorer.
