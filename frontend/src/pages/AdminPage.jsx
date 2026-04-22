@@ -29,6 +29,7 @@ export default function AdminPage() {
   const [giftNote, setGiftNote] = useState("");
   const [giftLoading, setGiftLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [generatedGift, setGeneratedGift] = useState(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -69,7 +70,7 @@ export default function AdminPage() {
         email: giftEmail.trim(), note: giftNote.trim()
       }, { withCredentials: true });
       toast.success(`Gift key generated: ${res.data.license_key}`);
-      navigator.clipboard?.writeText(res.data.license_key);
+      setGeneratedGift({ key: res.data.license_key, email: giftEmail.trim(), note: giftNote.trim() });
       setGiftEmail("");
       setGiftNote("");
       fetchAll();
@@ -362,6 +363,10 @@ export default function AdminPage() {
                   Generate & Copy Key
                 </Button>
               </div>
+
+              {generatedGift && (
+                <GiftEmailTemplate gift={generatedGift} onClose={() => setGeneratedGift(null)} />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -414,5 +419,89 @@ function StatCard({ icon: Icon, label, value, color }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function GiftEmailTemplate({ gift, onClose }) {
+  const emailText = `Subject: You've been upgraded to Obsidian Cinema Pro!
+
+Hey there,
+
+Great news — you've just been gifted a complimentary Obsidian Cinema Pro license! Consider this your all-access pass to the full cinematic experience.
+
+Your Pro License Key:
+${gift.key}
+
+Here's how to activate it:
+1. Open Obsidian Cinema
+2. Go to the Activation page (or Settings > License)
+3. Paste the key above and hit Activate
+
+What you're unlocking:
+- Unlimited movies in your library (no more caps)
+- Unlimited collections to organize however you like
+- AI-powered movie recommendations tailored to your taste
+- Priority access to every new feature we ship
+
+This key is yours alone — it locks to your machine on first activation, so no one else can use it.
+
+If you haven't grabbed Obsidian Cinema yet, download it here:
+https://www.obsidiancinema.com
+
+Welcome to the Pro side. Enjoy the show.
+
+Cheers,
+The Obsidian Cinema Team`;
+
+  const copyEmail = () => {
+    navigator.clipboard?.writeText(emailText);
+    toast.success("Email text copied to clipboard");
+  };
+
+  const copyKey = () => {
+    navigator.clipboard?.writeText(gift.key);
+    toast.success("License key copied");
+  };
+
+  return (
+    <div className="mt-4 p-4 rounded-lg border border-primary/30 bg-primary/5 space-y-3" data-testid="gift-email-template">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Gift className="w-4 h-4 text-pink-400" />
+          Gift key generated for {gift.email}
+        </h3>
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-xs">Dismiss</button>
+      </div>
+
+      <div className="flex items-center gap-2 p-2 rounded bg-secondary border border-border">
+        <code className="text-sm font-mono font-bold text-primary flex-1">{gift.key}</code>
+        <Button variant="ghost" size="sm" className="h-7 px-2" onClick={copyKey}>
+          <Copy className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+
+      <div className="relative">
+        <pre className="text-xs text-muted-foreground whitespace-pre-wrap bg-secondary/60 border border-border/50 rounded-lg p-4 max-h-64 overflow-y-auto font-sans leading-relaxed">
+          {emailText}
+        </pre>
+      </div>
+
+      <div className="flex gap-2">
+        <Button onClick={copyEmail} variant="outline" size="sm" data-testid="copy-gift-email-btn">
+          <Copy className="w-4 h-4 mr-1.5" /> Copy Email Text
+        </Button>
+        <Button
+          variant="outline" size="sm"
+          onClick={() => {
+            const subject = encodeURIComponent("You've been upgraded to Obsidian Cinema Pro!");
+            const body = encodeURIComponent(emailText.replace(/^Subject:.*\n\n/, ''));
+            window.open(`mailto:${gift.email}?subject=${subject}&body=${body}`);
+          }}
+          data-testid="open-mailto-btn"
+        >
+          Open in Email Client
+        </Button>
+      </div>
+    </div>
   );
 }
