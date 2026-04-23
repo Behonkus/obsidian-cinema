@@ -107,6 +107,8 @@ function DuplicateDetector() {
     setScanning(true);
     var saved = localStorage.getItem('obsidian_cinema_local_movies');
     var movies = saved ? JSON.parse(saved) : [];
+    var dismissed = [];
+    try { dismissed = JSON.parse(localStorage.getItem('obsidian_cinema_dismissed_dupes') || '[]'); } catch (e) {}
     var groups = [];
 
     // 1. Exact TMDB ID duplicates (strongest signal)
@@ -119,11 +121,14 @@ function DuplicateDetector() {
     });
     Object.entries(tmdbMap).forEach(function([tmdbId, group]) {
       if (group.length > 1) {
-        groups.push({ type: 'tmdb', label: group[0].title || group[0].file_name, tmdbId: tmdbId, movies: group });
+        var key = 'tmdb-' + tmdbId;
+        if (!dismissed.includes(key)) {
+          groups.push({ type: 'tmdb', key: key, label: group[0].title || group[0].file_name, tmdbId: tmdbId, movies: group });
+        }
       }
     });
 
-    // 2. Exact file name duplicates (same name, different directories)
+    // 2. Exact file name duplicates — keep year in the name so different years are NOT flagged
     var nameMap = {};
     movies.forEach(function(m) {
       var name = (m.file_name || '').replace(/\.[^.]+$/, '').toLowerCase().trim();
@@ -135,13 +140,13 @@ function DuplicateDetector() {
     groups.forEach(function(g) { g.movies.forEach(function(m) { tmdbGroupedIds.add(m.id); }); });
     Object.entries(nameMap).forEach(function([name, group]) {
       if (group.length > 1) {
-        // Skip if all movies in this group are already caught by TMDB matching
+        var key = 'file-' + name;
+        if (dismissed.includes(key)) return;
         var uncaught = group.filter(function(m) { return !tmdbGroupedIds.has(m.id); });
         if (uncaught.length > 1 || (uncaught.length >= 1 && group.length > uncaught.length)) {
-          // Only add if not already fully covered by TMDB groups
           var allCovered = group.every(function(m) { return tmdbGroupedIds.has(m.id); });
           if (!allCovered) {
-            groups.push({ type: 'filename', label: group[0].file_name, movies: group });
+            groups.push({ type: 'filename', key: key, label: group[0].file_name, movies: group });
           }
         }
       }
@@ -151,12 +156,37 @@ function DuplicateDetector() {
     setScanning(false);
   };
 
+  const dismissGroup = (groupKey) => {
+    var dismissed = [];
+    try { dismissed = JSON.parse(localStorage.getItem('obsidian_cinema_dismissed_dupes') || '[]'); } catch (e) {}
+    dismissed.push(groupKey);
+    localStorage.setItem('obsidian_cinema_dismissed_dupes', JSON.stringify(dismissed));
+    setDuplicates(function(prev) {
+      if (!prev) return prev;
+      return prev.filter(function(g) { return g.key !== groupKey; });
+    });
+  };
+
+  const dismissAll = () => {
+    if (!duplicates) return;
+    var dismissed = [];
+    try { dismissed = JSON.parse(localStorage.getItem('obsidian_cinema_dismissed_dupes') || '[]'); } catch (e) {}
+    duplicates.forEach(function(g) { if (!dismissed.includes(g.key)) dismissed.push(g.key); });
+    localStorage.setItem('obsidian_cinema_dismissed_dupes', JSON.stringify(dismissed));
+    setDuplicates([]);
+    toast.success('All duplicate warnings dismissed');
+  };
+
+  const resetDismissed = () => {
+    localStorage.removeItem('obsidian_cinema_dismissed_dupes');
+    toast.success('Dismissed duplicates reset — they will appear on next scan');
+  };
+
   const removeMovie = (movieId) => {
     var saved = localStorage.getItem('obsidian_cinema_local_movies');
     var movies = saved ? JSON.parse(saved) : [];
     var updated = movies.filter(function(m) { return m.id !== movieId; });
     localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated));
-    // Re-scan to refresh the list
     setDuplicates(function(prev) {
       if (!prev) return prev;
       var newGroups = prev.map(function(g) {
@@ -164,7 +194,7 @@ function DuplicateDetector() {
       }).filter(function(g) { return g.movies.length > 1; });
       return newGroups;
     });
-    toast.success('Movie removed from library');
+    toast.success('Movie entry removed from library');
   };
 
   return (
@@ -174,14 +204,19 @@ function DuplicateDetector() {
           <Copy className="w-4 h-4" /> Duplicate Detection
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Scan for duplicate movies by matching exact TMDB IDs or identical file names across different directories.
+          Scan for duplicate movies by matching exact TMDB IDs or identical file names (including year). Dismissed groups won't reappear on future scans.
         </p>
       </div>
 
-      <Button variant="outline" onClick={scan} disabled={scanning} data-testid="scan-duplicates-btn">
-        {scanning ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />}
-        {scanning ? 'Scanning...' : 'Scan for Duplicates'}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={scan} disabled={scanning} data-testid="scan-duplicates-btn">
+          {scanning ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />}
+          {scanning ? 'Scanning...' : 'Scan for Duplicates'}
+        </Button>
+        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={resetDismissed} data-testid="reset-dismissed-btn">
+          Reset Dismissed
+        </Button>
+      </div>
 
       {duplicates !== null && duplicates.length === 0 && (
         <p className="text-xs text-emerald-400 font-medium py-2" data-testid="no-duplicates-msg">No duplicates found — your library is clean!</p>
@@ -189,16 +224,30 @@ function DuplicateDetector() {
 
       {duplicates !== null && duplicates.length > 0 && (
         <div className="space-y-3 mt-2" data-testid="duplicate-results">
-          <p className="text-xs text-amber-400 font-medium">{duplicates.length} duplicate group{duplicates.length > 1 ? 's' : ''} found</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-amber-400 font-medium">{duplicates.length} duplicate group{duplicates.length > 1 ? 's' : ''} found</p>
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={dismissAll} data-testid="dismiss-all-btn">
+              Dismiss All
+            </Button>
+          </div>
           <div className="space-y-2 max-h-80 overflow-y-auto">
             {duplicates.map(function(group, gi) {
               return (
                 <div key={gi} className="p-2.5 rounded-lg bg-background border border-border/50 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-[10px]">
-                      {group.type === 'tmdb' ? 'Same TMDB ID' : 'Same Filename'}
-                    </Badge>
-                    <span className="text-sm font-medium truncate">{group.label}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Badge variant="secondary" className="text-[10px] flex-shrink-0">
+                        {group.type === 'tmdb' ? 'Same TMDB ID' : 'Same Filename'}
+                      </Badge>
+                      <span className="text-sm font-medium truncate">{group.label}</span>
+                    </div>
+                    <Button
+                      variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground flex-shrink-0"
+                      onClick={function() { dismissGroup(group.key); }}
+                      data-testid={'dismiss-dup-' + gi}
+                    >
+                      Dismiss
+                    </Button>
                   </div>
                   {group.movies.map(function(m, mi) {
                     var path = m.file_path || m.file_name || 'Unknown';
@@ -212,7 +261,7 @@ function DuplicateDetector() {
                             onClick={function() { removeMovie(m.id); }}
                             data-testid={'remove-dup-' + gi + '-' + mi}
                           >
-                            <Trash2 className="w-3 h-3 mr-1" /> Remove
+                            <Trash2 className="w-3 h-3 mr-1" /> Remove Entry
                           </Button>
                         )}
                       </div>
