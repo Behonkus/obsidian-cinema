@@ -102,6 +102,7 @@ function TmdbSetupGuide() {
 function DuplicateDetector() {
   const [duplicates, setDuplicates] = useState(null);
   const [scanning, setScanning] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(null); // { movieId, movieName }
 
   const scan = () => {
     setScanning(true);
@@ -258,7 +259,7 @@ function DuplicateDetector() {
                         {mi > 0 && (
                           <Button
                             variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-destructive hover:text-destructive"
-                            onClick={function() { removeMovie(m.id); }}
+                            onClick={function() { setConfirmRemove({ movieId: m.id, movieName: m.title || m.file_name || 'this movie' }); }}
                             data-testid={'remove-dup-' + gi + '-' + mi}
                           >
                             <Trash2 className="w-3 h-3 mr-1" /> Remove Entry
@@ -273,6 +274,45 @@ function DuplicateDetector() {
           </div>
         </div>
       )}
+
+      {/* Remove Entry Confirmation Dialog */}
+      <AlertDialog open={!!confirmRemove} onOpenChange={function(open) { if (!open) setConfirmRemove(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              Remove Movie from Library?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                This will permanently remove <strong className="text-foreground">"{confirmRemove?.movieName}"</strong> from your Obsidian Cinema library.
+              </span>
+              <span className="block text-foreground font-medium">
+                Your actual file on disk will NOT be deleted or modified.
+              </span>
+              <span className="block">
+                However, you will lose any metadata, poster, cast data, and ratings associated with this entry. If the movie is re-scanned later, it will need to be re-fetched from TMDB.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={function() {
+                if (confirmRemove) {
+                  removeMovie(confirmRemove.movieId);
+                  setConfirmRemove(null);
+                }
+              }}
+              data-testid="confirm-remove-entry-btn"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Remove from Library
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
