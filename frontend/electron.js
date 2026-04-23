@@ -295,10 +295,17 @@ ipcMain.handle('update:download', async () => {
   }
 });
 
-ipcMain.handle('update:install', () => {
-  // Close the window first so user sees it disappear cleanly
-  // instead of a blank white screen from quitAndInstall killing the renderer
+ipcMain.handle('update:install', async () => {
+  // Show a native dialog so user knows what's about to happen
   if (mainWindow) {
+    await dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Installing Update',
+      message: 'Obsidian Cinema will now close and restart with the new version.',
+      detail: 'This is normal — the app will reopen automatically after the update is installed.',
+      buttons: ['OK'],
+      defaultId: 0,
+    });
     mainWindow.close();
   }
   setTimeout(() => {
