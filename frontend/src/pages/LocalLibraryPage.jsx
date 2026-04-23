@@ -298,7 +298,7 @@ export default function LocalLibraryPage() {
   const [editingSynopsis, setEditingSynopsis] = useState(false);
   const [synopsisInput, setSynopsisInput] = useState('');
   const [collections, setCollections] = useState([]);
-  const [activeCollection, setActiveCollection] = useState(null);
+  const [activeCollection, setActiveCollection] = useState(() => searchParams.get('collection') || null);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [showNewCollectionInput, setShowNewCollectionInput] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
