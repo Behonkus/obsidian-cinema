@@ -67,24 +67,27 @@ export function LicenseProvider({ children }) {
       
       if (response.data.valid) {
         setLicenseStatus('valid');
+        localStorage.setItem('obsidian_cinema_is_pro', 'true');
+        window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
         return true;
       } else {
-        setLicenseStatus('invalid');
-        // Clear invalid license
-        if (isElectron()) {
-          await window.electronAPI.clearLicense();
-        }
-        setLicense(null);
-        localStorage.setItem('obsidian_cinema_is_pro', 'false');
-        window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'invalid' } }));
-        return false;
+        // Server rejected — but DON'T wipe the local license.
+        // The user paid, trust their local key. Only explicit deactivation should clear it.
+        // Common causes: machine_id mismatch after reinstall, server-side revocation.
+        console.warn('License validation failed:', response.data.error, response.data.message);
+        // Still treat as Pro locally — the license key exists on disk
+        setLicenseStatus('valid');
+        localStorage.setItem('obsidian_cinema_is_pro', 'true');
+        window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
+        return true;
       }
     } catch (err) {
       console.error('License validation error:', err);
-      // If server is unreachable, trust the local license (we have a key stored locally)
-      // Always trust local license on network errors — the user paid, don't punish them for being offline
+      // Server unreachable — trust the local license
       if (licenseKey) {
         setLicenseStatus('valid');
+        localStorage.setItem('obsidian_cinema_is_pro', 'true');
+        window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
         return true;
       }
       setLicenseStatus('invalid');
