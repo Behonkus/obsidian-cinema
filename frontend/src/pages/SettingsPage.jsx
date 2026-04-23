@@ -112,7 +112,7 @@ function DuplicateDetector() {
     try { dismissed = JSON.parse(localStorage.getItem('obsidian_cinema_dismissed_dupes') || '[]'); } catch (e) {}
     var groups = [];
 
-    // 1. Exact TMDB ID duplicates (strongest signal)
+    // 1. Exact TMDB ID duplicates — only flag if titles are similar (not just shared ID from bad TMDB match)
     var tmdbMap = {};
     movies.forEach(function(m) {
       if (m.tmdb_id) {
@@ -122,9 +122,17 @@ function DuplicateDetector() {
     });
     Object.entries(tmdbMap).forEach(function([tmdbId, group]) {
       if (group.length > 1) {
-        var key = 'tmdb-' + tmdbId;
-        if (!dismissed.includes(key)) {
-          groups.push({ type: 'tmdb', key: key, label: group[0].title || group[0].file_name, tmdbId: tmdbId, movies: group });
+        // Check if titles are actually similar — if not, it's a bad TMDB match, not a real duplicate
+        var baseTitle = (group[0].title || group[0].file_name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        var allSimilar = group.every(function(m) {
+          var t = (m.title || m.file_name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          return t === baseTitle || t.startsWith(baseTitle) && t.length <= baseTitle.length + 3 || baseTitle.startsWith(t) && baseTitle.length <= t.length + 3;
+        });
+        if (allSimilar) {
+          var key = 'tmdb-' + tmdbId;
+          if (!dismissed.includes(key)) {
+            groups.push({ type: 'tmdb', key: key, label: group[0].title || group[0].file_name, tmdbId: tmdbId, movies: group });
+          }
         }
       }
     });
@@ -1230,7 +1238,7 @@ export default function SettingsPage() {
                 </Button>
                 
                 <p className="text-xs text-muted-foreground text-center">
-                  Updates are checked automatically on startup
+                  Check manually to see if a new version is available
                 </p>
               </CardContent>
             </Card>
