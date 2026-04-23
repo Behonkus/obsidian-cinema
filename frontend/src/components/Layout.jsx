@@ -376,6 +376,37 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             </AnimatePresence>
           </NavLink>
         )}
+
+        {/* Pro License Badge — shows for all Pro users regardless of Google Auth */}
+        {desktopMode && isProUser && (
+          <div
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 ${collapsed ? "justify-center" : ""}`}
+            data-testid="sidebar-pro-badge"
+          >
+            <div
+              className="flex items-center justify-center w-5 h-5 flex-shrink-0"
+            >
+              <Crown className="w-5 h-5 text-amber-400" />
+            </div>
+            <AnimatePresence mode="wait">
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  className="font-bold text-sm whitespace-nowrap overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, #b8860b, #ffd700)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  PRO License
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </nav>
 
       {/* Sidebar Widgets (desktop mode only) */}
@@ -470,29 +501,8 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="space-y-3 mt-4"
+                className="mt-4"
               >
-                {/* Desktop Pro badge (when not logged in via Google) */}
-                {desktopPro && (
-                  <div className="px-3 py-2.5 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold tracking-wide"
-                        style={{
-                          background: 'linear-gradient(135deg, #b8860b, #ffd700, #b8860b)',
-                          color: '#1a1a1a',
-                          textShadow: '0 0 2px rgba(255,215,0,0.3)',
-                          boxShadow: '0 0 6px rgba(255,215,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)',
-                        }}
-                        data-testid="sidebar-pro-badge"
-                      >
-                        <Crown className="w-3 h-3" />
-                        PRO
-                      </div>
-                      <span className="text-xs text-amber-400 font-medium">License Active</span>
-                    </div>
-                  </div>
-                )}
                 <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
                   <p className="text-xs text-muted-foreground">
                     Powered by TMDB
