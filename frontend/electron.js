@@ -585,15 +585,8 @@ function createWindow() {
       mainWindow.webContents.openDevTools();
     }
     
-    // Check for updates after window is shown (with delay)
-    if (!isDev) {
-      setTimeout(() => {
-        autoUpdater.checkForUpdates().catch(err => {
-          console.error('Auto-update check on startup failed:', err.message);
-          // Don't sendUpdateStatus on startup failure — only manual checks show errors
-        });
-      }, 3000);
-    }
+    // Don't auto-check for updates on startup — let user trigger it from Settings
+    // This prevents surprise downloads and blank-screen restarts
   });
 
   // Handle external links

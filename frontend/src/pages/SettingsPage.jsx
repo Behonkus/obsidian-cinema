@@ -1129,15 +1129,17 @@ export default function SettingsPage() {
                             Update downloaded! Ready to install.
                           </span>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          The app will close and restart with the new version.
-                        </p>
+                        <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
+                          <p className="text-xs text-amber-300">
+                            The app will close completely and reopen with the new version. This is normal — it is not a crash.
+                          </p>
+                        </div>
                         <Button
                           onClick={() => {
                             setUpdateStatus({ status: 'installing' });
                             setTimeout(() => {
                               window.electronAPI.installUpdate();
-                            }, 1500);
+                            }, 2000);
                           }}
                           className="w-full bg-green-600 hover:bg-green-700 text-white mt-2"
                           size="sm"
@@ -1153,11 +1155,11 @@ export default function SettingsPage() {
                         <div className="flex items-center justify-center gap-2">
                           <RefreshCw className="w-5 h-5 animate-spin text-primary" />
                           <span className="text-sm font-medium text-foreground">
-                            Installing update — restarting app...
+                            Installing update...
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground text-center">
-                          The app will close and reopen automatically.
+                          The app will close and reopen automatically. This is normal.
                         </p>
                       </div>
                     )}

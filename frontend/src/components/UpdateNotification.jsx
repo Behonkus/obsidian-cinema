@@ -176,9 +176,11 @@ export default function UpdateNotification() {
                     <CheckCircle2 className="w-5 h-5" />
                     <span className="font-medium">Update Ready!</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    The app will close and restart with the new version.
-                  </p>
+                  <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
+                    <p className="text-xs text-amber-300">
+                      The app will close and reopen. This is normal — not a crash.
+                    </p>
+                  </div>
                   <Button 
                     onClick={handleInstall}
                     className="w-full bg-green-500 hover:bg-green-600 text-white"
@@ -193,9 +195,9 @@ export default function UpdateNotification() {
               {installing && (
                 <div className="flex flex-col items-center gap-2 py-3">
                   <RefreshCw className="w-6 h-6 animate-spin text-primary" />
-                  <span className="text-sm font-medium">Restarting app...</span>
+                  <span className="text-sm font-medium">Installing update...</span>
                   <p className="text-xs text-muted-foreground text-center">
-                    The app will close and reopen automatically.
+                    The app will close and reopen. This is normal.
                   </p>
                 </div>
               )}
