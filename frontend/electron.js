@@ -296,7 +296,14 @@ ipcMain.handle('update:download', async () => {
 });
 
 ipcMain.handle('update:install', () => {
-  autoUpdater.quitAndInstall(false, true);
+  // Close the window first so user sees it disappear cleanly
+  // instead of a blank white screen from quitAndInstall killing the renderer
+  if (mainWindow) {
+    mainWindow.close();
+  }
+  setTimeout(() => {
+    autoUpdater.quitAndInstall(false, true);
+  }, 500);
 });
 
 ipcMain.handle('update:getStatus', () => {

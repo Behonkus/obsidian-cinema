@@ -207,15 +207,10 @@ function DuplicateDetector() {
   };
 
   return (
-    <div className="md:col-span-2 p-3 rounded-lg border border-border bg-secondary/30 space-y-2" data-testid="duplicate-detector">
-      <div>
-        <p className="font-medium text-foreground text-sm flex items-center gap-2">
-          <Copy className="w-4 h-4" /> Duplicate Detection
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Scan for duplicate movies by matching exact TMDB IDs or identical file names (including year). Dismissed groups won't reappear on future scans.
-        </p>
-      </div>
+    <div className="space-y-2" data-testid="duplicate-detector">
+      <p className="text-xs text-muted-foreground">
+        Scan for duplicate movies by matching exact TMDB IDs or identical file names (including year). Dismissed groups won't reappear on future scans.
+      </p>
 
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={scan} disabled={scanning} data-testid="scan-duplicates-btn">
@@ -1068,8 +1063,7 @@ export default function SettingsPage() {
                   <Sparkles className="w-4 h-4 text-purple-400" />
                   App Updates
                 </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-3 space-y-3">
+              </CardHeader>              <CardContent className="px-4 pb-3 space-y-3">
                 {/* Current Version */}
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Current Version:</span>
@@ -1240,6 +1234,27 @@ export default function SettingsPage() {
                 <p className="text-xs text-muted-foreground text-center">
                   Check manually to see if a new version is available
                 </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Duplicate Detection Card - Desktop Only, sits next to App Updates */}
+        {isElectron() && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.27 }}
+          >
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-1 pt-3 px-4">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Copy className="w-4 h-4 text-primary" />
+                  Duplicate Detection
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <DuplicateDetector />
               </CardContent>
             </Card>
           </motion.div>
@@ -1478,9 +1493,6 @@ export default function SettingsPage() {
                   {genreFetching ? 'Fetching... (' + genreProgress + '/' + genreTotal + ')' : 'Fetch Genre Data'}
                 </Button>
               </div>
-
-              {/* Duplicate Detection — spans full width */}
-              <DuplicateDetector />
 
               {/* Backup & Restore — spans full width */}
               <div className="md:col-span-2 p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
