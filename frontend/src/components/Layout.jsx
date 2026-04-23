@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
+import { useLicense } from "@/context/LicenseContext";
 import { toast } from "sonner";
 import StatusBar from "@/components/StatusBar";
 
@@ -204,54 +205,13 @@ function SidebarWidgets() {
 const Sidebar = ({ collapsed, setCollapsed }) => {
   const navigate = useNavigate();
   const { user, logout, isPro } = useAuth();
+  const { isPro: isLicensePro } = useLicense();
   
   // Check if running in Electron
   const desktopMode = typeof window !== 'undefined' && window.electronAPI?.isElectron?.();
-  
-  // Desktop Pro status (from license key, not Google Auth)
-  // Initialize synchronously from localStorage to avoid flash of missing badge
-  const [desktopPro, setDesktopPro] = useState(function() {
-    if (!desktopMode) return false;
-    return localStorage.getItem('obsidian_cinema_is_pro') === 'true' ||
-           localStorage.getItem('obsidian_cinema_license_status') === 'valid';
-  });
-  useEffect(function() {
-    if (!desktopMode) return;
-    // Also check electron-store directly (ground truth) and keep polling
-    function checkDesktopPro() {
-      if (localStorage.getItem('obsidian_cinema_is_pro') === 'true' ||
-          localStorage.getItem('obsidian_cinema_license_status') === 'valid') {
-        setDesktopPro(true);
-        return;
-      }
-      if (window.electronAPI && window.electronAPI.getLicense) {
-        window.electronAPI.getLicense().then(function(license) {
-          if (license && license.subscription_tier === 'pro') {
-            setDesktopPro(true);
-            // Also fix localStorage so next mount is instant
-            localStorage.setItem('obsidian_cinema_is_pro', 'true');
-          }
-        }).catch(function() {});
-      }
-    }
-    checkDesktopPro();
-    function onProChange(e) {
-      if (e.detail && e.detail.isPro) {
-        setDesktopPro(true);
-      } else if (e.detail && (e.detail.status === 'not_activated' || e.detail.status === 'free' || e.detail.status === 'invalid')) {
-        setDesktopPro(false);
-      }
-    }
-    window.addEventListener('obsidian-pro-status-change', onProChange);
-    var interval = setInterval(checkDesktopPro, 3000);
-    return function() {
-      window.removeEventListener('obsidian-pro-status-change', onProChange);
-      clearInterval(interval);
-    };
-  }, [desktopMode]);
 
-  // Unified Pro check: web auth OR desktop license
-  const isProUser = isPro || desktopPro;
+  // Unified Pro check: web auth OR desktop license context
+  const isProUser = isPro || isLicensePro;
   
   // Different nav items for web vs desktop
   const isAdmin = user?.email === 'billrules@gmail.com';

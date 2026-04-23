@@ -10,6 +10,7 @@ import {
   Monitor,
 } from "lucide-react";
 import { THEMES, applyTheme, THEME_STORAGE_KEY } from "@/components/ThemeSelector";
+import { useLicense } from "@/context/LicenseContext";
 import DailyQuote from "@/components/DailyQuote";
 import packageJson from "../../package.json";
 
@@ -20,11 +21,8 @@ var QF_LABELS = {
 };
 
 export default function StatusBar({ sidebarCollapsed }) {
-  // Initialize Pro status synchronously from localStorage
-  var [proStatus, setProStatus] = useState(function() {
-    return localStorage.getItem('obsidian_cinema_is_pro') === 'true' ||
-           localStorage.getItem('obsidian_cinema_license_status') === 'valid';
-  });
+  var { isPro: isLicensePro } = useLicense();
+  var proStatus = isLicensePro;
   var [gridSize, setGridSize] = useState(localStorage.getItem('obsidian_cinema_grid_size') || 'medium');
   var [currentTheme, setCurrentTheme] = useState(localStorage.getItem(THEME_STORAGE_KEY) || 'rose');
   var [customColor, setCustomColor] = useState(localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48');
@@ -33,53 +31,6 @@ export default function StatusBar({ sidebarCollapsed }) {
   var [searchParams] = useSearchParams();
   var quickFilter = searchParams.get('qf') || '';
   var location = useLocation();
-
-  // Check Pro status using multiple signals for reliability
-  useEffect(function() {
-    function checkPro() {
-      // 1. Check localStorage (set earliest in the flow by LicenseContext, persists across sessions)
-      if (localStorage.getItem('obsidian_cinema_is_pro') === 'true') {
-        setProStatus(true);
-        return;
-      }
-      // 2. Check license_status in localStorage (set after server validation)
-      if (localStorage.getItem('obsidian_cinema_license_status') === 'valid') {
-        setProStatus(true);
-        return;
-      }
-      // 3. Check electron-store directly via IPC
-      if (window.electronAPI && window.electronAPI.getLicense) {
-        window.electronAPI.getLicense().then(function(license) {
-          if (license && license.subscription_tier === 'pro') {
-            setProStatus(true);
-          }
-        }).catch(function() {});
-      }
-    }
-
-    // Run immediately on mount
-    checkPro();
-
-    // Listen for custom event from LicenseContext (immediate notification)
-    // Only downgrade Pro status on explicit deactivation, not transient errors
-    function onProStatusChange(e) {
-      if (e.detail && e.detail.isPro) {
-        setProStatus(true);
-      } else if (e.detail && (e.detail.status === 'not_activated' || e.detail.status === 'free' || e.detail.status === 'invalid')) {
-        // Only remove badge for explicit non-pro states, not transient errors
-        setProStatus(false);
-      }
-    }
-    window.addEventListener('obsidian-pro-status-change', onProStatusChange);
-
-    // Fallback polling every 3 seconds (handles edge cases)
-    var interval = setInterval(checkPro, 3000);
-
-    return function() {
-      window.removeEventListener('obsidian-pro-status-change', onProStatusChange);
-      clearInterval(interval);
-    };
-  }, []);
 
   // Listen for storage changes (from same window via dispatchEvent and from localStorage writes)
   useEffect(function() {
