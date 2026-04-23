@@ -31,19 +31,22 @@ export function LicenseProvider({ children }) {
         // Check locally stored license
         const storedLicense = await window.electronAPI.getLicense();
         if (storedLicense) {
-          // Check if it's a free tier marker
-          if (storedLicense.subscription_tier === 'free') {
+          // If it has a license_key, it's a Pro license — regardless of subscription_tier field
+          if (storedLicense.license_key) {
+            setLicense(storedLicense);
+            localStorage.setItem('obsidian_cinema_is_pro', 'true');
+            window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'pending-validation' } }));
+            await validateLicenseWithServer(storedLicense.license_key, id);
+          } else if (storedLicense.subscription_tier === 'free') {
+            // Free tier marker (no license key, just a tier flag)
             setIsFreeTier(true);
             setLicenseStatus('free');
             localStorage.setItem('obsidian_cinema_is_pro', 'false');
             window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'free' } }));
           } else {
-            setLicense(storedLicense);
-            localStorage.setItem('obsidian_cinema_is_pro', 'true');
-            // Dispatch early so StatusBar picks up immediately, before server validation
-            window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'pending-validation' } }));
-            // Validate with server
-            await validateLicenseWithServer(storedLicense.license_key, id);
+            setLicenseStatus('not_activated');
+            localStorage.setItem('obsidian_cinema_is_pro', 'false');
+            window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'not_activated' } }));
           }
         } else {
           setLicenseStatus('not_activated');
