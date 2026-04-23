@@ -437,7 +437,7 @@ function GiftEmailTemplate({ gift, onClose }) {
 
 Hey there,
 
-Great news — the free tier has been expanded to 500 movies with release 1.5.9 but...
+Great news — the free tier has been expanded to 500 movies with release 1.6.0 but...
 
 You've just been gifted a complimentary Obsidian Cinema PRO license! Consider this your all-access pass to the full cinematic experience.
 
@@ -446,7 +446,7 @@ ${gift.key}
 
 Here's how to activate it:
 
-If you haven't grabbed the latest Obsidian Cinema yet, download v1.5.9 here:
+If you haven't grabbed the latest Obsidian Cinema yet, download v1.6.0 here:
 https://www.obsidiancinema.com
 
 1. Download and Install the newest version of Obsidian Cinema

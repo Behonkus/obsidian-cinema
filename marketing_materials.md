@@ -1,4 +1,4 @@
-# Obsidian Cinema — Marketing Materials (Updated v1.5.9)
+# Obsidian Cinema — Marketing Materials (Updated v1.6.0)
 
 ---
 
@@ -69,7 +69,7 @@ Obsidian Cinema scans your local and network drives, automatically fetches movie
 
 ### Key Facts
 - **Platform:** Windows (Electron-based desktop app)
-- **Version:** 1.5.9
+- **Version:** 1.6.0
 - **Price:** Free (500 movies, 3 collections) / Pro $25 one-time (unlimited)
 - **Data Source:** TMDB for posters, metadata, and cast data
 - **AI Engine:** GPT-4o for personalized movie recommendations
