@@ -150,7 +150,7 @@ ipcMain.handle('fs:pathExists', (event, checkPath) => {
 
 // Configure auto-updater
 autoUpdater.autoDownload = false; // Don't auto-download, let user decide
-autoUpdater.autoInstallOnAppQuit = true;
+autoUpdater.autoInstallOnAppQuit = false; // Don't auto-install — let user click "Restart & Install"
 
 // Set GH_TOKEN if available (prevents rate limiting, enables private repos)
 if (process.env.GH_TOKEN) {

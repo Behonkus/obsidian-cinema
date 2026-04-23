@@ -492,11 +492,10 @@ export default function SettingsPage() {
         
         if (status === 'available') {
           setIsCheckingUpdate(false);
-          toast.success(`Update v${data.version} is available! Downloading...`);
-          // Auto-trigger download
-          if (window.electronAPI.downloadUpdate) {
-            window.electronAPI.downloadUpdate();
-          }
+          toast.success(`Update v${data.version} is available!`, {
+            description: 'Go to Settings → App Updates to download it.',
+            duration: 8000,
+          });
         } else if (status === 'downloading' && data) {
           setIsCheckingUpdate(false);
           setDownloadProgress(data.percent || 0);
@@ -994,11 +993,26 @@ export default function SettingsPage() {
                       : 'bg-secondary/30 border border-border'
                   }`}>
                     {updateStatus.status === 'available' && (
-                      <div className="flex items-center gap-2">
-                        <Download className="w-4 h-4 text-purple-400" />
-                        <span className="text-sm text-purple-300">
-                          Update v{updateStatus.data?.version} available — downloading...
-                        </span>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Download className="w-4 h-4 text-purple-400" />
+                          <span className="text-sm text-purple-300">
+                            Update v{updateStatus.data?.version} is available!
+                          </span>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            if (window.electronAPI.downloadUpdate) {
+                              window.electronAPI.downloadUpdate();
+                            }
+                          }}
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                          size="sm"
+                          data-testid="download-update-btn"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Update
+                        </Button>
                       </div>
                     )}
                     {updateStatus.status === 'downloading' && (
@@ -1026,14 +1040,36 @@ export default function SettingsPage() {
                             Update downloaded! Ready to install.
                           </span>
                         </div>
+                        <p className="text-xs text-muted-foreground">
+                          The app will close and restart with the new version.
+                        </p>
                         <Button
-                          onClick={() => window.electronAPI.installUpdate()}
+                          onClick={() => {
+                            setUpdateStatus({ status: 'installing' });
+                            setTimeout(() => {
+                              window.electronAPI.installUpdate();
+                            }, 1500);
+                          }}
                           className="w-full bg-green-600 hover:bg-green-700 text-white mt-2"
                           size="sm"
+                          data-testid="install-update-btn"
                         >
                           <RefreshCw className="w-4 h-4 mr-2" />
                           Restart & Install Update
                         </Button>
+                      </div>
+                    )}
+                    {updateStatus.status === 'installing' && (
+                      <div className="space-y-2 py-2">
+                        <div className="flex items-center justify-center gap-2">
+                          <RefreshCw className="w-5 h-5 animate-spin text-primary" />
+                          <span className="text-sm font-medium text-foreground">
+                            Installing update — restarting app...
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground text-center">
+                          The app will close and reopen automatically.
+                        </p>
                       </div>
                     )}
                     {updateStatus.status === 'error' && (

@@ -65,9 +65,15 @@ export default function UpdateNotification() {
     await window.electronAPI.downloadUpdate();
   }, []);
 
+  const [installing, setInstalling] = useState(false);
+
   const handleInstall = useCallback(async () => {
     if (!isElectron()) return;
-    window.electronAPI.installUpdate();
+    setInstalling(true);
+    // Brief delay so user sees "Restarting..." before the app closes
+    setTimeout(() => {
+      window.electronAPI.installUpdate();
+    }, 1500);
   }, []);
 
   const handleDismiss = useCallback(() => {
@@ -164,14 +170,14 @@ export default function UpdateNotification() {
                 </>
               )}
 
-              {updateStatus === 'downloaded' && (
+              {updateStatus === 'downloaded' && !installing && (
                 <>
                   <div className="flex items-center gap-2 text-green-400">
                     <CheckCircle2 className="w-5 h-5" />
                     <span className="font-medium">Update Ready!</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Restart the app to apply the update.
+                    The app will close and restart with the new version.
                   </p>
                   <Button 
                     onClick={handleInstall}
@@ -182,6 +188,16 @@ export default function UpdateNotification() {
                     Restart & Update
                   </Button>
                 </>
+              )}
+
+              {installing && (
+                <div className="flex flex-col items-center gap-2 py-3">
+                  <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+                  <span className="text-sm font-medium">Restarting app...</span>
+                  <p className="text-xs text-muted-foreground text-center">
+                    The app will close and reopen automatically.
+                  </p>
+                </div>
               )}
 
               {updateStatus === 'checking' && (
