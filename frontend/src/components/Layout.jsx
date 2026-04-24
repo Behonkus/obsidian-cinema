@@ -336,37 +336,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             </AnimatePresence>
           </NavLink>
         )}
-
-        {/* Pro License Badge — shows for all Pro users regardless of Google Auth */}
-        {desktopMode && isProUser && (
-          <div
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 ${collapsed ? "justify-center" : ""}`}
-            data-testid="sidebar-pro-badge"
-          >
-            <div
-              className="flex items-center justify-center w-5 h-5 flex-shrink-0"
-            >
-              <Crown className="w-5 h-5 text-amber-400" />
-            </div>
-            <AnimatePresence mode="wait">
-              {!collapsed && (
-                <motion.span
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: "auto" }}
-                  exit={{ opacity: 0, width: 0 }}
-                  className="font-bold text-sm whitespace-nowrap overflow-hidden"
-                  style={{
-                    background: 'linear-gradient(135deg, #b8860b, #ffd700)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  PRO License
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
       </nav>
 
       {/* Sidebar Widgets (desktop mode only) */}
@@ -461,13 +430,31 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="mt-4"
+                className="mt-4 space-y-2"
               >
                 <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
                   <p className="text-xs text-muted-foreground">
                     Powered by TMDB
                   </p>
                 </div>
+                {desktopMode && isProUser && (
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20"
+                    data-testid="sidebar-pro-badge"
+                  >
+                    <Crown className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    <span
+                      className="font-bold text-xs tracking-wide"
+                      style={{
+                        background: 'linear-gradient(135deg, #b8860b, #ffd700)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                      }}
+                    >
+                      PRO License Active
+                    </span>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
