@@ -306,11 +306,9 @@ ipcMain.handle('update:install', async () => {
       buttons: ['OK'],
       defaultId: 0,
     });
-    mainWindow.close();
   }
-  setTimeout(() => {
-    autoUpdater.quitAndInstall(false, true);
-  }, 500);
+  // quitAndInstall handles closing the app and restarting
+  autoUpdater.quitAndInstall(false, true);
 });
 
 ipcMain.handle('update:getStatus', () => {
