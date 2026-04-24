@@ -30,6 +30,8 @@ var THEMES = [
   { id: 'pastel-lavender',name: 'Pastel Lavender', hue: '270 50% 72%',  preview: '#b8a3d9' },
   { id: 'pastel-peach',   name: 'Pastel Peach',    hue: '20 70% 72%',   preview: '#e8b89d' },
   { id: 'rainbow',    name: 'Rainbow',        hue: 'rainbow',      preview: 'linear-gradient(90deg, #ef4444, #f59e0b, #22c55e, #3b82f6, #8b5cf6)' },
+  { id: 'disco',      name: 'Disco',          hue: 'disco',        preview: 'linear-gradient(90deg, #ff0080, #ffff00, #00ff80, #ff00ff, #00ffff, #ff0080)' },
+  { id: 'icecream',   name: 'Ice Cream',      hue: 'icecream',     preview: 'linear-gradient(90deg, #fbb6ce, #c4b5fd, #a7f3d0, #fde68a, #fbcfe8)' },
 ];
 
 function hexToHsl(hex) {
@@ -68,30 +70,74 @@ function applyTheme(themeId) {
 
   var root = document.documentElement;
 
-  if (theme.hue === 'rainbow') {
-    // Rainbow: cycle hue with CSS animation
+  if (theme.hue === 'rainbow' || theme.hue === 'disco' || theme.hue === 'icecream') {
+    // Animated themes: cycle hue with CSS animation
     root.style.setProperty('--primary', '0 80% 55%');
     root.style.setProperty('--accent', '0 80% 55%');
     root.style.setProperty('--ring', '0 80% 55%');
 
-    // Add rainbow animation if not present
-    if (!document.getElementById('rainbow-style')) {
-      var style = document.createElement('style');
-      style.id = 'rainbow-style';
+    // Remove any existing animated theme style
+    var existingStyle = document.getElementById('animated-theme-style');
+    if (existingStyle) existingStyle.remove();
+
+    var style = document.createElement('style');
+    style.id = 'animated-theme-style';
+
+    if (theme.hue === 'rainbow') {
       style.textContent = [
-        '@keyframes rainbowHue { 0% { --primary: 0 80% 55%; --accent: 0 80% 55%; --ring: 0 80% 55%; }',
+        '@keyframes themeHue { 0% { --primary: 0 80% 55%; --accent: 0 80% 55%; --ring: 0 80% 55%; }',
         '16% { --primary: 30 90% 55%; --accent: 30 90% 55%; --ring: 30 90% 55%; }',
         '33% { --primary: 60 85% 50%; --accent: 60 85% 50%; --ring: 60 85% 50%; }',
         '50% { --primary: 150 80% 45%; --accent: 150 80% 45%; --ring: 150 80% 45%; }',
         '66% { --primary: 217 91% 60%; --accent: 217 91% 60%; --ring: 217 91% 60%; }',
         '83% { --primary: 270 75% 58%; --accent: 270 75% 58%; --ring: 270 75% 58%; }',
         '100% { --primary: 0 80% 55%; --accent: 0 80% 55%; --ring: 0 80% 55%; } }',
-        ':root { animation: rainbowHue 12s linear infinite; }'
+        ':root { animation: themeHue 12s linear infinite; }'
       ].join(' ');
-      document.head.appendChild(style);
+    } else if (theme.hue === 'disco') {
+      style.textContent = [
+        '@keyframes themeHue {',
+        '0% { --primary: 330 100% 50%; --accent: 330 100% 50%; --ring: 330 100% 50%; }',
+        '8% { --primary: 0 0% 95%; --accent: 0 0% 95%; --ring: 0 0% 95%; }',
+        '12% { --primary: 60 100% 50%; --accent: 60 100% 50%; --ring: 60 100% 50%; }',
+        '20% { --primary: 0 0% 95%; --accent: 0 0% 95%; --ring: 0 0% 95%; }',
+        '24% { --primary: 150 100% 50%; --accent: 150 100% 50%; --ring: 150 100% 50%; }',
+        '32% { --primary: 280 100% 60%; --accent: 280 100% 60%; --ring: 280 100% 60%; }',
+        '36% { --primary: 0 0% 95%; --accent: 0 0% 95%; --ring: 0 0% 95%; }',
+        '40% { --primary: 190 100% 50%; --accent: 190 100% 50%; --ring: 190 100% 50%; }',
+        '48% { --primary: 0 100% 50%; --accent: 0 100% 50%; --ring: 0 100% 50%; }',
+        '52% { --primary: 0 0% 95%; --accent: 0 0% 95%; --ring: 0 0% 95%; }',
+        '56% { --primary: 45 100% 50%; --accent: 45 100% 50%; --ring: 45 100% 50%; }',
+        '64% { --primary: 210 100% 55%; --accent: 210 100% 55%; --ring: 210 100% 55%; }',
+        '68% { --primary: 0 0% 95%; --accent: 0 0% 95%; --ring: 0 0% 95%; }',
+        '72% { --primary: 300 100% 55%; --accent: 300 100% 55%; --ring: 300 100% 55%; }',
+        '80% { --primary: 120 100% 45%; --accent: 120 100% 45%; --ring: 120 100% 45%; }',
+        '84% { --primary: 0 0% 95%; --accent: 0 0% 95%; --ring: 0 0% 95%; }',
+        '88% { --primary: 15 100% 55%; --accent: 15 100% 55%; --ring: 15 100% 55%; }',
+        '96% { --primary: 260 100% 60%; --accent: 260 100% 60%; --ring: 260 100% 60%; }',
+        '100% { --primary: 330 100% 50%; --accent: 330 100% 50%; --ring: 330 100% 50%; } }',
+        ':root { animation: themeHue 3s linear infinite; }'
+      ].join(' ');
+    } else if (theme.hue === 'icecream') {
+      style.textContent = [
+        '@keyframes themeHue {',
+        '0% { --primary: 340 60% 75%; --accent: 340 60% 75%; --ring: 340 60% 75%; }',
+        '16% { --primary: 270 55% 75%; --accent: 270 55% 75%; --ring: 270 55% 75%; }',
+        '33% { --primary: 150 45% 72%; --accent: 150 45% 72%; --ring: 150 45% 72%; }',
+        '50% { --primary: 45 70% 75%; --accent: 45 70% 75%; --ring: 45 70% 75%; }',
+        '66% { --primary: 200 60% 75%; --accent: 200 60% 75%; --ring: 200 60% 75%; }',
+        '83% { --primary: 310 55% 75%; --accent: 310 55% 75%; --ring: 310 55% 75%; }',
+        '100% { --primary: 340 60% 75%; --accent: 340 60% 75%; --ring: 340 60% 75%; } }',
+        ':root { animation: themeHue 20s ease-in-out infinite; }'
+      ].join(' ');
     }
+
+    document.head.appendChild(style);
   } else {
-    // Remove rainbow animation if present
+    // Remove animated theme style if present
+    var existingStyle = document.getElementById('animated-theme-style');
+    if (existingStyle) existingStyle.remove();
+    // Also clean up legacy rainbow-style element
     var rainbowEl = document.getElementById('rainbow-style');
     if (rainbowEl) rainbowEl.remove();
 
@@ -131,7 +177,7 @@ export default function ThemeSelector() {
 
   var solidThemes = THEMES.filter(function(t) { return !t.id.startsWith('pastel') && t.id !== 'rainbow'; });
   var pastelThemes = THEMES.filter(function(t) { return t.id.startsWith('pastel'); });
-  var specialThemes = THEMES.filter(function(t) { return t.id === 'rainbow'; });
+  var specialThemes = THEMES.filter(function(t) { return t.id === 'rainbow' || t.id === 'disco' || t.id === 'icecream'; });
 
   return (
     <DropdownMenu>

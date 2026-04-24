@@ -387,20 +387,22 @@ export default function SettingsPage() {
       var trash = localStorage.getItem('obsidian_cinema_trash') || '[]';
       var tmdb = localStorage.getItem('obsidian_cinema_tmdb_key') || '';
       var theme = localStorage.getItem('obsidian_cinema_theme') || '';
-      var gridSize = localStorage.getItem('obsidian_cinema_grid_size') || '';
+      var gridSizeVal = localStorage.getItem('obsidian_cinema_grid_size') || '';
       var sortBy = localStorage.getItem('obsidian_cinema_sort_by') || '';
       var favorites = localStorage.getItem('obsidian_cinema_favorites') || '[]';
       var activity = localStorage.getItem('obsidian_cinema_activity') || '{}';
-      var parsedMovies = [];
-      try { parsedMovies = JSON.parse(movies); } catch (e) {}
-      var parsedCols = [];
-      try { parsedCols = JSON.parse(collections); } catch (e) {}
+      
+      // Count without full parse — count occurrences of "id" key as approximation
+      var movieCount = 0;
+      var colCount = 0;
+      try { movieCount = (movies.match(/"id"/g) || []).length; } catch (e) {}
+      try { colCount = (collections.match(/"id"/g) || []).length; } catch (e) {}
 
       var snapshot = {
         date: new Date().toISOString(),
-        movieCount: parsedMovies.length,
-        collectionCount: parsedCols.length,
-        data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSize, sortBy: sortBy, favorites: favorites, activity: activity }
+        movieCount: movieCount,
+        collectionCount: colCount,
+        data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSizeVal, sortBy: sortBy, favorites: favorites, activity: activity }
       };
       // Clean up any old backup slots (2-5) from previous versions
       for (var i = 2; i <= 5; i++) {
@@ -542,35 +544,35 @@ export default function SettingsPage() {
   useEffect(() => {
     loadData();
     
-    // Load local poster count and collections
-    try {
-      const savedMovies = localStorage.getItem('obsidian_cinema_local_movies');
-      if (savedMovies) {
-        const movies = JSON.parse(savedMovies);
-        setPosterCount(movies.filter(m => m.poster_path).length);
-      }
-      const savedCols = localStorage.getItem('obsidian_cinema_collections');
-      if (savedCols) {
-        setCollectionsList(JSON.parse(savedCols));
-      }
-    } catch (e) {}
-    
-    // Load backups list and auto-backup
-    loadBackups();
-    // Auto-backup: once per session, only if movies exist
-    try {
-      var lastAutoBackup = sessionStorage.getItem('obsidian_cinema_last_auto_backup');
-      if (!lastAutoBackup) {
-        var savedMoviesForBackup = localStorage.getItem('obsidian_cinema_local_movies');
-        if (savedMoviesForBackup) {
-          var parsed = JSON.parse(savedMoviesForBackup);
-          if (parsed.length > 0) {
+    // Load local poster count and collections (defer heavy parsing)
+    setTimeout(() => {
+      try {
+        const savedMovies = localStorage.getItem('obsidian_cinema_local_movies');
+        if (savedMovies) {
+          const movies = JSON.parse(savedMovies);
+          setPosterCount(movies.filter(m => m.poster_path).length);
+        }
+        const savedCols = localStorage.getItem('obsidian_cinema_collections');
+        if (savedCols) {
+          setCollectionsList(JSON.parse(savedCols));
+        }
+      } catch (e) {}
+      
+      // Load backups list
+      loadBackups();
+      
+      // Auto-backup: once per session, only if movies exist — deferred to not block page load
+      try {
+        var lastAutoBackup = sessionStorage.getItem('obsidian_cinema_last_auto_backup');
+        if (!lastAutoBackup) {
+          var savedMoviesRaw = localStorage.getItem('obsidian_cinema_local_movies');
+          if (savedMoviesRaw && savedMoviesRaw.length > 10) {
             createBackup();
             sessionStorage.setItem('obsidian_cinema_last_auto_backup', 'true');
           }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }, 100);
 
     // Get app version if in Electron
     if (isElectron()) {
@@ -613,25 +615,23 @@ export default function SettingsPage() {
   }, []);
 
   const loadData = async () => {
-    setLoading(true);
+    // Show page immediately with local data — don't wait for server
+    const localTmdbKey = localStorage.getItem('obsidian_cinema_tmdb_key') || '';
+    setSettings({
+      tmdb_configured: Boolean(localTmdbKey),
+      tmdb_key_masked: localTmdbKey ? '*'.repeat(8) + '...' + localTmdbKey.slice(-4) : null
+    });
+    setLoading(false);
+
+    // Then try to enrich with server data in background
     try {
-      const settingsRes = await axios.get(`${API}/settings`);
+      const settingsRes = await axios.get(`${API}/settings`, { timeout: 5000 });
       const serverSettings = settingsRes.data;
-      // Override TMDB status from localStorage (per-user, not shared server)
-      const localTmdbKey = localStorage.getItem('obsidian_cinema_tmdb_key') || '';
       serverSettings.tmdb_configured = Boolean(localTmdbKey);
       serverSettings.tmdb_key_masked = localTmdbKey ? '*'.repeat(8) + '...' + localTmdbKey.slice(-4) : null;
       setSettings(serverSettings);
     } catch (err) {
-      console.error("Failed to load settings:", err);
-      // Still show local TMDB status even if server is unreachable
-      const localTmdbKey = localStorage.getItem('obsidian_cinema_tmdb_key') || '';
-      setSettings({
-        tmdb_configured: Boolean(localTmdbKey),
-        tmdb_key_masked: localTmdbKey ? '*'.repeat(8) + '...' + localTmdbKey.slice(-4) : null
-      });
-    } finally {
-      setLoading(false);
+      // Already showing local data, no action needed
     }
   };
 
@@ -915,7 +915,7 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-[10px] text-muted-foreground mb-1.5">Solid</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {THEMES.filter(function(t) { return !t.id.startsWith('pastel') && t.id !== 'rainbow'; }).map(function(theme) {
+                      {THEMES.filter(function(t) { return !t.id.startsWith('pastel') && t.id !== 'rainbow' && t.id !== 'disco' && t.id !== 'icecream'; }).map(function(theme) {
                         var active = currentTheme === theme.id;
                         return (
                           <button
@@ -963,7 +963,7 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-[10px] text-muted-foreground mb-1.5">Special</p>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      {THEMES.filter(function(t) { return t.id === 'rainbow'; }).map(function(theme) {
+                      {THEMES.filter(function(t) { return t.id === 'rainbow' || t.id === 'disco' || t.id === 'icecream'; }).map(function(theme) {
                         var active = currentTheme === theme.id;
                         return (
                           <button

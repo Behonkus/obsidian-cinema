@@ -68,7 +68,7 @@ export default function StatusBar({ sidebarCollapsed }) {
     window.dispatchEvent(new Event('storage'));
   };
 
-  var solidThemes = THEMES.filter(function(t) { return !t.id.startsWith('pastel') && t.id !== 'rainbow'; });
+  var solidThemes = THEMES.filter(function(t) { return !t.id.startsWith('pastel') && t.id !== 'rainbow' && t.id !== 'disco' && t.id !== 'icecream'; });
 
   return (
     <div
