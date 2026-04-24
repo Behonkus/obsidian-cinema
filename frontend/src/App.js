@@ -29,7 +29,6 @@ import LocalLibraryPage from "@/pages/LocalLibraryPage";
 import StatsPage from "@/pages/StatsPage";
 import AdminPage from "@/pages/AdminPage";
 import LandingPage from "@/pages/LandingPage";
-import UpdateNotification from "@/components/UpdateNotification";
 import { RefreshCw } from "lucide-react";
 
 // Check if running in Electron
@@ -181,7 +180,6 @@ function App() {
           <LicenseProvider>
             <ScrollToTop />
             <AppRouter />
-            <UpdateNotification />
           </LicenseProvider>
         </AuthProvider>
       </Router>
