@@ -202,6 +202,57 @@ function SidebarWidgets() {
   );
 }
 
+function FreeTierBadge() {
+  const [movieCount, setMovieCount] = useState(0);
+  const FREE_LIMIT = 500;
+
+  useEffect(() => {
+    const check = () => {
+      try {
+        const raw = localStorage.getItem('obsidian_cinema_local_movies');
+        const movies = raw ? JSON.parse(raw) : [];
+        setMovieCount(movies.length);
+      } catch {}
+    };
+    check();
+    const interval = setInterval(check, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const remaining = Math.max(0, FREE_LIMIT - movieCount);
+  const pct = Math.min(100, Math.round((movieCount / FREE_LIMIT) * 100));
+
+  return (
+    <NavLink
+      to="/activate"
+      className="block"
+      data-testid="sidebar-free-badge"
+    >
+      <div className="px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 hover:border-amber-500/30 transition-colors space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">Free Version</span>
+          <span className="text-[10px] text-muted-foreground">{movieCount}/{FREE_LIMIT}</span>
+        </div>
+        <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{
+              width: pct + '%',
+              background: pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : 'hsl(var(--primary))',
+            }}
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          {remaining > 0 ? `${remaining} movies remaining` : 'Limit reached'}
+          {' — '}
+          <span className="text-amber-400 font-medium">Upgrade to Pro</span>
+        </p>
+      </div>
+    </NavLink>
+  );
+}
+
+
 const Sidebar = ({ collapsed, setCollapsed }) => {
   const navigate = useNavigate();
   const { user, logout, isPro } = useAuth();
@@ -454,6 +505,9 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                       PRO License Active
                     </span>
                   </div>
+                )}
+                {desktopMode && !isProUser && (
+                  <FreeTierBadge />
                 )}
               </motion.div>
             )}
