@@ -21,7 +21,7 @@ export function MostViewedMovies({ movies }) {
     })
     .filter(function(s) { return s.score > 0; })
     .sort(function(a, b) { return b.score - a.score; })
-    .slice(0, 10);
+    .slice(0, 15);
 
   if (scored.length === 0) return null;
 

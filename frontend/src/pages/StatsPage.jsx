@@ -113,36 +113,31 @@ function RatingChart({ data }) {
 
 function FormatChart({ data }) {
   if (!data || data.length === 0) return null;
-  const cells = data.map(function(entry, idx) {
-    return <Cell key={entry.name} fill={COLORS[idx % COLORS.length]} />;
-  });
-  const legend = data.map(function(f, idx) {
-    return (
-      <div key={f.name} className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-sm" style={{ background: COLORS[idx % COLORS.length] }} />
-          <span className="font-mono text-xs">{f.name}</span>
-        </div>
-        <span className="text-muted-foreground text-xs">{f.value}</span>
-      </div>
-    );
-  });
+  const maxVal = Math.max(...data.map(d => d.value));
   return (
     <Card className="h-full">
       <CardHeader className="pb-1 pt-3 px-4">
         <CardTitle className="text-sm font-medium text-muted-foreground">File Formats</CardTitle>
       </CardHeader>
-      <CardContent className="px-4 pb-3 flex-1 flex items-center">
-        <div className="flex items-center gap-4">
-          <ResponsiveContainer width="50%" height={160}>
-            <PieChart>
-              <Pie data={data} cx="50%" cy="50%" innerRadius={35} outerRadius={65} dataKey="value" stroke="none">
-                {cells}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex-1 space-y-1.5">{legend}</div>
+      <CardContent className="px-4 pb-3">
+        <div className="space-y-2.5">
+          {data.map(function(f, idx) {
+            var pct = maxVal > 0 ? (f.value / maxVal) * 100 : 0;
+            return (
+              <div key={f.name} className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-mono text-muted-foreground">{f.name}</span>
+                  <span className="font-medium text-foreground tabular-nums">{f.value.toLocaleString()}</span>
+                </div>
+                <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: pct + '%', background: COLORS[idx % COLORS.length] }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
