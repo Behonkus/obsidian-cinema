@@ -252,7 +252,6 @@ function LowestRatedList({ movies }) {
 
 function GenreTotals({ data }) {
   const total = data ? data.reduce((sum, d) => sum + d.value, 0) : 0;
-  const display = data ? data.slice(0, 12) : [];
   return (
     <Card>
       <CardHeader className="pb-1 pt-3 px-4">
@@ -263,11 +262,11 @@ function GenreTotals({ data }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-3">
-        {display.length === 0 ? (
+        {!data || data.length === 0 ? (
           <p className="text-xs text-muted-foreground py-4 text-center">No genre data yet. Fetch metadata from TMDB to see genre stats.</p>
         ) : (
           <div className="space-y-1.5">
-            {display.map((item, i) => {
+            {data.map((item, i) => {
               const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
               return (
                 <div key={item.name} className="flex items-center gap-2 text-xs">
@@ -278,9 +277,6 @@ function GenreTotals({ data }) {
                 </div>
               );
             })}
-            {data.length > 12 && (
-              <p className="text-[10px] text-muted-foreground/50 pt-1">+{data.length - 12} more genres</p>
-            )}
           </div>
         )}
       </CardContent>
