@@ -973,7 +973,7 @@ export default function SettingsPage() {
                               localStorage.setItem(THEME_STORAGE_KEY, theme.id);
                               applyTheme(theme.id);
                             }}
-                            className={'h-7 px-4 rounded-full border-2 transition-all flex items-center justify-center gap-1.5 text-[11px] font-medium text-white ' + (active ? 'border-foreground' : 'border-transparent hover:scale-[1.02]')}
+                            className={'h-7 px-4 rounded-full border-2 transition-all flex items-center justify-center gap-1.5 text-[11px] font-bold text-black ' + (active ? 'border-foreground' : 'border-transparent hover:scale-[1.02]')}
                             style={{ background: theme.preview }}
                             title={theme.name}
                             data-testid={'settings-theme-' + theme.id}
