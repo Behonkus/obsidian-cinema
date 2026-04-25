@@ -1625,6 +1625,7 @@ export default function SettingsPage() {
                   <ul className="space-y-1 text-muted-foreground">
                     <li>• Scan local & network directories</li>
                     <li>• TMDB posters, metadata & cast</li>
+                    <li>• Genre tags & filtering</li>
                     <li>• System default player integration</li>
                     <li>• 13 sorting options & poster sizes</li>
                     <li>• Directory management & filtering</li>
@@ -1635,9 +1636,10 @@ export default function SettingsPage() {
                   <h4 className="font-medium text-foreground mb-2">Smart Features</h4>
                   <ul className="space-y-1 text-muted-foreground">
                     <li>• AI movie suggestions</li>
-                    <li>• Editable title, year & synopsis</li>
+                    <li>• Duplicate detection & management</li>
+                    <li>• Editable title, year, rating & synopsis</li>
                     <li>• Cast display & bulk fetch</li>
-                    <li>• Reset & re-fetch metadata</li>
+                    <li>• Search by title, year & actor</li>
                     <li>• Collections & trash management</li>
                     <li>• Backup, export & restore</li>
                   </ul>
@@ -1647,8 +1649,8 @@ export default function SettingsPage() {
                   <ul className="space-y-1 text-muted-foreground">
                     <li>• Library stats & cast insights</li>
                     <li>• Collection health tracking</li>
-                    <li>• 18 color themes</li>
-                    <li>• Auto-updates</li>
+                    <li>• 21 color themes (incl. Disco & Ice Cream)</li>
+                    <li>• In-app updates</li>
                     <li>• MP4, MKV, AVI, MOV, WMV & more</li>
                     <li>• UNC & network path support</li>
                   </ul>
