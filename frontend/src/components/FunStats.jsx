@@ -187,8 +187,8 @@ export function MarathonMode({ total }) {
   var months = (hours / 730).toFixed(1);
 
   return (
-    <Card data-testid="marathon-mode">
-      <CardContent className="p-4 flex flex-wrap items-center gap-4 md:gap-6">
+    <Card data-testid="marathon-mode" className="h-full">
+      <CardContent className="p-4 h-full flex flex-col justify-center flex-wrap items-center gap-4 md:gap-6">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Timer className="w-4 h-4 text-emerald-400" />
           <span className="text-sm font-medium">Marathon Mode</span>

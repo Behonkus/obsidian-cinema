@@ -128,11 +128,11 @@ function FormatChart({ data }) {
     );
   });
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader className="pb-1 pt-3 px-4">
         <CardTitle className="text-sm font-medium text-muted-foreground">File Formats</CardTitle>
       </CardHeader>
-      <CardContent className="px-4 pb-3">
+      <CardContent className="px-4 pb-3 flex-1 flex items-center">
         <div className="flex items-center gap-4">
           <ResponsiveContainer width="50%" height={160}>
             <PieChart>
@@ -790,7 +790,7 @@ export default function StatsPage() {
         <RatingPersonality avgRating={stats.avgRating} movies={movies} />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-3">
+      <div className="grid md:grid-cols-2 gap-3 items-stretch">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <DecadeChart data={stats.decadeData} />
         </motion.div>
@@ -802,10 +802,10 @@ export default function StatsPage() {
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="flex flex-col gap-3">
           <GrowthChart data={stats.growthData} />
-          <MarathonMode total={stats.total} />
+          <div className="flex-1 flex"><div className="w-full"><MarathonMode total={stats.total} /></div></div>
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="flex flex-col">
-          <div className="flex-1"><FormatChart data={stats.formatData} /></div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <FormatChart data={stats.formatData} />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
           <DirectoryChart data={stats.dirData} />
