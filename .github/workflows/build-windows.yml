@@ -72,11 +72,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Zip installer for easy sharing
+        run: |
+          cd frontend/dist
+          powershell Compress-Archive -Path "*.exe" -DestinationPath "Obsidian-Cinema-Setup-v${{ steps.version.outputs.VERSION }}.zip"
+        shell: cmd
+
+      - name: Attach zip to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          files: frontend/dist/Obsidian-Cinema-Setup-v${{ steps.version.outputs.VERSION }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload installer as build artifact (backup)
         uses: actions/upload-artifact@v4
         with:
           name: obsidian-cinema-v${{ steps.version.outputs.VERSION }}
           path: |
             frontend/dist/*.exe
+            frontend/dist/*.zip
             frontend/dist/latest.yml
           retention-days: 30
