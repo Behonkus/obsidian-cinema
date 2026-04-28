@@ -1766,13 +1766,35 @@ export default function LocalLibraryPage() {
                     </div>
                   ) : (
                     <h2
-                      className="text-xl font-bold cursor-pointer hover:text-primary transition-colors group flex items-center gap-1.5"
-                      onClick={() => { setEditingTitle(true); setTitleInput(selectedMovie.title || selectedMovie.file_name || ''); }}
-                      title="Click to edit title"
+                      className="text-xl font-bold group flex items-center gap-1.5 select-text"
                       data-testid="movie-title-editable"
                     >
-                      {selectedMovie.title}
-                      <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-50 text-muted-foreground" />
+                      <span
+                        className="cursor-text"
+                        onDoubleClick={() => { setEditingTitle(true); setTitleInput(selectedMovie.title || selectedMovie.file_name || ''); }}
+                        title="Double-click to edit title"
+                      >
+                        {selectedMovie.title}
+                      </span>
+                      <button
+                        className="opacity-0 group-hover:opacity-50 hover:!opacity-100 text-muted-foreground transition-opacity p-0.5"
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedMovie.title || selectedMovie.file_name || '');
+                          toast.success('Title copied to clipboard');
+                        }}
+                        title="Copy title"
+                        data-testid="copy-title-btn"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        className="opacity-0 group-hover:opacity-50 hover:!opacity-100 text-muted-foreground transition-opacity p-0.5"
+                        onClick={() => { setEditingTitle(true); setTitleInput(selectedMovie.title || selectedMovie.file_name || ''); }}
+                        title="Edit title"
+                        data-testid="edit-title-btn"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
                     </h2>
                   )}
                   {editingYear ? (
