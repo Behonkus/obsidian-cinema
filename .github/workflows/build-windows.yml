@@ -64,34 +64,36 @@ jobs:
           echo "Verified: electron.js and preload.js present"
         shell: cmd
 
-      - name: Build Electron installer and publish to GitHub Releases
+      - name: Build Electron installer (no auto-publish)
         run: |
           cd frontend
-          npx electron-builder --win --publish always
+          npx electron-builder --win --publish never
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Zip installer for easy sharing
+      - name: Zip installer for sharing
         run: |
           cd frontend/dist
           powershell Compress-Archive -Path "*.exe" -DestinationPath "Obsidian-Cinema-Setup-v${{ steps.version.outputs.VERSION }}.zip"
         shell: cmd
 
-      - name: Attach zip to GitHub Release
+      - name: Create GitHub Release with zip and latest.yml only
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.VERSION }}
-          files: frontend/dist/Obsidian-Cinema-Setup-v${{ steps.version.outputs.VERSION }}.zip
+          name: Obsidian Cinema v${{ steps.version.outputs.VERSION }}
+          files: |
+            frontend/dist/Obsidian-Cinema-Setup-v${{ steps.version.outputs.VERSION }}.zip
+            frontend/dist/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload installer as build artifact (backup)
+      - name: Upload build artifacts (backup)
         uses: actions/upload-artifact@v4
         with:
           name: obsidian-cinema-v${{ steps.version.outputs.VERSION }}
           path: |
             frontend/dist/*.exe
-            frontend/dist/*.zip
             frontend/dist/latest.yml
           retention-days: 30
