@@ -628,11 +628,11 @@ function computeStats(movies, directories, trashedMovies) {
   for (i = 0; i < Math.min(actorKeys.length, 10); i++) {
     topActors.push({ name: actorKeys[i], count: actorAppearances[actorKeys[i]], photo: actorPhotos[actorKeys[i]] || null });
   }
-  // Top-rated actors (min 5 movies, sorted by avg rating)
+  // Top-rated actors (min 12 movies, sorted by avg rating)
   var ratedActors = [];
   for (i = 0; i < actorKeys.length; i++) {
     var ar = actorRatings[actorKeys[i]];
-    if (ar && ar.count >= 5) {
+    if (ar && ar.count >= 12) {
       ratedActors.push({ name: actorKeys[i], avgRating: ar.sum / ar.count, movieCount: ar.count, photo: actorPhotos[actorKeys[i]] || null });
     }
   }
