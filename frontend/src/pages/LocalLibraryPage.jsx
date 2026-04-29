@@ -1770,9 +1770,9 @@ export default function LocalLibraryPage() {
                       data-testid="movie-title-editable"
                     >
                       <span
-                        className="cursor-text"
-                        onDoubleClick={() => { setEditingTitle(true); setTitleInput(selectedMovie.title || selectedMovie.file_name || ''); }}
-                        title="Double-click to edit title"
+                        className="cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => { setEditingTitle(true); setTitleInput(selectedMovie.title || selectedMovie.file_name || ''); }}
+                        title="Click to edit title"
                       >
                         {selectedMovie.title}
                       </span>
@@ -1786,14 +1786,6 @@ export default function LocalLibraryPage() {
                         data-testid="copy-title-btn"
                       >
                         <Copy className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        className="opacity-0 group-hover:opacity-50 hover:!opacity-100 text-muted-foreground transition-opacity p-0.5"
-                        onClick={() => { setEditingTitle(true); setTitleInput(selectedMovie.title || selectedMovie.file_name || ''); }}
-                        title="Edit title"
-                        data-testid="edit-title-btn"
-                      >
-                        <Edit2 className="w-3 h-3" />
                       </button>
                     </h2>
                   )}
