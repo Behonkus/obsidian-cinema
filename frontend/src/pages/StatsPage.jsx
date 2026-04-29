@@ -48,7 +48,7 @@ const COLLECTIONS_KEY = 'obsidian_cinema_collections';
 
 const COLORS = ['hsl(var(--primary))', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#10b981', '#ec4899', '#6366f1', '#f97316', '#14b8a6'];
 
-function CountUp({ end, duration = 1200 }) {
+function CountUp({ end, duration = 3500 }) {
   const [value, setValue] = useState(0);
   const [done, setDone] = useState(false);
   useEffect(() => {

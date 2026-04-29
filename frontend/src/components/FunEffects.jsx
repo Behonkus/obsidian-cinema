@@ -110,13 +110,13 @@ export function SparkleHover({ children, active }) {
   useEffect(function() {
     if (!active) { setParticles([]); return; }
     var ps = [];
-    for (var i = 0; i < 8; i++) {
+    for (var i = 0; i < 10; i++) {
       ps.push({
         id: i,
-        top: (Math.random() * 100) + '%',
-        left: (Math.random() * 100) + '%',
+        top: (Math.random() * 120 - 10) + '%',
+        left: (Math.random() * 120 - 10) + '%',
         delay: (Math.random() * 1.2) + 's',
-        size: (4 + Math.random() * 4) + 'px',
+        size: (6 + Math.random() * 6) + 'px',
       });
     }
     setParticles(ps);

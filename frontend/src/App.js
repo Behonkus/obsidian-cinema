@@ -29,8 +29,6 @@ import LocalLibraryPage from "@/pages/LocalLibraryPage";
 import StatsPage from "@/pages/StatsPage";
 import AdminPage from "@/pages/AdminPage";
 import LandingPage from "@/pages/LandingPage";
-import { DiscoScanline } from "@/components/FunEffects";
-import { THEME_STORAGE_KEY } from "@/components/ThemeSelector";
 import { RefreshCw } from "lucide-react";
 
 // Check if running in Electron
@@ -174,21 +172,6 @@ function AppRouter() {
   );
 }
 
-function DiscoOverlay() {
-  const [isDisco, setIsDisco] = useState(false);
-  useEffect(function() {
-    function check() {
-      setIsDisco(localStorage.getItem(THEME_STORAGE_KEY) === 'disco');
-    }
-    check();
-    window.addEventListener('storage', check);
-    var interval = setInterval(check, 2000);
-    return function() { window.removeEventListener('storage', check); clearInterval(interval); };
-  }, []);
-  if (!isDisco) return null;
-  return <DiscoScanline />;
-}
-
 function App() {
   return (
     <div className="App min-h-screen bg-background">
@@ -197,7 +180,6 @@ function App() {
           <LicenseProvider>
             <ScrollToTop />
             <AppRouter />
-            <DiscoOverlay />
           </LicenseProvider>
         </AuthProvider>
       </Router>
