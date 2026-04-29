@@ -74,7 +74,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
 import { CollectionAssigner } from "@/components/CollectionAssigner";
-import { PopcornAnimation, ClapperAnimation, FireworksOverlay, useMilestone } from "@/components/FunEffects";
+import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 
 const FREE_TIER_MOVIE_LIMIT = 500;
 const FREE_TIER_COLLECTION_LIMIT = 3;
@@ -316,6 +316,7 @@ export default function LocalLibraryPage() {
   const fetchAbortRef = useRef(false);
   const fetchCountRef = useRef({ fetched: 0, found: 0, total: 0 });
   const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [aiButtonHover, setAiButtonHover] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
   const [showPosterTip, setShowPosterTip] = useState(false);
@@ -1254,7 +1255,8 @@ export default function LocalLibraryPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Milestone fireworks */}
+      {/* Milestone celebration */}
+      {milestone && <ConfettiBurst onComplete={dismissMilestone} />}
       {milestone && <FireworksOverlay onComplete={dismissMilestone} />}
       {milestone && (
         <div className="milestone-banner" onClick={dismissMilestone}>
@@ -2215,16 +2217,20 @@ export default function LocalLibraryPage() {
                     </p>
                   </div>
                   {aiSuggestions.length === 0 && !aiLoading && !aiError && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full gap-2 text-xs"
-                      onClick={() => fetchAiSuggestions(selectedMovie)}
-                      data-testid="get-ai-suggestions-btn"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      If you liked this, you might also enjoy...
-                    </Button>
+                    <SparkleHover active={aiButtonHover}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2 text-xs"
+                        onClick={() => fetchAiSuggestions(selectedMovie)}
+                        onMouseEnter={() => setAiButtonHover(true)}
+                        onMouseLeave={() => setAiButtonHover(false)}
+                        data-testid="get-ai-suggestions-btn"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        If you liked this, you might also enjoy...
+                      </Button>
+                    </SparkleHover>
                   )}
                   {aiLoading && (
                     <div className="py-4" data-testid="ai-loading">

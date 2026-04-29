@@ -106,3 +106,94 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+/* ===== PRO BADGE GOLD SHIMMER ===== */
+@keyframes goldShimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+.pro-shimmer {
+    background: linear-gradient(
+        90deg,
+        #b8860b 0%,
+        #ffd700 20%,
+        #fff8dc 40%,
+        #ffd700 60%,
+        #b8860b 80%,
+        #ffd700 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: goldShimmer 4s ease-in-out infinite;
+}
+
+/* ===== CONFETTI ===== */
+@keyframes confettiFall {
+    0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+.confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+.confetti-piece {
+    position: absolute;
+    top: -10px;
+    width: 10px;
+    height: 10px;
+    animation: confettiFall 3s ease-in forwards;
+}
+
+/* ===== COUNT UP ANIMATION ===== */
+@keyframes countPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+.count-up-done {
+    animation: countPulse 0.3s ease-out;
+}
+
+/* ===== SPARKLE / TWINKLE ===== */
+@keyframes sparkle {
+    0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+.sparkle-container {
+    position: relative;
+    overflow: visible;
+}
+.sparkle-particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffd700, transparent);
+    pointer-events: none;
+    animation: sparkle 1.2s ease-in-out infinite;
+}
+
+/* ===== DISCO SCANLINE OVERLAY ===== */
+@keyframes discoScanline {
+    0% { top: -5%; opacity: 0.08; }
+    50% { opacity: 0.15; }
+    100% { top: 105%; opacity: 0.08; }
+}
+.disco-scanline {
+    position: fixed;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+    pointer-events: none;
+    z-index: 9998;
+    animation: discoScanline 2s linear infinite;
+}
+

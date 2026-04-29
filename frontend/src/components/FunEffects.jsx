@@ -55,6 +55,100 @@ export function ClapperAnimation({ text = "Loading..." }) {
   );
 }
 
+/* ── Confetti Burst (for milestones) ── */
+export function ConfettiBurst({ onComplete }) {
+  var [pieces, setPieces] = useState([]);
+  useEffect(function() {
+    var colors = ['#ff0080', '#ffd700', '#00ff80', '#00bfff', '#ff4444', '#aa55ff', '#ff6600', '#00ffcc'];
+    var newPieces = [];
+    for (var i = 0; i < 60; i++) {
+      newPieces.push({
+        id: i,
+        left: Math.random() * 100 + '%',
+        color: colors[Math.floor(Math.random() * colors.length)],
+        delay: Math.random() * 1.5 + 's',
+        duration: (2 + Math.random() * 2) + 's',
+        size: (6 + Math.random() * 8) + 'px',
+        rotation: Math.random() * 360 + 'deg',
+        shape: Math.random() > 0.5 ? '50%' : '0',
+      });
+    }
+    setPieces(newPieces);
+    var timer = setTimeout(function() {
+      if (onComplete) onComplete();
+    }, 4000);
+    return function() { clearTimeout(timer); };
+  }, [onComplete]);
+
+  return (
+    <div className="confetti-container" data-testid="confetti-burst">
+      {pieces.map(function(p) {
+        return (
+          <div
+            key={p.id}
+            className="confetti-piece"
+            style={{
+              left: p.left,
+              backgroundColor: p.color,
+              width: p.size,
+              height: p.size,
+              borderRadius: p.shape,
+              animationDelay: p.delay,
+              animationDuration: p.duration,
+              transform: 'rotate(' + p.rotation + ')',
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Sparkle Hover Effect (for AI button etc.) ── */
+export function SparkleHover({ children, active }) {
+  var [particles, setParticles] = useState([]);
+  useEffect(function() {
+    if (!active) { setParticles([]); return; }
+    var ps = [];
+    for (var i = 0; i < 8; i++) {
+      ps.push({
+        id: i,
+        top: (Math.random() * 100) + '%',
+        left: (Math.random() * 100) + '%',
+        delay: (Math.random() * 1.2) + 's',
+        size: (4 + Math.random() * 4) + 'px',
+      });
+    }
+    setParticles(ps);
+  }, [active]);
+
+  return (
+    <div className="sparkle-container" style={{ display: 'inline-flex', position: 'relative' }}>
+      {children}
+      {active && particles.map(function(p) {
+        return (
+          <div
+            key={p.id}
+            className="sparkle-particle"
+            style={{
+              top: p.top,
+              left: p.left,
+              width: p.size,
+              height: p.size,
+              animationDelay: p.delay,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Disco Scanline Overlay ── */
+export function DiscoScanline() {
+  return <div className="disco-scanline" />;
+}
+
 /* ── Fireworks (for milestones) ── */
 export function FireworksOverlay({ onComplete }) {
   useEffect(function() {

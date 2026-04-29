@@ -48,7 +48,28 @@ const COLLECTIONS_KEY = 'obsidian_cinema_collections';
 
 const COLORS = ['hsl(var(--primary))', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#10b981', '#ec4899', '#6366f1', '#f97316', '#14b8a6'];
 
+function CountUp({ end, duration = 1200 }) {
+  const [value, setValue] = useState(0);
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    if (typeof end !== 'number' || isNaN(end)) { setValue(end); setDone(true); return; }
+    var start = 0;
+    var startTime = null;
+    function step(ts) {
+      if (!startTime) startTime = ts;
+      var progress = Math.min((ts - startTime) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(start + (end - start) * eased));
+      if (progress < 1) requestAnimationFrame(step);
+      else { setValue(end); setDone(true); }
+    }
+    requestAnimationFrame(step);
+  }, [end, duration]);
+  return <span className={done ? 'count-up-done' : ''}>{typeof value === 'number' ? value.toLocaleString() : value}</span>;
+}
+
 function StatCard({ icon: Icon, label, value, sub, color, delay }) {
+  var isNum = typeof value === 'number' && !isNaN(value);
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: delay || 0 }}>
       <Card>
@@ -57,7 +78,9 @@ function StatCard({ icon: Icon, label, value, sub, color, delay }) {
             <Icon className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-foreground">{value}</p>
+            <p className="text-2xl font-bold text-foreground">
+              {isNum ? <CountUp end={value} /> : value}
+            </p>
             <p className="text-xs text-muted-foreground">{label}</p>
             {sub && <p className="text-xs text-muted-foreground/70 mt-0.5">{sub}</p>}
           </div>

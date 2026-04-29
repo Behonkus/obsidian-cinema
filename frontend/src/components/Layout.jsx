@@ -494,14 +494,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                     data-testid="sidebar-pro-badge"
                   >
                     <Crown className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                    <span
-                      className="font-bold text-xs tracking-wide"
-                      style={{
-                        background: 'linear-gradient(135deg, #b8860b, #ffd700)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                      }}
-                    >
+                    <span className="font-bold text-xs tracking-wide pro-shimmer">
                       PRO License Active
                     </span>
                   </div>
