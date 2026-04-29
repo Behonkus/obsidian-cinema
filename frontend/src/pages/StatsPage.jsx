@@ -684,7 +684,7 @@ function computeStats(movies, directories, trashedMovies) {
     avgRating: avgRating,
     topRated: sortedByRating.slice(0, 5),
     lowestRated: lowestRated,
-    newest: sortedByYear[0] || null,
+    newest: withAdded[0] || sortedByYear[0] || null,
     oldest: sortedByYear.length > 0 ? sortedByYear[sortedByYear.length - 1] : null,
     decadeData: decadeData,
     ratingData: ratingData,
@@ -790,7 +790,7 @@ export default function StatsPage() {
                 <CardContent className="p-4 flex items-center gap-3">
                   <TrendingUp className="w-5 h-5 text-green-400" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Newest in Library</p>
+                    <p className="text-xs text-muted-foreground">Last Added to Library</p>
                     <p className="font-medium text-sm">{stats.newest.title} ({stats.newest.year})</p>
                   </div>
                 </CardContent>
