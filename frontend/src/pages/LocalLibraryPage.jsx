@@ -2137,7 +2137,7 @@ export default function LocalLibraryPage() {
                           className="text-sm h-8"
                           data-testid="poster-search-input"
                         />
-                        <Button size="sm" onClick={searchPosters} disabled={posterSearching} className="h-8">
+                        <Button size="sm" onClick={() => searchPosters()} disabled={posterSearching} className="h-8">
                           {posterSearching ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
                         </Button>
                       </div>
