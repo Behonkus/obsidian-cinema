@@ -74,19 +74,32 @@ export function LicenseProvider({ children }) {
         window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
         return true;
       } else {
-        // Server rejected — but DON'T wipe the local license.
-        // The user paid, trust their local key. Only explicit deactivation should clear it.
-        // Common causes: machine_id mismatch after reinstall, server-side revocation.
-        console.warn('License validation failed:', response.data.error, response.data.message);
-        // Still treat as Pro locally — the license key exists on disk
-        setLicenseStatus('valid');
-        localStorage.setItem('obsidian_cinema_is_pro', 'true');
-        window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
-        return true;
+        // Server explicitly rejected this key
+        const error = response.data.error;
+        if (error === 'deactivated' || error === 'invalid_key') {
+          // Key was revoked or doesn't exist — clear local Pro status
+          console.warn('License rejected by server:', error, response.data.message);
+          setLicenseStatus('invalid');
+          localStorage.setItem('obsidian_cinema_is_pro', 'false');
+          window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'invalid' } }));
+          // Clear the stored license since key is genuinely invalid
+          if (isElectron()) {
+            await window.electronAPI.clearLicense();
+          }
+          setLicense(null);
+          return false;
+        } else {
+          // machine_mismatch or other non-critical issue — trust local key, user paid
+          console.warn('License validation issue (non-critical):', error, response.data.message);
+          setLicenseStatus('valid');
+          localStorage.setItem('obsidian_cinema_is_pro', 'true');
+          window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
+          return true;
+        }
       }
     } catch (err) {
       console.error('License validation error:', err);
-      // Server unreachable — trust the local license
+      // Server unreachable — trust the local license for offline use
       if (licenseKey) {
         setLicenseStatus('valid');
         localStorage.setItem('obsidian_cinema_is_pro', 'true');

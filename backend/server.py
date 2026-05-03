@@ -2536,12 +2536,21 @@ async def validate_license(data: LicenseActivateRequest):
             "message": "License is activated on a different device"
         }
     
-    # If not yet activated, that's okay - we allow it
+    # If not yet activated on a machine, bind it now (auto-activate on first validate)
+    if not activated_machine and machine_id:
+        await db.license_keys.update_one(
+            {"license_key": license_key},
+            {"$set": {
+                "activated_machine_id": machine_id,
+                "activated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    
     return {
         "valid": True,
         "email": license_doc.get("email"),
         "subscription_tier": "pro",
-        "is_activated": activated_machine is not None
+        "is_activated": True
     }
 
 @api_router.post("/license/deactivate")

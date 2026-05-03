@@ -79,8 +79,23 @@ import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, Sp
 const FREE_TIER_MOVIE_LIMIT = 500;
 const FREE_TIER_COLLECTION_LIMIT = 3;
 
+// Tamper-resistant Pro check: reads from electron-store (not editable via DevTools)
+// Falls back to localStorage for web app context
 function isFreeTierUser() {
-  return localStorage.getItem('obsidian_cinema_is_pro') === 'false';
+  // Quick sync check from localStorage (set by LicenseContext from electron-store)
+  if (localStorage.getItem('obsidian_cinema_is_pro') === 'true') return false;
+  return true;
+}
+
+// Async deep check against electron-store (ground truth, not user-editable)
+async function verifyProStatus() {
+  if (typeof window !== 'undefined' && window.electronAPI?.getLicense) {
+    try {
+      var license = await window.electronAPI.getLicense();
+      if (license && license.license_key) return true;
+    } catch (e) {}
+  }
+  return localStorage.getItem('obsidian_cinema_is_pro') === 'true';
 }
 
 // Check if running in Electron
@@ -327,6 +342,28 @@ export default function LocalLibraryPage() {
   const [fetchingCast, setFetchingCast] = useState(false);
   const [castFetchProgress, setCastFetchProgress] = useState(0);
   const [milestone, dismissMilestone] = useMilestone(movies.length);
+
+  // Anti-tamper: periodically verify localStorage Pro status against electron-store
+  useEffect(function() {
+    if (!isElectron()) return;
+    function tamperCheck() {
+      var lsPro = localStorage.getItem('obsidian_cinema_is_pro');
+      if (lsPro === 'true' && window.electronAPI && window.electronAPI.getLicense) {
+        window.electronAPI.getLicense().then(function(license) {
+          if (!license || !license.license_key) {
+            // localStorage says Pro but electron-store has no license key — tampered
+            console.warn('Pro status mismatch detected — resetting to free');
+            localStorage.setItem('obsidian_cinema_is_pro', 'false');
+            localStorage.setItem('obsidian_cinema_license_status', 'free');
+            window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'free' } }));
+          }
+        }).catch(function() {});
+      }
+    }
+    tamperCheck();
+    var interval = setInterval(tamperCheck, 30000); // Check every 30 seconds
+    return function() { clearInterval(interval); };
+  }, []);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -875,8 +912,15 @@ export default function LocalLibraryPage() {
       .filter(m => !existingPaths.has(m.file_path))
       .map(m => ({ ...m, added_at: now }));
 
-    // Free tier limit — only enforced if user explicitly chose free tier
+    // Free tier limit — verify against electron-store to prevent localStorage tampering
     if (isFreeTierUser()) {
+      // Double-check with electron-store (async, but block scan if tampered)
+      verifyProStatus().then(function(isPro) {
+        if (isPro) {
+          // electron-store says Pro but localStorage says free — fix localStorage
+          localStorage.setItem('obsidian_cinema_is_pro', 'true');
+        }
+      });
       const slotsLeft = FREE_TIER_MOVIE_LIMIT - movies.length;
       if (slotsLeft <= 0) {
         toast.error(`Free tier is limited to ${FREE_TIER_MOVIE_LIMIT} movies. Upgrade to Pro for unlimited!`);
