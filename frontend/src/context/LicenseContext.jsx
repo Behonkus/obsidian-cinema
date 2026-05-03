@@ -36,9 +36,50 @@ export function LicenseProvider({ children }) {
             setLicense(storedLicense);
             localStorage.setItem('obsidian_cinema_is_pro', 'true');
             window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'pending-validation' } }));
-            await validateLicenseWithServer(storedLicense.license_key, id);
+            // Validate directly (don't rely on useCallback ref timing)
+            try {
+              const resp = await axios.post(`${API}/license/validate`, {
+                license_key: storedLicense.license_key,
+                machine_id: id
+              });
+              if (resp.data.valid) {
+                setLicenseStatus('valid');
+                localStorage.setItem('obsidian_cinema_is_pro', 'true');
+                localStorage.setItem('obsidian_cinema_last_validation', Date.now().toString());
+                window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
+              } else {
+                const error = resp.data.error;
+                if (error === 'deactivated' || error === 'invalid_key') {
+                  setLicenseStatus('invalid');
+                  localStorage.setItem('obsidian_cinema_is_pro', 'false');
+                  localStorage.removeItem('obsidian_cinema_last_validation');
+                  window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'invalid' } }));
+                  await window.electronAPI.clearLicense();
+                  setLicense(null);
+                } else {
+                  // machine_mismatch etc — trust local key
+                  setLicenseStatus('valid');
+                  localStorage.setItem('obsidian_cinema_is_pro', 'true');
+                  localStorage.setItem('obsidian_cinema_last_validation', Date.now().toString());
+                  window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
+                }
+              }
+            } catch (err) {
+              console.error('License startup validation error:', err);
+              // Offline — check grace period
+              const lastVal = parseInt(localStorage.getItem('obsidian_cinema_last_validation') || '0', 10);
+              const daysSince = (Date.now() - lastVal) / (1000 * 60 * 60 * 24);
+              if (lastVal > 0 && daysSince <= 7) {
+                setLicenseStatus('valid');
+                localStorage.setItem('obsidian_cinema_is_pro', 'true');
+                window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
+              } else {
+                setLicenseStatus('expired_offline');
+                localStorage.setItem('obsidian_cinema_is_pro', 'false');
+                window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'expired_offline' } }));
+              }
+            }
           } else if (storedLicense.subscription_tier === 'free') {
-            // Free tier marker (no license key, just a tier flag)
             setIsFreeTier(true);
             setLicenseStatus('free');
             localStorage.setItem('obsidian_cinema_is_pro', 'false');
