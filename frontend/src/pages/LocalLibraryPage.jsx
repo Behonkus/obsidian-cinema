@@ -34,7 +34,9 @@ import {
   RotateCcw,
   X,
   Star,
-  Tag
+  Tag,
+  AlertTriangle,
+  Crown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1476,6 +1478,36 @@ export default function LocalLibraryPage() {
           </Button>
         </div>
       )}
+
+      {/* Over-limit warning for free users who somehow have more than 500 movies */}
+      {isFreeTierUser() && movies.length > FREE_TIER_MOVIE_LIMIT && (
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg" data-testid="over-limit-banner">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-400">Library exceeds Free Tier limit</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Your library has {movies.length.toLocaleString()} movies but the free tier allows {FREE_TIER_MOVIE_LIMIT}. 
+                You cannot add new movies or scan new directories until you upgrade to Pro.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              className="bg-amber-500 hover:bg-amber-600 text-black font-bold flex-shrink-0"
+              onClick={() => {
+                if (isElectron()) {
+                  window.location.hash = '#/activate';
+                }
+              }}
+              data-testid="over-limit-upgrade-btn"
+            >
+              <Crown className="w-3.5 h-3.5 mr-1.5" />
+              Upgrade to Pro
+            </Button>
+          </div>
+        </div>
+      )}
+
 
       {/* Directory Filter */}
       {directories.length > 1 && (
