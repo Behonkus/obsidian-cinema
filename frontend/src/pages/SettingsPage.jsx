@@ -24,7 +24,8 @@ import {
   Clock,
   ChevronDown,
   Tag,
-  Copy
+  Copy,
+  Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1655,6 +1656,27 @@ export default function SettingsPage() {
                     <li>• UNC & network path support</li>
                   </ul>
                 </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
+                <div className="text-xs text-muted-foreground">
+                  Questions, feedback, or feature requests?
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs gap-1.5"
+                  onClick={() => {
+                    if (isElectron()) {
+                      window.electronAPI.openExternal('mailto:obsidiancinemaplus@gmail.com?subject=Obsidian Cinema Feedback');
+                    } else {
+                      window.open('mailto:obsidiancinemaplus@gmail.com?subject=Obsidian Cinema Feedback', '_blank');
+                    }
+                  }}
+                  data-testid="contact-email-btn"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  Contact Us
+                </Button>
               </div>
             </CardContent>
           </Card>
