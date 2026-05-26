@@ -94,29 +94,32 @@ export function LicenseProvider({ children }) {
           localStorage.setItem('obsidian_cinema_is_pro', 'false');
           window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'not_activated' } }));
         }
-      }
-      
-      // Send usage ping (fire-and-forget, don't block startup)
-      try {
-        const movieCount = (() => {
+        
+        // Send usage ping (fire-and-forget, don't block startup)
+        try {
+          var movieCount = 0;
           try {
-            const raw = localStorage.getItem('obsidian_cinema_local_movies');
-            return raw ? JSON.parse(raw).length : 0;
-          } catch { return 0; }
-        })();
-        const isPro = localStorage.getItem('obsidian_cinema_is_pro') === 'true';
-        const version = (() => {
-          try { return require('../../package.json').version; } catch { return 'unknown'; }
-        })();
-        axios.post(`${API}/usage/ping`, {
-          machine_id: id,
-          version: version,
-          movie_count: movieCount,
-          license_key: storedLicense?.license_key || null,
-          is_pro: isPro,
-        }).catch(() => {});
-      } catch (e) {}
-      
+            var raw = localStorage.getItem('obsidian_cinema_local_movies');
+            if (raw) movieCount = JSON.parse(raw).length;
+          } catch (e2) {}
+          var isPro = localStorage.getItem('obsidian_cinema_is_pro') === 'true';
+          var appVersion = 'unknown';
+          try {
+            var vEl = document.querySelector('[data-app-version]');
+            if (vEl) appVersion = vEl.getAttribute('data-app-version');
+          } catch (e3) {}
+          if (appVersion === 'unknown' && window.electronAPI?.getAppVersion) {
+            try { appVersion = await window.electronAPI.getAppVersion(); } catch (e4) {}
+          }
+          axios.post(`${API}/usage/ping`, {
+            machine_id: id,
+            version: appVersion,
+            movie_count: movieCount,
+            license_key: storedLicense?.license_key || null,
+            is_pro: isPro,
+          }).catch(function() {});
+        } catch (e5) {}
+      }
       setLoading(false);
     };
     
