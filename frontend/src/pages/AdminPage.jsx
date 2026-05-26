@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Users, Key, Gift, DollarSign, RefreshCw, Shield, ShieldOff,
-  Monitor, Copy, Search, TrendingUp, UserCheck, UserX, Trash2
+  Monitor, Copy, Search, TrendingUp, UserCheck, UserX, Trash2,
+  Activity, Clock, Film, Smartphone
 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
@@ -23,6 +24,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState([]);
   const [licenses, setLicenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [usageData, setUsageData] = useState(null);
   const [userSearch, setUserSearch] = useState("");
   const [licenseSearch, setLicenseSearch] = useState("");
   const [giftEmail, setGiftEmail] = useState("");
@@ -34,14 +36,16 @@ export default function AdminPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [s, u, l] = await Promise.all([
+      const [s, u, l, usage] = await Promise.all([
         axios.get(`${API}/admin/stats`, { withCredentials: true }),
         axios.get(`${API}/admin/users`, { withCredentials: true }),
         axios.get(`${API}/admin/licenses`, { withCredentials: true }),
+        axios.get(`${API}/admin/usage`, { withCredentials: true }).catch(() => ({ data: null })),
       ]);
       setStats(s.data);
       setUsers(u.data.users);
       setLicenses(l.data.licenses);
+      setUsageData(usage.data);
     } catch (err) {
       toast.error("Failed to load admin data");
     } finally {
@@ -119,10 +123,11 @@ export default function AdminPage() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid grid-cols-4 w-full max-w-lg">
+        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
           <TabsTrigger value="overview" data-testid="admin-tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="users" data-testid="admin-tab-users">Users</TabsTrigger>
           <TabsTrigger value="licenses" data-testid="admin-tab-licenses">Licenses</TabsTrigger>
+          <TabsTrigger value="usage" data-testid="admin-tab-usage">Usage</TabsTrigger>
           <TabsTrigger value="gift" data-testid="admin-tab-gift">Gift Key</TabsTrigger>
         </TabsList>
 
@@ -333,6 +338,173 @@ export default function AdminPage() {
           <p className="text-xs text-muted-foreground">{filteredLicenses.length} of {licenses.length} licenses</p>
         </TabsContent>
 
+
+        {/* ── Usage Tab ── */}
+        <TabsContent value="usage" className="space-y-4">
+          {usageData ? (
+            <>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Card>
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                      <Smartphone className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold">{usageData.summary?.total_installs || 0}</p>
+                      <p className="text-[11px] text-muted-foreground">Total Installs</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-green-500/20 flex items-center justify-center">
+                      <Activity className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold">{usageData.summary?.active_7d || 0}</p>
+                      <p className="text-[11px] text-muted-foreground">Active (7 days)</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold">{usageData.summary?.active_30d || 0}</p>
+                      <p className="text-[11px] text-muted-foreground">Active (30 days)</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                      <Film className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold">{(usageData.summary?.total_movies || 0).toLocaleString()}</p>
+                      <p className="text-[11px] text-muted-foreground">Total Movies (all users)</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Pro vs Free breakdown */}
+              <div className="grid grid-cols-2 gap-3">
+                <Card>
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                      <Key className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold">{usageData.summary?.pro_users || 0}</p>
+                      <p className="text-[11px] text-muted-foreground">Pro Users (active installs)</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold">{usageData.summary?.free_users || 0}</p>
+                      <p className="text-[11px] text-muted-foreground">Free Users (active installs)</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Version Distribution */}
+              {usageData.summary?.versions && Object.keys(usageData.summary.versions).length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2 pt-4 px-5">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Version Distribution</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-4">
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(usageData.summary.versions).sort((a, b) => b[1] - a[1]).map(([ver, count]) => (
+                        <Badge key={ver} variant="secondary" className="text-xs px-3 py-1">
+                          v{ver}: {count} user{count !== 1 ? 's' : ''}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Individual User Records */}
+              <Card>
+                <CardHeader className="pb-2 pt-4 px-5">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Activity className="w-4 h-4" />
+                    All Desktop Installs ({usageData.records?.length || 0})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-5 pb-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm" data-testid="usage-table">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left p-2 text-muted-foreground font-medium text-xs">Machine</th>
+                          <th className="text-left p-2 text-muted-foreground font-medium text-xs">Tier</th>
+                          <th className="text-left p-2 text-muted-foreground font-medium text-xs">Version</th>
+                          <th className="text-left p-2 text-muted-foreground font-medium text-xs">Movies</th>
+                          <th className="text-left p-2 text-muted-foreground font-medium text-xs">Sessions</th>
+                          <th className="text-left p-2 text-muted-foreground font-medium text-xs">First Seen</th>
+                          <th className="text-left p-2 text-muted-foreground font-medium text-xs">Last Seen</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(usageData.records || []).map((r, i) => {
+                          var lastSeen = r.last_seen ? new Date(r.last_seen) : null;
+                          var daysAgo = lastSeen ? Math.floor((Date.now() - lastSeen.getTime()) / 86400000) : null;
+                          var isRecent = daysAgo !== null && daysAgo <= 7;
+                          return (
+                            <tr key={i} className="border-b border-border/50 hover:bg-secondary/30">
+                              <td className="p-2">
+                                <span className="text-xs text-muted-foreground font-mono">
+                                  {r.machine_id ? r.machine_id.substring(0, 16) + '...' : '—'}
+                                </span>
+                              </td>
+                              <td className="p-2">
+                                <Badge variant={r.is_pro ? "default" : "secondary"} className={r.is_pro ? "bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]" : "text-[10px]"}>
+                                  {r.is_pro ? 'Pro' : 'Free'}
+                                </Badge>
+                              </td>
+                              <td className="p-2 text-xs text-muted-foreground">v{r.version || '?'}</td>
+                              <td className="p-2 text-xs font-medium">{(r.movie_count || 0).toLocaleString()}</td>
+                              <td className="p-2 text-xs text-muted-foreground">{r.session_count || 1}</td>
+                              <td className="p-2 text-xs text-muted-foreground">
+                                {r.first_seen ? new Date(r.first_seen).toLocaleDateString() : '—'}
+                              </td>
+                              <td className="p-2">
+                                <span className={'text-xs ' + (isRecent ? 'text-green-400 font-medium' : 'text-muted-foreground')}>
+                                  {lastSeen ? (daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : daysAgo + ' days ago') : '—'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Activity className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
+                <p className="text-muted-foreground">No usage data yet. Data appears after users open the desktop app (v1.6.5+).</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+
         {/* ── Gift Key Tab ── */}
         <TabsContent value="gift" className="space-y-4">
           <Card>
@@ -437,7 +609,7 @@ function GiftEmailTemplate({ gift, onClose }) {
 
 Hey there,
 
-Great news — the free tier has been expanded to 500 movies with release 1.6.4 but...
+Great news — the free tier has been expanded to 500 movies with release 1.6.5 but...
 
 You've just been gifted a complimentary Obsidian Cinema PRO license! Consider this your all-access pass to the full cinematic experience.
 
@@ -446,7 +618,7 @@ ${gift.key}
 
 Here's how to activate it:
 
-If you haven't grabbed the latest Obsidian Cinema yet, download v1.6.4 here:
+If you haven't grabbed the latest Obsidian Cinema yet, download v1.6.5 here:
 https://www.obsidiancinema.com
 
 1. Download and Install the newest version of Obsidian Cinema

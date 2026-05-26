@@ -95,6 +95,28 @@ export function LicenseProvider({ children }) {
           window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'not_activated' } }));
         }
       }
+      
+      // Send usage ping (fire-and-forget, don't block startup)
+      try {
+        const movieCount = (() => {
+          try {
+            const raw = localStorage.getItem('obsidian_cinema_local_movies');
+            return raw ? JSON.parse(raw).length : 0;
+          } catch { return 0; }
+        })();
+        const isPro = localStorage.getItem('obsidian_cinema_is_pro') === 'true';
+        const version = (() => {
+          try { return require('../../package.json').version; } catch { return 'unknown'; }
+        })();
+        axios.post(`${API}/usage/ping`, {
+          machine_id: id,
+          version: version,
+          movie_count: movieCount,
+          license_key: storedLicense?.license_key || null,
+          is_pro: isPro,
+        }).catch(() => {});
+      } catch (e) {}
+      
       setLoading(false);
     };
     

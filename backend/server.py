@@ -2892,6 +2892,110 @@ async def admin_get_stats(request: Request, session_token: Optional[str] = Cooki
         "recent_transactions": recent_txns,
     }
 
+
+# ── Usage Tracking ──
+
+@api_router.post("/usage/ping")
+async def usage_ping(request: Request):
+    """Called by desktop app on startup to record activity."""
+    try:
+        body = await request.json()
+    except Exception:
+        return {"ok": True}
+    
+    machine_id = body.get("machine_id", "").strip()
+    if not machine_id:
+        return {"ok": True}
+    
+    version = body.get("version", "unknown")
+    movie_count = body.get("movie_count", 0)
+    license_key = body.get("license_key", None)
+    is_pro = body.get("is_pro", False)
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Upsert into usage_tracking collection
+    existing = await db.usage_tracking.find_one({"machine_id": machine_id})
+    if existing:
+        await db.usage_tracking.update_one(
+            {"machine_id": machine_id},
+            {"$set": {
+                "last_seen": now,
+                "version": version,
+                "movie_count": movie_count,
+                "license_key": license_key,
+                "is_pro": is_pro,
+            },
+            "$inc": {"session_count": 1}}
+        )
+    else:
+        await db.usage_tracking.insert_one({
+            "machine_id": machine_id,
+            "first_seen": now,
+            "last_seen": now,
+            "version": version,
+            "movie_count": movie_count,
+            "license_key": license_key,
+            "is_pro": is_pro,
+            "session_count": 1,
+        })
+    
+    return {"ok": True}
+
+
+@api_router.get("/admin/usage")
+async def admin_get_usage(request: Request, session_token: Optional[str] = Cookie(default=None)):
+    """Get usage tracking data for admin panel."""
+    await require_admin(request, session_token)
+    
+    records = await db.usage_tracking.find({}, {"_id": 0}).sort("last_seen", -1).to_list(1000)
+    
+    # Calculate summary stats
+    now = datetime.now(timezone.utc)
+    total_installs = len(records)
+    active_7d = 0
+    active_30d = 0
+    pro_users = 0
+    free_users = 0
+    total_movies = 0
+    versions = {}
+    
+    for r in records:
+        last_seen = r.get("last_seen", "")
+        if last_seen:
+            try:
+                ls = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
+                days_ago = (now - ls).days
+                if days_ago <= 7:
+                    active_7d += 1
+                if days_ago <= 30:
+                    active_30d += 1
+            except Exception:
+                pass
+        
+        if r.get("is_pro"):
+            pro_users += 1
+        else:
+            free_users += 1
+        
+        total_movies += r.get("movie_count", 0)
+        
+        v = r.get("version", "unknown")
+        versions[v] = versions.get(v, 0) + 1
+    
+    return {
+        "records": records,
+        "summary": {
+            "total_installs": total_installs,
+            "active_7d": active_7d,
+            "active_30d": active_30d,
+            "pro_users": pro_users,
+            "free_users": free_users,
+            "total_movies": total_movies,
+            "versions": versions,
+        }
+    }
+
 # Include the router after all endpoints are defined
 app.include_router(api_router)
 
