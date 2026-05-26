@@ -34,19 +34,20 @@ export function LicenseProvider({ children }) {
           // If it has a license_key, it's a Pro license — regardless of subscription_tier field
           if (storedLicense.license_key) {
             setLicense(storedLicense);
+            setLicenseStatus('valid'); // Assume valid initially, validate in background
             localStorage.setItem('obsidian_cinema_is_pro', 'true');
-            window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'pending-validation' } }));
-            // Validate directly (don't rely on useCallback ref timing)
-            try {
-              const resp = await axios.post(`${API}/license/validate`, {
-                license_key: storedLicense.license_key,
-                machine_id: id
-              });
+            window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
+            
+            // Show app immediately, validate in background
+            setLoading(false);
+            
+            // Background validation (non-blocking)
+            axios.post(`${API}/license/validate`, {
+              license_key: storedLicense.license_key,
+              machine_id: id
+            }, { timeout: 5000 }).then(async (resp) => {
               if (resp.data.valid) {
-                setLicenseStatus('valid');
-                localStorage.setItem('obsidian_cinema_is_pro', 'true');
                 localStorage.setItem('obsidian_cinema_last_validation', Date.now().toString());
-                window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
               } else {
                 const error = resp.data.error;
                 if (error === 'deactivated' || error === 'invalid_key') {
@@ -54,31 +55,44 @@ export function LicenseProvider({ children }) {
                   localStorage.setItem('obsidian_cinema_is_pro', 'false');
                   localStorage.removeItem('obsidian_cinema_last_validation');
                   window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'invalid' } }));
-                  await window.electronAPI.clearLicense();
+                  if (isElectron()) await window.electronAPI.clearLicense();
                   setLicense(null);
                 } else {
-                  // machine_mismatch etc — trust local key
-                  setLicenseStatus('valid');
-                  localStorage.setItem('obsidian_cinema_is_pro', 'true');
                   localStorage.setItem('obsidian_cinema_last_validation', Date.now().toString());
-                  window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
                 }
               }
-            } catch (err) {
-              console.error('License startup validation error:', err);
-              // Offline — check grace period
+            }).catch((err) => {
+              console.error('License background validation error:', err);
               const lastVal = parseInt(localStorage.getItem('obsidian_cinema_last_validation') || '0', 10);
               const daysSince = (Date.now() - lastVal) / (1000 * 60 * 60 * 24);
-              if (lastVal > 0 && daysSince <= 7) {
-                setLicenseStatus('valid');
-                localStorage.setItem('obsidian_cinema_is_pro', 'true');
-                window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: true, status: 'valid' } }));
-              } else {
+              if (!lastVal || daysSince > 7) {
                 setLicenseStatus('expired_offline');
                 localStorage.setItem('obsidian_cinema_is_pro', 'false');
                 window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'expired_offline' } }));
               }
-            }
+            });
+            
+            // Usage ping (fire-and-forget)
+            try {
+              var movieCount = 0;
+              try {
+                var raw = localStorage.getItem('obsidian_cinema_local_movies');
+                if (raw) movieCount = JSON.parse(raw).length;
+              } catch (e2) {}
+              var appVersion = 'unknown';
+              if (window.electronAPI?.getAppVersion) {
+                try { appVersion = await window.electronAPI.getAppVersion(); } catch (e4) {}
+              }
+              axios.post(`${API}/usage/ping`, {
+                machine_id: id,
+                version: appVersion,
+                movie_count: movieCount,
+                license_key: storedLicense.license_key,
+                is_pro: true,
+              }, { timeout: 5000 }).catch(function() {});
+            } catch (e5) {}
+            
+            return; // Already set loading to false above
           } else if (storedLicense.subscription_tier === 'free') {
             setIsFreeTier(true);
             setLicenseStatus('free');
@@ -95,30 +109,24 @@ export function LicenseProvider({ children }) {
           window.dispatchEvent(new CustomEvent('obsidian-pro-status-change', { detail: { isPro: false, status: 'not_activated' } }));
         }
         
-        // Send usage ping (fire-and-forget, don't block startup)
+        // Free tier usage ping (fire-and-forget)
         try {
-          var movieCount = 0;
+          var freeMovieCount = 0;
           try {
-            var raw = localStorage.getItem('obsidian_cinema_local_movies');
-            if (raw) movieCount = JSON.parse(raw).length;
-          } catch (e2) {}
-          var isPro = localStorage.getItem('obsidian_cinema_is_pro') === 'true';
-          var appVersion = 'unknown';
-          try {
-            var vEl = document.querySelector('[data-app-version]');
-            if (vEl) appVersion = vEl.getAttribute('data-app-version');
-          } catch (e3) {}
-          if (appVersion === 'unknown' && window.electronAPI?.getAppVersion) {
-            try { appVersion = await window.electronAPI.getAppVersion(); } catch (e4) {}
+            var freeRaw = localStorage.getItem('obsidian_cinema_local_movies');
+            if (freeRaw) freeMovieCount = JSON.parse(freeRaw).length;
+          } catch (ef) {}
+          var freeVersion = 'unknown';
+          if (window.electronAPI?.getAppVersion) {
+            try { freeVersion = await window.electronAPI.getAppVersion(); } catch (ef2) {}
           }
           axios.post(`${API}/usage/ping`, {
             machine_id: id,
-            version: appVersion,
-            movie_count: movieCount,
-            license_key: storedLicense?.license_key || null,
-            is_pro: isPro,
-          }).catch(function() {});
-        } catch (e5) {}
+            version: freeVersion,
+            movie_count: freeMovieCount,
+            is_pro: false,
+          }, { timeout: 5000 }).catch(function() {});
+        } catch (ef3) {}
       }
       setLoading(false);
     };
