@@ -623,8 +623,8 @@ https://www.obsidiancinema.com
 
 1. Download and Install the newest version of Obsidian Cinema
 2. Open Obsidian Cinema
-3. Go to the Activation page (or Settings > License)
-4. Paste the key above and hit Activate
+3. Go to the Activation page (it appears when you first open the app)
+4. Enter the key above and hit Activate
 
 What you're unlocking:
 - Unlimited movies in your library (no more caps)
