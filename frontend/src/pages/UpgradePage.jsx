@@ -629,7 +629,7 @@ export default function UpgradePage() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-foreground mb-1">Activate Pro in the app</h3>
                     <p className="text-sm text-muted-foreground">
-                      Open Obsidian Cinema. On the Activation page, click <strong>"Enter License Key"</strong>, paste your key, and hit Activate.
+                      Open Obsidian Cinema. On the Activation page (first launch) or go to <strong>Settings &gt; License &gt; Enter License Key</strong>, paste your key, and hit Activate.
                     </p>
                   </div>
                 </div>

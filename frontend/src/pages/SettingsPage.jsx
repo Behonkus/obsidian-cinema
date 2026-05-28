@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLicense } from "@/context/LicenseContext";
 import { motion } from "framer-motion";
 import { 
   Settings as SettingsIcon,
@@ -25,7 +26,8 @@ import {
   ChevronDown,
   Tag,
   Copy,
-  Mail
+  Mail,
+  Crown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -325,6 +327,7 @@ function DuplicateDetector() {
 
 export default function SettingsPage() {
   const navigate = useNavigate();
+  const { isPro, license, licenseStatus } = useLicense();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tmdbKey, setTmdbKey] = useState("");
@@ -1049,6 +1052,78 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </motion.div>
+        )}
+
+        {/* License Status Card - Desktop Only */}
+        {isElectron() && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.23 }}
+          >
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-1 pt-3 px-4">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Key className="w-4 h-4 text-amber-400" />
+                  License
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                {isPro ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
+                        <Crown className="w-3 h-3 mr-1" /> Pro Active
+                      </Badge>
+                    </div>
+                    {license?.license_key && (
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {license.license_key.substring(0, 20)}...
+                      </p>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => navigate('/activate')}
+                      data-testid="manage-license-btn"
+                    >
+                      Manage License
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      You're on the free tier (500 movies, 3 collections). Have a license key?
+                    </p>
+                    <Button
+                      size="sm"
+                      className="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs"
+                      onClick={() => navigate('/activate')}
+                      data-testid="activate-license-btn"
+                    >
+                      <Crown className="w-3.5 h-3.5 mr-1.5" />
+                      Enter License Key
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-xs text-muted-foreground"
+                      onClick={() => {
+                        if (isElectron()) {
+                          window.electronAPI.openExternal(`${process.env.REACT_APP_BACKEND_URL}/upgrade`);
+                        }
+                      }}
+                      data-testid="buy-license-btn"
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1.5" />
+                      Purchase Pro License
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
 
         {/* App Updates Card - Desktop Only */}

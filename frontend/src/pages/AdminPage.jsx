@@ -623,7 +623,7 @@ https://www.obsidiancinema.com
 
 1. Download and Install the newest version of Obsidian Cinema
 2. Open Obsidian Cinema
-3. Go to the Activation page (it appears when you first open the app)
+3. On the Activation page (appears on first launch) or go to Settings > License > Enter License Key
 4. Enter the key above and hit Activate
 
 What you're unlocking:
