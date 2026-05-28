@@ -36,7 +36,8 @@ import {
   Star,
   Tag,
   AlertTriangle,
-  Crown
+  Crown,
+  FileDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +78,7 @@ import { toast } from "sonner";
 import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
 import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
+import PdfExportDialog from "@/components/PdfExportDialog";
 
 const FREE_TIER_MOVIE_LIMIT = 500;
 const FREE_TIER_COLLECTION_LIMIT = 3;
@@ -1443,6 +1445,20 @@ export default function LocalLibraryPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          {/* PDF Export */}
+          {movies.length > 0 && (
+            <PdfExportDialog
+              movies={filteredMovies}
+              listTitle={activeCollection ? 'Collection' : (activeDirectory ? activeDirectory.split(/[\\/]/).pop() : 'My Movie Library')}
+              trigger={
+                <Button variant="outline" size="sm" className="gap-1.5" data-testid="pdf-export-trigger">
+                  <FileDown className="w-3.5 h-3.5" />
+                  <span className="text-xs">PDF</span>
+                </Button>
+              }
+            />
+          )}
         </div>
       </div>
 

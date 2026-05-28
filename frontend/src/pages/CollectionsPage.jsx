@@ -8,7 +8,8 @@ import {
   Film,
   Edit2,
   MoreVertical,
-  Palette
+  Palette,
+  FileDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import PdfExportDialog from "@/components/PdfExportDialog";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -81,6 +83,7 @@ export default function CollectionsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState(null);
   const [deletingCollection, setDeletingCollection] = useState(null);
+  const [pdfCollection, setPdfCollection] = useState(null);
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newColor, setNewColor] = useState("#e11d48");
@@ -404,6 +407,19 @@ export default function CollectionsPage() {
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              var saved = localStorage.getItem(STORAGE_KEY);
+                              var allMovies = saved ? JSON.parse(saved) : [];
+                              var ids = new Set(collection.movie_ids || []);
+                              var colMovies = allMovies.filter(function(m) { return ids.has(m.id); });
+                              setPdfCollection({ name: collection.name, movies: colMovies });
+                            }}
+                          >
+                            <FileDown className="w-4 h-4 mr-2" />
+                            Export PDF
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -512,6 +528,17 @@ export default function CollectionsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PDF Export Dialog for collection */}
+      {pdfCollection && pdfCollection.movies.length > 0 && (
+        <PdfExportDialog
+          movies={pdfCollection.movies}
+          listTitle={pdfCollection.name}
+          autoOpen={true}
+          onClose={() => setPdfCollection(null)}
+          trigger={<span />}
+        />
+      )}
     </div>
   );
 }
