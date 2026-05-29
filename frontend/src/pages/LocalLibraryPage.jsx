@@ -982,7 +982,7 @@ export default function LocalLibraryPage() {
             .replace(/\./g, ' ')
             .replace(/[_-]/g, ' ')
             .replace(/\s+/g, ' ')
-            .trim();
+            .trim() || nameWithoutExt.replace(/\./g, ' ').replace(/[_-]/g, ' ').trim();
           return { id: Date.now().toString() + Math.random().toString(36).slice(2, 8), file_path: fp, file_name: fileName, title, year, added_at: now };
         });
 
@@ -1865,15 +1865,15 @@ export default function LocalLibraryPage() {
                     >
                       <span
                         className="cursor-pointer hover:text-primary transition-colors"
-                        onClick={() => { setEditingTitle(true); setTitleInput(selectedMovie.title || selectedMovie.file_name || ''); }}
+                        onClick={() => { setEditingTitle(true); setTitleInput(String(selectedMovie.title || selectedMovie.file_name || '')); }}
                         title="Click to edit title"
                       >
-                        {selectedMovie.title}
+                        {String(selectedMovie.title || selectedMovie.file_name || 'Untitled')}
                       </span>
                       <button
                         className="opacity-0 group-hover:opacity-50 hover:!opacity-100 text-muted-foreground transition-opacity p-0.5"
                         onClick={() => {
-                          navigator.clipboard.writeText(selectedMovie.title || selectedMovie.file_name || '');
+                          navigator.clipboard.writeText(String(selectedMovie.title || selectedMovie.file_name || ''));
                           toast.success('Title copied to clipboard');
                         }}
                         title="Copy title"
