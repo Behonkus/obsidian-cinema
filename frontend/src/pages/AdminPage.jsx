@@ -606,6 +606,7 @@ function StatCard({ icon: Icon, label, value, color }) {
 
 function GiftEmailTemplate({ gift, onClose }) {
   const emailText = `Subject: You've been upgraded to Obsidian Cinema Pro!
+Recipient: ${gift.email}
 
 Hey there,
 
