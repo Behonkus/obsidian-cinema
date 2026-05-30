@@ -681,13 +681,12 @@ The Obsidian Cinema Team`;
           onClick={() => {
             const subject = encodeURIComponent("You've been upgraded to Obsidian Cinema Pro!");
             const body = encodeURIComponent(emailText.replace(/^Subject:.*\n\n/, ''));
-            const to = encodeURIComponent(gift.email);
-            // Open Gmail compose directly so user can switch to obsidiancinemaplus account
+            const to = encodeURIComponent('obsidiancinemaplus@gmail.com');
             window.open(`https://mail.google.com/mail/?view=cm&to=${to}&su=${subject}&body=${body}`, '_blank');
           }}
           data-testid="open-mailto-btn"
         >
-          Open in Gmail (send from obsidiancinemaplus@gmail.com)
+          Draft Email in Gmail
         </Button>
       </div>
     </div>
