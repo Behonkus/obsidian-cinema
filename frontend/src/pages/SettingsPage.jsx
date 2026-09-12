@@ -27,7 +27,8 @@ import {
   Tag,
   Copy,
   Mail,
-  Crown
+  Crown,
+  Link2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -365,6 +366,8 @@ export default function SettingsPage() {
   const [genreStatusText, setGenreStatusText] = useState('');
   const [backups, setBackups] = useState([]);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(null);
+  const [relinking, setRelinking] = useState(false);
+  const [relinkResult, setRelinkResult] = useState(null);
   const [lastExportDate, setLastExportDate] = useState(() => localStorage.getItem('obsidian_cinema_last_export') || null);
   const [importStep, setImportStep] = useState(null); // null, 'select', 'preview', 'done'
   const [importData, setImportData] = useState(null);
@@ -1568,6 +1571,171 @@ export default function SettingsPage() {
                   )}
                   {genreFetching ? 'Fetching... (' + genreProgress + '/' + genreTotal + ')' : 'Fetch Genre Data'}
                 </Button>
+              </div>
+
+              {/* Re-link Moved Files — spans full width */}
+              <div className="md:col-span-2 p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
+                <div>
+                  <p className="font-medium text-foreground text-sm flex items-center gap-2">
+                    <Link2 className="w-4 h-4 text-primary" /> Re-link Moved Files
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Moved or renamed your movie directories? Scan the new locations and re-link files to existing library cards — keeping all metadata, posters, ratings, and cast data intact.
+                  </p>
+                </div>
+                {relinkResult && (
+                  <div className="p-2 rounded bg-secondary border border-border text-xs space-y-1" data-testid="relink-result">
+                    <p className="font-medium text-foreground">{relinkResult.summary}</p>
+                    {relinkResult.relinked > 0 && <p className="text-green-400">Re-linked: {relinkResult.relinked} movies (metadata preserved)</p>}
+                    {relinkResult.newFiles > 0 && <p className="text-blue-400">New files found: {relinkResult.newFiles} (added to library)</p>}
+                    {relinkResult.unchanged > 0 && <p className="text-muted-foreground">Already correct: {relinkResult.unchanged}</p>}
+                    {relinkResult.orphaned > 0 && <p className="text-amber-400">Orphaned cards (old path not found): {relinkResult.orphaned}</p>}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={relinking}
+                    onClick={async function() {
+                      if (!isElectron() || !window.electronAPI?.openDirectoryDialog) return;
+                      setRelinking(true);
+                      setRelinkResult(null);
+                      try {
+                        var dirResult = await window.electronAPI.openDirectoryDialog();
+                        if (dirResult.canceled || !dirResult.filePaths?.length) { setRelinking(false); return; }
+                        var dirPath = dirResult.filePaths[0];
+                        
+                        // Scan the directory for video files
+                        var extensions = ['mp4','mkv','avi','mov','wmv','flv','webm','m4v','mpg','mpeg','3gp','ts'];
+                        var scanned = await window.electronAPI.scanDirectory(dirPath, true, extensions);
+                        if (!scanned || scanned.length === 0) {
+                          toast.info('No video files found in that directory.');
+                          setRelinking(false);
+                          return;
+                        }
+                        
+                        // Load existing library
+                        var saved = localStorage.getItem('obsidian_cinema_local_movies');
+                        var existing = saved ? JSON.parse(saved) : [];
+                        
+                        // Build lookup maps from existing library
+                        var byTmdbId = {};
+                        var byTitleYear = {};
+                        var byFileName = {};
+                        var byFilePath = {};
+                        existing.forEach(function(m) {
+                          if (m.file_path) byFilePath[m.file_path] = m;
+                          if (m.tmdb_id) {
+                            if (!byTmdbId[m.tmdb_id]) byTmdbId[m.tmdb_id] = m;
+                          }
+                          var key = ((m.title || '') + '|' + (m.year || '')).toLowerCase();
+                          if (key !== '|') { if (!byTitleYear[key]) byTitleYear[key] = m; }
+                          if (m.file_name) {
+                            var fn = m.file_name.toLowerCase();
+                            if (!byFileName[fn]) byFileName[fn] = m;
+                          }
+                        });
+                        
+                        var relinked = 0;
+                        var newFiles = 0;
+                        var unchanged = 0;
+                        var updatedIds = new Set();
+                        
+                        scanned.forEach(function(filePath) {
+                          // Already in library with correct path
+                          if (byFilePath[filePath]) {
+                            unchanged++;
+                            return;
+                          }
+                          
+                          var fileName = filePath.split(/[\\/]/).pop();
+                          var ext = '.' + fileName.split('.').pop().toLowerCase();
+                          var nameWithoutExt = fileName.replace(new RegExp(ext.replace('.', '\\.') + '$', 'i'), '');
+                          var yearMatch = nameWithoutExt.match(/[\(\[\s]*(19|20)\d{2}[\)\]\s]*/);
+                          var year = yearMatch ? parseInt(yearMatch[0].replace(/[\(\[\]\)\s]/g, '')) : null;
+                          var title = nameWithoutExt
+                            .replace(/[\(\[\s]*(19|20)\d{2}[\)\]\s]*/g, '')
+                            .replace(/\./g, ' ').replace(/[_-]/g, ' ').replace(/\s+/g, ' ').trim()
+                            || nameWithoutExt.replace(/\./g, ' ').replace(/[_-]/g, ' ').trim();
+                          
+                          // Try matching: 1) filename exact, 2) title+year, 3) TMDB ID via title search
+                          var match = null;
+                          var fn = fileName.toLowerCase();
+                          if (byFileName[fn] && !updatedIds.has(byFileName[fn].id)) {
+                            match = byFileName[fn];
+                          }
+                          if (!match) {
+                            var key = (title + '|' + (year || '')).toLowerCase();
+                            if (byTitleYear[key] && !updatedIds.has(byTitleYear[key].id)) {
+                              match = byTitleYear[key];
+                            }
+                          }
+                          
+                          if (match) {
+                            // Re-link: update the file path on the existing card
+                            match.file_path = filePath;
+                            match.file_name = fileName;
+                            updatedIds.add(match.id);
+                            relinked++;
+                          } else {
+                            // Truly new file — add as new entry
+                            existing.push({
+                              id: Date.now().toString() + Math.random().toString(36).slice(2, 8),
+                              file_path: filePath,
+                              file_name: fileName,
+                              title: title,
+                              year: year,
+                              added_at: Date.now()
+                            });
+                            newFiles++;
+                          }
+                        });
+                        
+                        // Count orphaned (existing cards whose paths no longer exist in any scanned dir)
+                        var orphaned = 0;
+                        existing.forEach(function(m) {
+                          if (m.file_path && m.file_path.startsWith(dirPath) && !scanned.includes(m.file_path) && !updatedIds.has(m.id)) {
+                            orphaned++;
+                          }
+                        });
+                        
+                        localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(existing));
+                        
+                        setRelinkResult({
+                          summary: 'Scanned ' + scanned.length + ' files in ' + dirPath.split(/[\\/]/).pop(),
+                          relinked: relinked,
+                          newFiles: newFiles,
+                          unchanged: unchanged,
+                          orphaned: orphaned
+                        });
+                        
+                        if (relinked > 0) {
+                          toast.success(relinked + ' movies re-linked with metadata preserved!');
+                        } else if (newFiles > 0) {
+                          toast.success(newFiles + ' new movies added.');
+                        } else {
+                          toast.info('All files already matched to existing library entries.');
+                        }
+                      } catch (err) {
+                        console.error('Re-link error:', err);
+                        toast.error('Failed to scan directory: ' + (err.message || 'Unknown error'));
+                      }
+                      setRelinking(false);
+                    }}
+                    data-testid="relink-scan-btn"
+                  >
+                    {relinking ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Link2 className="w-4 h-4 mr-2" />
+                    )}
+                    {relinking ? 'Scanning...' : 'Scan & Re-link Directory'}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Matches by filename or title+year. No files on disk are modified. You can run this for each directory you've moved.
+                </p>
               </div>
 
               {/* Backup & Restore — spans full width */}
