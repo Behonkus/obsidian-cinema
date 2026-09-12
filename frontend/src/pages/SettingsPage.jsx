@@ -1598,17 +1598,16 @@ export default function SettingsPage() {
                     size="sm"
                     disabled={relinking}
                     onClick={async function() {
-                      if (!isElectron() || !window.electronAPI?.openDirectoryDialog) return;
+                      if (!isElectron() || !window.electronAPI?.openFolderDialog) return;
                       setRelinking(true);
                       setRelinkResult(null);
                       try {
-                        var dirResult = await window.electronAPI.openDirectoryDialog();
+                        var dirResult = await window.electronAPI.openFolderDialog();
                         if (dirResult.canceled || !dirResult.filePaths?.length) { setRelinking(false); return; }
                         var dirPath = dirResult.filePaths[0];
                         
                         // Scan the directory for video files
-                        var extensions = ['mp4','mkv','avi','mov','wmv','flv','webm','m4v','mpg','mpeg','3gp','ts'];
-                        var scanned = await window.electronAPI.scanDirectory(dirPath, true, extensions);
+                        var scanned = await window.electronAPI.scanForVideos(dirPath, true);
                         if (!scanned || scanned.length === 0) {
                           toast.info('No video files found in that directory.');
                           setRelinking(false);
