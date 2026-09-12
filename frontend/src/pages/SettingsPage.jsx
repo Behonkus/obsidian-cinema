@@ -1640,32 +1640,25 @@ export default function SettingsPage() {
                         var newFiles = 0;
                         var unchanged = 0;
                         var updatedIds = new Set();
+                        var scannedPaths = new Set();
                         
-                        scanned.forEach(function(filePath) {
+                        scanned.forEach(function(item) {
+                          scannedPaths.add(item.file_path);
+                          
                           // Already in library with correct path
-                          if (byFilePath[filePath]) {
+                          if (byFilePath[item.file_path]) {
                             unchanged++;
                             return;
                           }
                           
-                          var fileName = filePath.split(/[\\/]/).pop();
-                          var ext = '.' + fileName.split('.').pop().toLowerCase();
-                          var nameWithoutExt = fileName.replace(new RegExp(ext.replace('.', '\\.') + '$', 'i'), '');
-                          var yearMatch = nameWithoutExt.match(/[\(\[\s]*(19|20)\d{2}[\)\]\s]*/);
-                          var year = yearMatch ? parseInt(yearMatch[0].replace(/[\(\[\]\)\s]/g, '')) : null;
-                          var title = nameWithoutExt
-                            .replace(/[\(\[\s]*(19|20)\d{2}[\)\]\s]*/g, '')
-                            .replace(/\./g, ' ').replace(/[_-]/g, ' ').replace(/\s+/g, ' ').trim()
-                            || nameWithoutExt.replace(/\./g, ' ').replace(/[_-]/g, ' ').trim();
-                          
-                          // Try matching: 1) filename exact, 2) title+year, 3) TMDB ID via title search
+                          // Try matching: 1) filename exact, 2) title+year
                           var match = null;
-                          var fn = fileName.toLowerCase();
-                          if (byFileName[fn] && !updatedIds.has(byFileName[fn].id)) {
+                          var fn = (item.file_name || '').toLowerCase();
+                          if (fn && byFileName[fn] && !updatedIds.has(byFileName[fn].id)) {
                             match = byFileName[fn];
                           }
-                          if (!match) {
-                            var key = (title + '|' + (year || '')).toLowerCase();
+                          if (!match && item.title) {
+                            var key = (item.title + '|' + (item.year || '')).toLowerCase();
                             if (byTitleYear[key] && !updatedIds.has(byTitleYear[key].id)) {
                               match = byTitleYear[key];
                             }
@@ -1673,28 +1666,28 @@ export default function SettingsPage() {
                           
                           if (match) {
                             // Re-link: update the file path on the existing card
-                            match.file_path = filePath;
-                            match.file_name = fileName;
+                            match.file_path = item.file_path;
+                            match.file_name = item.file_name;
                             updatedIds.add(match.id);
                             relinked++;
                           } else {
                             // Truly new file — add as new entry
                             existing.push({
                               id: Date.now().toString() + Math.random().toString(36).slice(2, 8),
-                              file_path: filePath,
-                              file_name: fileName,
-                              title: title,
-                              year: year,
+                              file_path: item.file_path,
+                              file_name: item.file_name,
+                              title: item.title || item.file_name,
+                              year: item.year,
                               added_at: Date.now()
                             });
                             newFiles++;
                           }
                         });
                         
-                        // Count orphaned (existing cards whose paths no longer exist in any scanned dir)
+                        // Count orphaned (existing cards whose paths no longer exist in scanned dir)
                         var orphaned = 0;
                         existing.forEach(function(m) {
-                          if (m.file_path && m.file_path.startsWith(dirPath) && !scanned.includes(m.file_path) && !updatedIds.has(m.id)) {
+                          if (m.file_path && m.file_path.startsWith(dirPath) && !scannedPaths.has(m.file_path) && !updatedIds.has(m.id)) {
                             orphaned++;
                           }
                         });
