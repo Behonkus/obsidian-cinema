@@ -61,7 +61,10 @@ export default function AdminPage() {
       toast.success(successMsg);
       fetchAll();
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Action failed");
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail;
+      console.error('Admin action failed:', endpoint, status, err.response?.data || err.message);
+      toast.error(detail ? `${detail} (${status})` : status ? `Action failed — server error ${status}` : `Action failed — could not reach server (${err.message})`);
     }
     setConfirmAction(null);
   };
