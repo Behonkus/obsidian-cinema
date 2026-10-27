@@ -199,7 +199,7 @@ function DuplicateDetector() {
     var saved = localStorage.getItem('obsidian_cinema_local_movies');
     var movies = saved ? JSON.parse(saved) : [];
     var updated = movies.filter(function(m) { return m.id !== movieId; });
-    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated));
+    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated)); window.dispatchEvent(new Event('oc-library-updated'));
     setDuplicates(function(prev) {
       if (!prev) return prev;
       var newGroups = prev.map(function(g) {
@@ -464,7 +464,7 @@ export default function SettingsPage() {
         return;
       }
       var d = snapshot.data;
-      if (d.movies) localStorage.setItem('obsidian_cinema_local_movies', d.movies);
+      if (d.movies) localStorage.setItem('obsidian_cinema_local_movies', d.movies); window.dispatchEvent(new Event('oc-library-updated'));
       if (d.dirs) localStorage.setItem('obsidian_cinema_local_dirs', d.dirs);
       if (d.collections) localStorage.setItem('obsidian_cinema_collections', d.collections);
       if (d.trash) localStorage.setItem('obsidian_cinema_trash', d.trash);
@@ -564,7 +564,7 @@ export default function SettingsPage() {
     if (!importData || !importData.snapshot) return;
     try {
       var d = importData.snapshot.data;
-      if (d.movies) localStorage.setItem('obsidian_cinema_local_movies', d.movies);
+      if (d.movies) localStorage.setItem('obsidian_cinema_local_movies', d.movies); window.dispatchEvent(new Event('oc-library-updated'));
       if (d.dirs) localStorage.setItem('obsidian_cinema_local_dirs', d.dirs);
       if (d.collections) localStorage.setItem('obsidian_cinema_collections', d.collections);
       if (d.trash) localStorage.setItem('obsidian_cinema_trash', d.trash);
@@ -1515,7 +1515,7 @@ export default function SettingsPage() {
                       var match = need.find(function(n) { return n.id === m.id; });
                       return match ? match : m;
                     });
-                    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated));
+                    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated)); window.dispatchEvent(new Event('oc-library-updated'));
                     setCastFetching(false);
                     setCastStatusText('Done! Cast fetched for ' + fetched + ' of ' + need.length + ' movies.');
                     toast.success('Cast fetched for ' + fetched + ' movies');
@@ -1589,7 +1589,7 @@ export default function SettingsPage() {
                       var match = need.find(function(n) { return n.id === m.id; });
                       return match ? match : m;
                     });
-                    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated));
+                    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(updated)); window.dispatchEvent(new Event('oc-library-updated'));
                     setGenreFetching(false);
                     setGenreStatusText('Done! Genres fetched for ' + fetched + ' of ' + need.length + ' movies.');
                     toast.success('Genres fetched for ' + fetched + ' movies');
@@ -1724,7 +1724,7 @@ export default function SettingsPage() {
                           }
                         });
                         
-                        localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(existing));
+                        localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(existing)); window.dispatchEvent(new Event('oc-library-updated'));
                         
                         setRelinkResult({
                           summary: 'Scanned ' + scanned.length + ' files in ' + dirPath.split(/[\\/]/).pop(),
@@ -1999,7 +1999,7 @@ export default function SettingsPage() {
                   if (saved) {
                     var movies = JSON.parse(saved);
                     var cleared = movies.map(function(m) { var copy = Object.assign({}, m); delete copy.poster_path; return copy; });
-                    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(cleared));
+                    localStorage.setItem('obsidian_cinema_local_movies', JSON.stringify(cleared)); window.dispatchEvent(new Event('oc-library-updated'));
                   }
                   setPosterCount(0);
                   setShowClearPostersConfirm(false);

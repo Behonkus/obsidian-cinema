@@ -159,8 +159,9 @@ function SidebarWidgets() {
 
   useEffect(() => {
     refreshStats();
-    const interval = setInterval(refreshStats, 5000);
-    return () => clearInterval(interval);
+    window.addEventListener('oc-library-updated', refreshStats);
+    const interval = setInterval(refreshStats, 60000);
+    return () => { clearInterval(interval); window.removeEventListener('oc-library-updated', refreshStats); };
   }, [refreshStats]);
 
   const toggleFilter = (qf) => {
@@ -231,8 +232,9 @@ function FreeTierBadge() {
       } catch {}
     };
     check();
-    const interval = setInterval(check, 5000);
-    return () => clearInterval(interval);
+    window.addEventListener('oc-library-updated', check);
+    const interval = setInterval(check, 60000);
+    return () => { clearInterval(interval); window.removeEventListener('oc-library-updated', check); };
   }, []);
 
   const remaining = Math.max(0, FREE_LIMIT - movieCount);

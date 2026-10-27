@@ -628,7 +628,7 @@ async def list_drives():
                     try:
                         import shutil
                         total, used, free = shutil.disk_usage(drive_path)
-                    except:
+                    except Exception:
                         pass
                     
                     drives.append({
@@ -660,7 +660,7 @@ async def list_drives():
                         "total_gb": round(total / (1024**3), 1),
                         "free_gb": round(free / (1024**3), 1)
                     })
-                except:
+                except Exception:
                     drives.append({
                         "path": path,
                         "name": path,
@@ -1558,7 +1558,7 @@ async def fetch_movie_metadata(movie_id: str):
         if details.get("release_date"):
             try:
                 update_data["year"] = int(details["release_date"][:4])
-            except:
+            except Exception:
                 pass
         
         await db.movies.update_one(
@@ -1873,7 +1873,7 @@ async def set_movie_tmdb(movie_id: str, tmdb_id: int):
     if details.get("release_date"):
         try:
             update_data["year"] = int(details["release_date"][:4])
-        except:
+        except Exception:
             pass
     
     await db.movies.update_one(

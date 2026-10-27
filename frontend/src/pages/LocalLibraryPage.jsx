@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, useDeferredValue, memo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -80,6 +80,7 @@ import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
 import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
+import { fetchFullMetadata, fetchMovieDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
 
 const FREE_TIER_MOVIE_LIMIT = 500;
 const FREE_TIER_COLLECTION_LIMIT = 3;
@@ -101,6 +102,12 @@ async function verifyProStatus() {
     } catch (e) {}
   }
   return localStorage.getItem('obsidian_cinema_is_pro') === 'true';
+}
+
+// Re-parse a scanned file name with the smarter parser (keeps fallback title)
+function withParsedName(m) {
+  const p = parseFilename(m.file_name);
+  return { ...m, title: p.title || m.title, year: p.year || m.year || null, imdb_id: p.imdb_id || m.imdb_id || null };
 }
 
 // Check if running in Electron
@@ -159,7 +166,10 @@ const GRID_SIZES = {
 };
 
 // Reusable movie card component
-function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavorite }) {
+const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie, isFavorite, onToggleFav }) {
+  var onClick = function() { onOpen(movie); };
+  var onPlay = function(e) { e.stopPropagation(); onPlayMovie(movie); };
+  var onToggleFavorite = function(e) { onToggleFav(movie.id, e); };
   var [showConfetti, setShowConfetti] = useState(false);
   var [showShimmer, setShowShimmer] = useState(false);
 
@@ -194,11 +204,14 @@ function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavor
       <Card className="overflow-hidden hover:border-primary/50 transition-colors cursor-pointer" onClick={onClick}>
         <div className="aspect-[2/3] bg-gradient-to-br from-primary/20 to-secondary relative flex items-center justify-center overflow-hidden">
           {movie.poster_path ? (
-            <img src={movie.poster_path} alt={movie.title} className="w-full h-full object-cover" loading="lazy" onLoad={handlePosterLoad} />
+            <img src={thumbUrl(movie.poster_path, gridSize === 'large' ? 'w500' : 'w342')} alt={movie.title} className="w-full h-full object-cover" loading="lazy" decoding="async" onLoad={handlePosterLoad} />
           ) : (
             <Film className="w-12 h-12 text-primary/50" />
           )}
           {showShimmer && <div className="poster-shimmer" />}
+          {movie.needs_review && (
+            <span className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded bg-amber-500/90 text-black text-[9px] font-bold" title="Uncertain match — open to verify" data-testid={`needs-review-badge-${movie.id}`}>CHECK</span>
+          )}
           {/* Favorite star - top right */}
           <button
             className={'absolute top-1.5 right-1.5 z-10 p-1 rounded-full backdrop-blur-sm transition-all ' + (isFavorite ? 'bg-amber-500/20 animate-[favGlow_2s_ease-in-out_infinite]' : 'bg-black/40 hover:bg-black/60')}
@@ -238,7 +251,7 @@ function MovieCard({ movie, gridSize, onClick, onPlay, isFavorite, onToggleFavor
       </Card>
     </motion.div>
   );
-}
+});
 
 function CastRow({ cast, onClear }) {
   return (
@@ -401,8 +414,13 @@ export default function LocalLibraryPage() {
   }, []);
 
   // Save to localStorage when movies change
+  const moviesLoadedRef = useRef(false);
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(movies));
+    if (!moviesLoadedRef.current) { moviesLoadedRef.current = true; return; }
+    const t = setTimeout(() => {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(movies)); window.dispatchEvent(new Event('oc-library-updated')); } catch (e) { console.error('Library save failed:', e); toast.error('Could not save library — storage is full'); }
+    }, 600);
+    return () => clearTimeout(t);
   }, [movies]);
 
   useEffect(() => {
@@ -424,7 +442,7 @@ export default function LocalLibraryPage() {
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
   }, [favorites]);
 
-  const toggleFavorite = (movieId, e) => {
+  const toggleFavorite = useCallback((movieId, e) => {
     if (e) { e.stopPropagation(); e.preventDefault(); }
     setFavorites(prev => {
       if (prev.includes(movieId)) {
@@ -432,7 +450,8 @@ export default function LocalLibraryPage() {
       }
       return [...prev, movieId];
     });
-  };
+  }, []);
+  const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
 
   // Save grid size preference
   useEffect(() => {
@@ -491,69 +510,63 @@ export default function LocalLibraryPage() {
     toast.success('Collection deleted');
   };
 
-  // Fetch poster from TMDB
+  // Smart match + full metadata from TMDB
   const fetchPosterForMovie = async (movie) => {
     if (!tmdbApiKey) return null;
-    
     try {
-      const query = encodeURIComponent(movie.title);
-      const yearParam = movie.year ? `&year=${movie.year}` : '';
-      const response = await fetch(
-        `${TMDB_API}/search/movie?api_key=${tmdbApiKey}&query=${query}${yearParam}`
-      );
-      const data = await response.json();
-      
-      if (data.results && data.results.length > 0) {
-        const result = data.results[0];
-        const movieData = {
-          poster_path: result.poster_path ? `${TMDB_IMG}${result.poster_path}` : null,
-          tmdb_id: result.id,
-          overview: result.overview,
-          rating: result.vote_average,
-          release_date: result.release_date
-        };
-        // Also fetch cast and genres
-        try {
-          const [credResp, detailResp] = await Promise.all([
-            fetch(`${TMDB_API}/movie/${result.id}/credits?api_key=${tmdbApiKey}`),
-            fetch(`${TMDB_API}/movie/${result.id}?api_key=${tmdbApiKey}`)
-          ]);
-          const credData = await credResp.json();
-          if (credData.cast) {
-            movieData.cast = credData.cast.slice(0, 5).map(c => ({
-              name: c.name,
-              character: c.character,
-              profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null,
-            }));
-          }
-          const detailData = await detailResp.json();
-          if (detailData.genres && detailData.genres.length > 0) {
-            movieData.genres = detailData.genres.map(g => g.name);
-          }
-        } catch (_) { /* cast/genre fetch is optional */ }
-        return movieData;
-      }
+      return await fetchFullMetadata(movie, tmdbApiKey);
     } catch (err) {
       console.error('TMDB fetch error:', err);
+      return null;
     }
-    return null;
   };
 
-  // Fetch cast only for a movie that already has tmdb_id
-  const fetchCastForMovie = async (movie) => {
+  // Fetch full details (cast, director, runtime...) for a movie that already has tmdb_id
+  const fetchDetailsForMovie = async (movie) => {
     if (!tmdbApiKey || !movie.tmdb_id) return null;
-    try {
-      const resp = await fetch(`${TMDB_API}/movie/${movie.tmdb_id}/credits?api_key=${tmdbApiKey}`);
-      const data = await resp.json();
-      if (data.cast) {
-        return data.cast.slice(0, 5).map(c => ({
-          name: c.name,
-          character: c.character,
-          profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null,
-        }));
-      }
-    } catch (_) {}
-    return null;
+    const d = await fetchMovieDetails(movie.tmdb_id, tmdbApiKey);
+    if (!d) return null;
+    const keep = {};
+    ['cast', 'runtime', 'tagline', 'director', 'writers', 'certification', 'imdb_id', 'original_title', 'original_language', 'tmdb_title', 'collection_name', 'studios', 'countries', 'backdrop_path', 'vote_count', 'release_date', 'metadata_updated_at'].forEach(k => { if (d[k] != null) keep[k] = d[k]; });
+    if (!movie.poster_path && d.poster_path) keep.poster_path = d.poster_path;
+    if (!movie.overview && d.overview) keep.overview = d.overview;
+    if (!movie.rating && d.rating) keep.rating = d.rating;
+    if (!movie.year && d.year) keep.year = d.year;
+    if ((!movie.genres || movie.genres.length === 0) && d.genres.length) keep.genres = d.genres;
+    return keep;
+  };
+
+  // Batch many per-movie updates into one state change
+  const pendingUpdatesRef = useRef({});
+  const flushUpdates = () => {
+    const pending = pendingUpdatesRef.current;
+    pendingUpdatesRef.current = {};
+    if (Object.keys(pending).length === 0) return;
+    setMovies(prev => prev.map(m => pending[m.id] ? { ...m, ...pending[m.id] } : m));
+  };
+  const queueUpdate = (id, data) => {
+    pendingUpdatesRef.current[id] = { ...(pendingUpdatesRef.current[id] || {}), ...data };
+  };
+
+  // Manually pick a TMDB result — re-matches the movie with full metadata
+  const applyManualMatch = async (result) => {
+    if (!selectedMovie) return;
+    const id = selectedMovie.id;
+    const d = await fetchMovieDetails(result.id, tmdbApiKey);
+    const data = d ? { ...d, match_confidence: 1, match_method: 'manual', needs_review: false } : { poster_path: result.poster, tmdb_id: result.id, overview: result.overview, rating: result.rating, needs_review: false };
+    if (!data.poster_path) data.poster_path = result.poster;
+    setMovies(prev => prev.map(m => m.id === id ? { ...m, ...data } : m));
+    setSelectedMovie(prev => prev && prev.id === id ? { ...prev, ...data } : prev);
+    setPosterMode(null);
+    setPosterSearch('');
+    setPosterResults([]);
+    toast.success('Matched to "' + (result.title || 'movie') + (result.year ? ' (' + result.year + ')' : '') + '"');
+  };
+
+  const confirmMatch = (movie) => {
+    setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, needs_review: false } : m));
+    setSelectedMovie(prev => prev ? { ...prev, needs_review: false } : prev);
+    toast.success('Match confirmed');
   };
 
   // Update a single movie's poster
@@ -699,6 +712,9 @@ export default function LocalLibraryPage() {
       rating: null,
       tmdb_id: null,
       genres: null,
+      runtime: null, tagline: null, director: null, writers: null, certification: null,
+      imdb_id: null, tmdb_title: null, original_title: null, collection_name: null,
+      backdrop_path: null, match_confidence: null, needs_review: false, metadata_updated_at: null,
     };
     setMovies(prev => prev.map(m => m.id === movie.id ? cleaned : m));
     setSelectedMovie(cleaned);
@@ -790,33 +806,36 @@ export default function LocalLibraryPage() {
     }
   };
 
-  // Bulk fetch cast for movies that have tmdb_id but no cast data
+  // Bulk enrich: fetch cast, director, runtime etc. for matched movies missing full details
   const fetchAllCast = async () => {
     if (!tmdbApiKey) {
       toast.error('Please add your TMDB API key in Settings first');
       return;
     }
-    const needCast = movies.filter(m => m.tmdb_id && (!m.cast || m.cast.length === 0));
-    if (needCast.length === 0) {
-      toast.info('All movies with TMDB data already have cast info');
+    const needDetails = movies.filter(m => m.tmdb_id && !m.metadata_updated_at);
+    if (needDetails.length === 0) {
+      toast.info('All matched movies already have full details');
       return;
     }
+    fetchAbortRef.current = false;
     setFetchingCast(true);
     setCastFetchProgress(0);
-    let fetched = 0;
-    for (let i = 0; i < needCast.length; i++) {
-      const movie = needCast[i];
-      const cast = await fetchCastForMovie(movie);
-      if (cast) {
-        setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, cast } : m));
-      }
-      fetched++;
-      setCastFetchProgress(Math.round((fetched / needCast.length) * 100));
-      // Small delay to avoid rate limiting
-      if (i < needCast.length - 1) await new Promise(r => setTimeout(r, 250));
-    }
+    let done = 0;
+    let enriched = 0;
+    let lastFlush = Date.now();
+    await runPool(needDetails, m => fetchDetailsForMovie(m), {
+      concurrency: 8,
+      shouldStop: () => fetchAbortRef.current,
+      onResult: (movie, data) => {
+        done++;
+        if (data) { queueUpdate(movie.id, data); enriched++; }
+        if (Date.now() - lastFlush > 1500) { lastFlush = Date.now(); flushUpdates(); setCastFetchProgress(Math.round((done / needDetails.length) * 100)); }
+      },
+    });
+    flushUpdates();
+    setCastFetchProgress(100);
     setFetchingCast(false);
-    toast.success('Cast data fetched for ' + fetched + ' movies');
+    toast.success('Full details added for ' + enriched + ' of ' + done + ' movies');
   };
 
 
@@ -869,34 +888,37 @@ export default function LocalLibraryPage() {
 
     let fetched = 0;
     let found = 0;
+    let review = 0;
+    let lastFlush = Date.now();
+    const total = moviesNeedingPosters.length;
 
-    for (var i = 0; i < moviesNeedingPosters.length; i++) {
-      // Check abort
-      if (fetchAbortRef.current) {
-        toast.info('Poster fetch paused — ' + found + ' of ' + fetched + ' processed saved. Click "Fetch Posters" to continue where you left off.');
-        break;
-      }
-
-      const movie = moviesNeedingPosters[i];
-      const tmdbData = await fetchPosterForMovie(movie);
-
-      if (tmdbData) {
-        // Save each poster immediately so progress is never lost
-        setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, ...tmdbData } : m));
-        found++;
-      }
-
-      fetched++;
-      fetchCountRef.current = { fetched: fetched, found: found, total: moviesNeedingPosters.length };
-      setFetchProgress((fetched / moviesNeedingPosters.length) * 100);
-
-      // Small delay to avoid rate limiting
-      await new Promise(r => setTimeout(r, 250));
-    }
+    await runPool(moviesNeedingPosters, m => fetchPosterForMovie(m), {
+      concurrency: 6,
+      shouldStop: () => fetchAbortRef.current,
+      onResult: (movie, tmdbData) => {
+        fetched++;
+        if (tmdbData) {
+          queueUpdate(movie.id, tmdbData);
+          found++;
+          if (tmdbData.needs_review) review++;
+        }
+        fetchCountRef.current = { fetched, found, total };
+        if (Date.now() - lastFlush > 1500) {
+          lastFlush = Date.now();
+          flushUpdates();
+          setFetchProgress((fetched / total) * 100);
+        }
+      },
+    });
+    flushUpdates();
+    setFetchProgress((fetched / total) * 100);
 
     setFetchingPosters(false);
-    if (!fetchAbortRef.current) {
-      toast.success('Done! Found posters for ' + found + ' of ' + fetched + ' movies.');
+    const reviewMsg = review > 0 ? ' ' + review + ' uncertain match' + (review > 1 ? 'es are' : ' is') + ' marked CHECK for you to verify.' : '';
+    if (fetchAbortRef.current) {
+      toast.info('Fetch paused — ' + found + ' of ' + fetched + ' processed saved. Click "Fetch Posters" to continue.' + reviewMsg);
+    } else {
+      toast.success('Done! Found metadata for ' + found + ' of ' + fetched + ' movies.' + reviewMsg);
     }
   };
 
@@ -915,7 +937,7 @@ export default function LocalLibraryPage() {
     const now = Date.now();
     let uniqueNewMovies = newMovies
       .filter(m => !existingPaths.has(m.file_path))
-      .map(m => ({ ...m, added_at: now }));
+      .map(m => withParsedName({ ...m, added_at: now }));
 
     // Free tier limit — verify against electron-store to prevent localStorage tampering
     if (isFreeTierUser()) {
@@ -984,7 +1006,7 @@ export default function LocalLibraryPage() {
             .replace(/[_-]/g, ' ')
             .replace(/\s+/g, ' ')
             .trim() || nameWithoutExt.replace(/\./g, ' ').replace(/[_-]/g, ' ').trim();
-          return { id: Date.now().toString() + Math.random().toString(36).slice(2, 8), file_path: fp, file_name: fileName, title, year, added_at: now };
+          return withParsedName({ id: Date.now().toString() + Math.random().toString(36).slice(2, 8), file_path: fp, file_name: fileName, title, year, added_at: now });
         });
 
       if (newMovies.length > 0) {
@@ -1038,7 +1060,7 @@ export default function LocalLibraryPage() {
       const now = Date.now();
       const newMovies = allScanned
         .filter(f => !existingPaths.has(f.file_path))
-        .map(f => ({ ...f, added_at: now }));
+        .map(f => withParsedName({ ...f, added_at: now }));
 
       const removedPaths = [...existingPaths].filter(p => !scannedPaths.has(p));
 
@@ -1233,7 +1255,7 @@ export default function LocalLibraryPage() {
   }
 
   // Compute available genres from all movies
-  const availableGenres = (() => {
+  const availableGenres = useMemo(() => {
     const genreCount = {};
     movies.forEach(m => {
       if (m.genres && Array.isArray(m.genres)) {
@@ -1244,16 +1266,23 @@ export default function LocalLibraryPage() {
       }
     });
     return Object.entries(genreCount).sort((a, b) => b[1] - a[1]);
-  })();
+  }, [movies]);
 
-  const filteredMovies = sortMovies(
+  const deferredSearch = useDeferredValue(searchQuery);
+  const activeCollectionIds = useMemo(() => {
+    if (!activeCollection) return null;
+    const col = collections.find(c => c.id === activeCollection);
+    return col ? new Set(col.movie_ids) : null;
+  }, [activeCollection, collections]);
+  const filteredMovies = useMemo(() => sortMovies(
     movies.filter(movie => {
       // Quick filter
       if (quickFilter === 'no-poster' && movie.poster_path) return false;
       if (quickFilter === 'no-rating' && movie.rating) return false;
       if (quickFilter === 'no-year' && movie.year) return false;
       if (quickFilter === 'no-genre' && movie.genres && movie.genres.length > 0) return false;
-      if (quickFilter === 'favorites' && !favorites.includes(movie.id)) return false;
+      if (quickFilter === 'favorites' && !favoriteSet.has(movie.id)) return false;
+      if (quickFilter === 'needs-review' && !movie.needs_review) return false;
       if (quickFilter === 'recent' && !recentIds.has(movie.id)) return false;
       // Genre filter
       if (selectedGenre) {
@@ -1265,17 +1294,32 @@ export default function LocalLibraryPage() {
         if (!movie.file_path?.startsWith(activeDirectory)) return false;
       }
       // Collection filter
-      if (activeCollection) {
-        const col = collections.find(c => c.id === activeCollection);
-        if (col && !col.movie_ids.includes(movie.id)) return false;
-      }
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      return movie.title?.toLowerCase().includes(query) || 
+      if (activeCollectionIds && !activeCollectionIds.has(movie.id)) return false;
+      if (!deferredSearch) return true;
+      const query = deferredSearch.toLowerCase();
+      return String(movie.title || '').toLowerCase().includes(query) || 
              movie.file_name?.toLowerCase().includes(query) ||
+             (movie.year && String(movie.year) === query) ||
+             (movie.director && movie.director.toLowerCase().includes(query)) ||
              (movie.cast && movie.cast.some(c => c.name?.toLowerCase().includes(query)));
     })
-  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [movies, quickFilter, selectedGenre, activeDirectory, activeCollectionIds, deferredSearch, sortBy, favoriteSet]);
+
+  const openMovieDetailCb = useCallback((m) => { setSelectedMovie(m); trackActivity(m.id, 'view'); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const playMovieCb = useCallback((m) => playMovie(m), []);
+  const libraryCounts = useMemo(() => {
+    const dirCounts = {};
+    let missingPoster = 0, needsReview = 0, needsDetails = 0;
+    movies.forEach(m => {
+      if (!m.poster_path) missingPoster++;
+      if (m.needs_review) needsReview++;
+      if (m.tmdb_id && !m.metadata_updated_at) needsDetails++;
+    });
+    directories.forEach(d => { dirCounts[d] = movies.filter(m => m.file_path?.startsWith(d)).length; });
+    return { dirCounts, missingPoster, needsReview, needsDetails };
+  }, [movies, directories]);
 
   const displayedMovies = filteredMovies.slice(0, visibleCount);
   const hasMore = visibleCount < filteredMovies.length;
@@ -1353,12 +1397,26 @@ export default function LocalLibraryPage() {
               <span className="text-xs">
               {fetchingPosters 
                 ? 'Fetching...' 
-                : (function() {
-                    var missing = movies.filter(function(m) { return !m.poster_path; }).length;
-                    return missing > 0 ? 'Fetch Posters (' + missing + ')' : 'Fetch Posters';
-                  })()
+                : (libraryCounts.missingPoster > 0 ? 'Fetch Posters (' + libraryCounts.missingPoster + ')' : 'Fetch Posters')
               }
               </span>
+            </Button>
+          )}
+          {libraryCounts.needsDetails > 0 && (
+            <Button variant="outline" size="sm" onClick={fetchAllCast} disabled={fetchingCast || fetchingPosters} data-testid="enrich-metadata-btn" title="Add cast, director, runtime, rating and more to already-matched movies">
+              <Sparkles className={`w-4 h-4 mr-1.5 ${fetchingCast ? 'animate-pulse' : ''}`} />
+              <span className="text-xs">{fetchingCast ? 'Enriching... ' + castFetchProgress + '%' : 'Enrich Details (' + libraryCounts.needsDetails + ')'}</span>
+            </Button>
+          )}
+          {libraryCounts.needsReview > 0 && (
+            <Button variant={quickFilter === 'needs-review' ? 'default' : 'outline'} size="sm" className={quickFilter === 'needs-review' ? '' : 'border-amber-500/40 text-amber-400'} onClick={() => setQuickFilter(quickFilter === 'needs-review' ? null : 'needs-review')} data-testid="needs-review-filter-btn" title="Show movies whose match was uncertain">
+              <AlertTriangle className="w-4 h-4 mr-1.5" />
+              <span className="text-xs">Check Matches ({libraryCounts.needsReview})</span>
+            </Button>
+          )}
+          {fetchingCast && (
+            <Button variant="ghost" size="sm" className="text-amber-400" onClick={abortFetch} data-testid="abort-enrich-btn">
+              <span className="text-xs">Pause</span>
             </Button>
           )}
           <div className="flex-1" />
@@ -1541,7 +1599,7 @@ export default function LocalLibraryPage() {
             <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-1">{movies.length}</Badge>
           </Button>
           {directories.map((dir, i) => {
-            const count = movies.filter(m => m.file_path?.startsWith(dir)).length;
+            const count = libraryCounts.dirCounts[dir] || 0;
             const label = dir.split(/[\\/]/).pop() || dir;
             return (
               <Button
@@ -1750,7 +1808,7 @@ export default function LocalLibraryPage() {
                 </div>
                 <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
                   {dirMovies.map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => openMovieDetail(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} isFavorite={favorites.includes(movie.id)} onToggleFavorite={(e) => toggleFavorite(movie.id, e)} />
+                    <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} />
                   ))}
                 </div>
               </div>
@@ -1759,7 +1817,7 @@ export default function LocalLibraryPage() {
         ) : (
         <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
           {displayedMovies.map((movie) => (
-            <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onClick={() => openMovieDetail(movie)} onPlay={(e) => { e.stopPropagation(); playMovie(movie); }} isFavorite={favorites.includes(movie.id)} onToggleFavorite={(e) => toggleFavorite(movie.id, e)} />
+            <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} />
           ))}
         </div>
         )
@@ -2157,6 +2215,38 @@ export default function LocalLibraryPage() {
                 </div>
               </div>
 
+              {selectedMovie.needs_review && (
+                <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 space-y-2" data-testid="needs-review-panel">
+                  <p className="text-xs text-amber-300 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Uncertain match{selectedMovie.tmdb_title ? ': "' + selectedMovie.tmdb_title + '"' : ''}{selectedMovie.release_date ? ' (' + selectedMovie.release_date.slice(0, 4) + ')' : ''} — is this the right movie?
+                  </p>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="h-7 text-xs" onClick={() => confirmMatch(selectedMovie)} data-testid="confirm-match-btn">
+                      <Check className="w-3 h-3 mr-1" /> Yes, correct
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setPosterMode('search'); setPosterSearch(selectedMovie.title || ''); searchPosters(selectedMovie.title || ''); }} data-testid="fix-match-btn">
+                      <Search className="w-3 h-3 mr-1" /> Pick the right one
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {(selectedMovie.director || selectedMovie.runtime || selectedMovie.certification || selectedMovie.tagline || selectedMovie.imdb_id) && (
+                <div className="space-y-1.5" data-testid="movie-extra-details">
+                  {selectedMovie.tagline && <p className="text-xs italic text-muted-foreground" data-testid="movie-tagline">"{selectedMovie.tagline}"</p>}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    {selectedMovie.certification && <span className="px-1.5 py-0.5 border border-border rounded text-[10px] font-semibold" data-testid="movie-certification">{selectedMovie.certification}</span>}
+                    {selectedMovie.runtime ? <span className="flex items-center gap-1" data-testid="movie-runtime"><Clock className="w-3 h-3" />{Math.floor(selectedMovie.runtime / 60) > 0 ? Math.floor(selectedMovie.runtime / 60) + 'h ' : ''}{selectedMovie.runtime % 60}m</span> : null}
+                    {selectedMovie.director && <span data-testid="movie-director">Directed by <span className="text-foreground">{selectedMovie.director}</span></span>}
+                    {selectedMovie.imdb_id && (
+                      <button className="text-amber-400 hover:underline" onClick={() => { var u = 'https://www.imdb.com/title/' + selectedMovie.imdb_id + '/'; if (window.electronAPI?.openExternal) window.electronAPI.openExternal(u); else window.open(u, '_blank'); }} data-testid="movie-imdb-link">IMDb</button>
+                    )}
+                  </div>
+                  {selectedMovie.collection_name && <p className="text-[11px] text-muted-foreground" data-testid="movie-collection-name">Part of: {selectedMovie.collection_name}</p>}
+                </div>
+              )}
+
               {/* Cast Section */}
               {selectedMovie.cast && selectedMovie.cast.length > 0 ? (
                 <CastRow cast={selectedMovie.cast} onClear={() => {
@@ -2170,18 +2260,18 @@ export default function LocalLibraryPage() {
                   size="sm"
                   className="text-xs text-muted-foreground w-full"
                   onClick={async () => {
-                    var castData = await fetchCastForMovie(selectedMovie);
-                    if (castData) {
-                      setMovies(function(prev) { return prev.map(function(m) { return m.id === selectedMovie.id ? Object.assign({}, m, { cast: castData }) : m; }); });
-                      setSelectedMovie(function(prev) { return Object.assign({}, prev, { cast: castData }); });
-                      toast.success('Cast loaded');
+                    var details = await fetchDetailsForMovie(selectedMovie);
+                    if (details && details.cast && details.cast.length) {
+                      setMovies(function(prev) { return prev.map(function(m) { return m.id === selectedMovie.id ? Object.assign({}, m, details) : m; }); });
+                      setSelectedMovie(function(prev) { return Object.assign({}, prev, details); });
+                      toast.success('Cast & details loaded');
                     } else {
                       toast.info('No cast data found');
                     }
                   }}
                   data-testid="fetch-cast-single-btn"
                 >
-                  <Users className="w-3 h-3 mr-1.5" /> Load cast from TMDB
+                  <Users className="w-3 h-3 mr-1.5" /> Load cast & details from TMDB
                 </Button>
               ) : null}
 
@@ -2241,7 +2331,7 @@ export default function LocalLibraryPage() {
                               <div
                                 key={result.id}
                                 className="relative cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors"
-                                onClick={() => updateMoviePoster(selectedMovie.id, result.poster, { overview: result.overview, rating: result.rating, year: result.year })}
+                                onClick={() => applyManualMatch(result)}
                                 data-testid={'poster-result-' + result.id}
                               >
                                 <img src={result.poster} alt={result.title} className="w-full aspect-[2/3] object-cover" />

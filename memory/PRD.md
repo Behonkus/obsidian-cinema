@@ -52,3 +52,12 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 ## Credentials
 - Test User: `billrules@gmail.com`
 - Pro License Key: `OBSIDIAN-D9FE-BC22-4AE3-ACAA`
+
+## Metadata Engine & Performance Overhaul (June 2026, unreleased — next version bump)
+- New `frontend/src/lib/tmdbMatcher.js`: smart filename parser (strips 1080p/BluRay/x264 etc., picks the correct year e.g. "2001 A Space Odyssey (1968)", reads IMDb ids `tt1234567`), multi-strategy TMDB search (year-filtered, unfiltered, subtitle/article variants), fuzzy scoring (title similarity + year + popularity), confidence threshold, IMDb-id direct lookup.
+- One TMDB request per movie gets everything (append_to_response=credits,release_dates,external_ids): director, writers, runtime, tagline, US certification, IMDb id, franchise, studios, top 10 cast.
+- Low-confidence matches flagged `needs_review` → "CHECK" badge on card, "Check Matches (N)" toolbar filter, modal panel with "Yes, correct" / "Pick the right one". Picking a TMDB search result now re-matches fully (sets tmdb_id + all details).
+- "Enrich Details (N)" button: backfills new fields for already-matched movies (tmdb_id but no metadata_updated_at).
+- Titles/years only auto-cleaned if user never edited them (equal to old scanner output).
+- Performance: concurrent rate-limited fetching (6–8 parallel, ≤35 req/s, 429 retry) replacing 250ms sequential loop; batched state updates every 1.5s; debounced library save (600ms) + `oc-library-updated` event; sidebar/free-badge no longer re-parse entire library every 5s (event-driven + 60s fallback); memoized filtering/genre/dir counts, deferred search, memoized MovieCard, w342 grid thumbnails; search also matches year/director.
+- Verified in preview with simulated Electron + mocked TMDB. Needs real desktop build test.
