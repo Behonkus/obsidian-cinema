@@ -2792,7 +2792,7 @@ async def admin_revoke_license(request: Request, session_token: Optional[str] = 
     if not key:
         raise HTTPException(status_code=400, detail="license_key required")
     result = await db.license_keys.update_one({"license_key": key}, {"$set": {"is_active": False}})
-    if result.modified_count == 0:
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="License key not found")
     return {"success": True, "message": f"License {key} revoked"}
 
@@ -2804,7 +2804,7 @@ async def admin_reactivate_license(request: Request, session_token: Optional[str
     if not key:
         raise HTTPException(status_code=400, detail="license_key required")
     result = await db.license_keys.update_one({"license_key": key}, {"$set": {"is_active": True}})
-    if result.modified_count == 0:
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="License key not found")
     return {"success": True, "message": f"License {key} reactivated"}
 
@@ -2819,7 +2819,7 @@ async def admin_reset_machine(request: Request, session_token: Optional[str] = C
         {"license_key": key},
         {"$set": {"activated_machine_id": None, "activated_at": None}}
     )
-    if result.modified_count == 0:
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="License key not found")
     return {"success": True, "message": f"Machine lock cleared for {key}"}
 

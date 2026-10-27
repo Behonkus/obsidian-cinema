@@ -1,0 +1,35 @@
+{
+  "summary": "PREVIEW verification of Admin Licenses Revoke/Reactivate/Delete and Usage 'User' column. Backend: 4/4 pytest pass (auth gate, gift->revoke->reactivate->delete lifecycle with GET verification, 400/404 errors, usage email/name enrichment). Frontend (Playwright, admin cookie): Revoke opens AlertDialog, Cancel closes with no change, Confirm -> toast 'License revoked' + badge 'Revoked'; Reactivate restores to Active; UI-generated gift key -> Delete dialog -> Cancel keeps it, Confirm -> toast 'License permanently deleted' + row removed. Usage table headers start with 'User'; test-machine-abc row shows tester@example.com; other rows show 'Anonymous (free)'. No console errors. Everything works in preview, so the reported production 'nothing happens' problem is NOT reproducible from this code. Most likely the live site is running an older build that hasn't been redeployed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/admin/licenses/revoke|reactivate|reset-machine", "issue": "Uses modified_count==0 -> 404 'License key not found'. Revoking an already revoked key (or reactivating an active one) wrongly returns 404. Use matched_count instead."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Admin > Licenses", "issues": ["'Active' badge (default variant = red primary) looks nearly the same as the 'Revoked' destructive badge. Use green/emerald for Active."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_admin_licenses_usage.py", "/app/test_reports/pytest/pytest_admin_iter18.xml"],
+  "action_items": [
+    "Production: redeploy the latest build. The preview code works, so the live site probably has a stale frontend bundle (no AlertDialog/confirmAction wiring)",
+    "Minor: switch modified_count to matched_count in the revoke/reactivate/reset-machine 404 checks",
+    "Minor: make the Active badge green so it is distinct from Revoked",
+    "/app/memory/test_credentials.md is missing. Create it with the admin session token info"
+  ],
+  "critical_code_review_comments": [
+    "AdminPage.jsx is 706 lines (over the 700 limit). Consider splitting the tabs into components",
+    "ADMIN_EMAIL is hardcoded in server.py. It should come from an env var",
+    "Admin license endpoints parse raw request.json() without Pydantic models"
+  ],
+  "updated_files": ["/app/backend/tests/test_admin_licenses_usage.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "/app/memory/test_credentials.md missing; used Bearer/cookie session_token=test_admin_session_token as provided",
+  "seed_data_creation": "None persisted. Gift keys created during tests were deleted. TEST-REVOKE-0001 was revoked at start; it was reactivated and left Active.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Admin at /admin. License rows: admin-license-row-{i}; buttons revoke-{i}/reactivate-{i}/delete-license-{i}; dialog via role=alertdialog with Cancel/Confirm. Usage: usage-table, usage-user-{i}. Do not touch OBSIDIAN-D9FE... or OBSIDIAN-1CBB... keys."
+}

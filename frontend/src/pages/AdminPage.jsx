@@ -271,7 +271,7 @@ export default function AdminPage() {
                         </td>
                         <td className="p-3 text-muted-foreground text-xs">{l.email}</td>
                         <td className="p-3">
-                          <Badge variant={l.is_active ? 'default' : 'destructive'} className="text-[10px]">
+                          <Badge variant={l.is_active ? 'default' : 'destructive'} className={l.is_active ? "text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20" : "text-[10px]"} data-testid={`license-status-${i}`}>
                             {l.is_active ? 'Active' : 'Revoked'}
                           </Badge>
                         </td>

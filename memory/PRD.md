@@ -61,3 +61,8 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Titles/years only auto-cleaned if user never edited them (equal to old scanner output).
 - Performance: concurrent rate-limited fetching (6–8 parallel, ≤35 req/s, 429 retry) replacing 250ms sequential loop; batched state updates every 1.5s; debounced library save (600ms) + `oc-library-updated` event; sidebar/free-badge no longer re-parse entire library every 5s (event-driven + 60s fallback); memoized filtering/genre/dir counts, deferred search, memoized MovieCard, w342 grid thumbnails; search also matches year/director.
 - Verified in preview with simulated Electron + mocked TMDB. Needs real desktop build test.
+
+## Admin fixes (June 2026)
+- Usage tab: new "User" column (name + email) resolved server-side from license_key or license activated_machine_id; free desktop users show "Anonymous (free)" (they never sign in).
+- Revoke/Reactivate/Reset-machine use matched_count (no false 404 on repeat). Active badge is green.
+- Revoke/Delete verified working in preview (iteration_18). Live-site "no dialog" report sent to deployer debug; likely stale production build.
