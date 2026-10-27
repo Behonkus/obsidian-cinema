@@ -45,7 +45,7 @@ export function LicenseProvider({ children }) {
             axios.post(`${API}/license/validate`, {
               license_key: storedLicense.license_key,
               machine_id: id
-            }, { timeout: 5000 }).then(async (resp) => {
+            }, { timeout: 15000 }).then(async (resp) => {
               if (resp.data.valid) {
                 localStorage.setItem('obsidian_cinema_last_validation', Date.now().toString());
               } else {

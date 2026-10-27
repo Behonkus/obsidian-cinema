@@ -373,19 +373,30 @@ export default function SettingsPage() {
   const [importData, setImportData] = useState(null);
 
   // Load backup list
-  const loadBackups = () => {
+  const loadBackups = async () => {
     var list = [];
+    // Check file system backup first (new method)
+    if (isElectron() && window.electronAPI?.loadBackup) {
+      try {
+        var result = await window.electronAPI.loadBackup();
+        if (result.ok && result.data) {
+          var parsed = JSON.parse(result.data);
+          list.push({ slot: 'file', date: parsed.date, movieCount: parsed.movieCount || 0, collectionCount: parsed.collectionCount || 0, source: 'file' });
+        }
+      } catch (e) {}
+    }
+    // Also check legacy localStorage backup
     var raw = localStorage.getItem('obsidian_cinema_backup_1');
     if (raw) {
       try {
-        var parsed = JSON.parse(raw);
-        list.push({ slot: 1, date: parsed.date, movieCount: parsed.movieCount || 0, collectionCount: parsed.collectionCount || 0 });
+        var parsedLs = JSON.parse(raw);
+        list.push({ slot: 1, date: parsedLs.date, movieCount: parsedLs.movieCount || 0, collectionCount: parsedLs.collectionCount || 0, source: 'localStorage' });
       } catch (e) {}
     }
     setBackups(list);
   };
 
-  // Create a backup snapshot (single slot, always replaced)
+  // Create a backup snapshot — uses Electron file system if available, skips if localStorage is full
   const createBackup = () => {
     try {
       var movies = localStorage.getItem('obsidian_cinema_local_movies') || '[]';
@@ -399,7 +410,6 @@ export default function SettingsPage() {
       var favorites = localStorage.getItem('obsidian_cinema_favorites') || '[]';
       var activity = localStorage.getItem('obsidian_cinema_activity') || '{}';
       
-      // Count without full parse — count occurrences of "id" key as approximation
       var movieCount = 0;
       var colCount = 0;
       try { movieCount = (movies.match(/"id"/g) || []).length; } catch (e) {}
@@ -411,26 +421,48 @@ export default function SettingsPage() {
         collectionCount: colCount,
         data: { movies: movies, dirs: dirs, collections: collections, trash: trash, tmdb: tmdb, theme: theme, gridSize: gridSizeVal, sortBy: sortBy, favorites: favorites, activity: activity }
       };
-      // Clean up any old backup slots (2-5) from previous versions
-      for (var i = 2; i <= 5; i++) {
+      
+      // Clean up old backup slots from localStorage to free space
+      for (var i = 1; i <= 5; i++) {
         localStorage.removeItem('obsidian_cinema_backup_' + i);
       }
-      localStorage.setItem('obsidian_cinema_backup_1', JSON.stringify(snapshot));
+      
+      // Save backup to Electron file system (no localStorage quota issues)
+      if (isElectron() && window.electronAPI?.saveBackup) {
+        window.electronAPI.saveBackup(JSON.stringify(snapshot));
+      } else {
+        // Web fallback — only store metadata, not the full data (to avoid quota)
+        var metaOnly = { date: snapshot.date, movieCount: movieCount, collectionCount: colCount, storage: 'electron' };
+        try { localStorage.setItem('obsidian_cinema_backup_meta', JSON.stringify(metaOnly)); } catch (e2) {}
+      }
       loadBackups();
       return true;
     } catch (e) {
       console.error('Backup failed:', e);
-      toast.error('Backup failed — storage may be full. Try exporting to file instead.');
       return false;
     }
   };
 
-  // Restore from a backup slot
-  const restoreBackup = (slot) => {
-    var raw = localStorage.getItem('obsidian_cinema_backup_' + slot);
-    if (!raw) return;
+  // Restore from backup (file system or legacy localStorage)
+  const restoreBackup = async (slot) => {
     try {
-      var snapshot = JSON.parse(raw);
+      var snapshot = null;
+      // Try file system first (new backups)
+      if (isElectron() && window.electronAPI?.loadBackup) {
+        var result = await window.electronAPI.loadBackup();
+        if (result.ok && result.data) {
+          snapshot = JSON.parse(result.data);
+        }
+      }
+      // Fall back to legacy localStorage backup
+      if (!snapshot) {
+        var raw = localStorage.getItem('obsidian_cinema_backup_' + slot);
+        if (raw) snapshot = JSON.parse(raw);
+      }
+      if (!snapshot || !snapshot.data) {
+        toast.error('No backup found to restore');
+        return;
+      }
       var d = snapshot.data;
       if (d.movies) localStorage.setItem('obsidian_cinema_local_movies', d.movies);
       if (d.dirs) localStorage.setItem('obsidian_cinema_local_dirs', d.dirs);

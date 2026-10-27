@@ -146,6 +146,33 @@ ipcMain.handle('fs:pathExists', (event, checkPath) => {
   return fs.existsSync(checkPath);
 });
 
+// Backup to file system (avoids localStorage quota limits)
+const BACKUP_PATH = path.join(app.getPath('userData'), 'library_backup.json');
+
+ipcMain.handle('fs:saveBackup', (event, data) => {
+  try {
+    fs.writeFileSync(BACKUP_PATH, data, 'utf-8');
+    return { ok: true, path: BACKUP_PATH };
+  } catch (err) {
+    console.error('Failed to save backup:', err);
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('fs:loadBackup', () => {
+  try {
+    if (fs.existsSync(BACKUP_PATH)) {
+      const data = fs.readFileSync(BACKUP_PATH, 'utf-8');
+      return { ok: true, data: data };
+    }
+    return { ok: false, error: 'No backup found' };
+  } catch (err) {
+    console.error('Failed to load backup:', err);
+    return { ok: false, error: err.message };
+  }
+});
+
+
 // ============ AUTO-UPDATER CONFIGURATION ============
 
 // Configure auto-updater
