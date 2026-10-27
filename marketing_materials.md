@@ -1,4 +1,4 @@
-# Obsidian Cinema — Marketing Materials (Updated v1.6.5)
+# Obsidian Cinema — Marketing Materials (Updated v1.6.6)
 
 ---
 
@@ -19,6 +19,9 @@ Most of us have movies spread across internal drives, external USB disks, and ne
 Obsidian Cinema sits between a file manager and a full media server. Point it at any directory — `C:\Movies`, `D:\Films`, `\\NAS\Media` — and it does the rest:
 
 - **Automatic poster, metadata & cast fetch** from TMDB (title, year, rating, genre, overview, full cast).
+- **Smart matching engine (new in 1.6.6)** — cleans messy filenames (1080p, BluRay, x264…), picks the right year, compares multiple search results and scores them, and reads IMDb IDs in filenames. Uncertain matches get a "CHECK" badge so you can confirm or pick the right movie in one click.
+- **Richer movie details (new in 1.6.6)** — director, runtime, age rating, tagline, IMDb link, franchise and top 10 cast, plus a one-click "Enrich Details" button for movies already in your library. Still only needs your free TMDB key — nothing extra to set up.
+- **Faster with huge libraries (new in 1.6.6)** — parallel metadata fetching and a smoother library for collections of 20,000+ movies.
 - **AI-powered recommendations** — personalized movie suggestions based on your viewing and browsing activity, powered by GPT-4o.
 - **One-click playback** in your default media player (VLC, MPC, Windows Media Player — your choice).
 - **Favorites** — star movies with an animated confetti burst. Persists across sessions and survives updates.
@@ -36,7 +39,7 @@ Obsidian Cinema sits between a file manager and a full media server. Point it at
 - **TMDB setup guide** — step-by-step instructions for getting a free TMDB API key, both on the landing page and in Settings.
 - **Admin panel** — web-based admin dashboard for user management, license management (revoke, reactivate, reset machine lock, delete), gift key generation with email templates, and revenue overview.
 - **EULA** — End User License Agreement displayed on first launch of each new version, must be scrolled and accepted to proceed.
-- **18+ color themes plus a custom color picker** — solid, pastel, animated rainbow, or pick any color you want.
+- **21 color themes plus a custom color picker** — solid, pastel, animated rainbow, or pick any color you want.
 - **Backup & restore** — export your entire library to a timestamped JSON file and restore it anytime. Includes favorites, activity data, collections, and all settings.
 - **Daily movie quotes** — a rotating selection of 179 iconic movie quotes greets you each day.
 - **Recently Deleted** — a 30-day trash so nothing is permanently lost by accident.
@@ -69,7 +72,7 @@ Obsidian Cinema scans your local and network drives, automatically fetches movie
 
 ### Key Facts
 - **Platform:** Windows (Electron-based desktop app)
-- **Version:** 1.6.5
+- **Version:** 1.6.6
 - **Price:** Free (500 movies, 3 collections) / Pro $25 one-time (unlimited)
 - **Data Source:** TMDB for posters, metadata, and cast data
 - **AI Engine:** GPT-4o for personalized movie recommendations

@@ -610,7 +610,7 @@ Recipient: ${gift.email}
 
 Hey there,
 
-Great news — the free tier has been expanded to 500 movies with release 1.6.5 but...
+Great news — release 1.6.6 brings a smarter movie-matching engine: more accurate posters, years, genres and cast, plus director, runtime, age rating and IMDb links for every movie, uncertain matches flagged for you to check, and much faster fetching for big libraries. The free tier also includes up to 500 movies. But...
 
 You've just been gifted a complimentary Obsidian Cinema PRO license! Consider this your all-access pass to the full cinematic experience.
 
@@ -619,7 +619,7 @@ ${gift.key}
 
 Here's how to activate it:
 
-If you haven't grabbed the latest Obsidian Cinema yet, download v1.6.5 here:
+If you haven't grabbed the latest Obsidian Cinema yet, download v1.6.6 here:
 https://www.obsidiancinema.com
 
 1. Download and Install the newest version of Obsidian Cinema

@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import axios from "axios";
 import { THEMES, applyTheme, THEME_STORAGE_KEY } from "@/components/ThemeSelector";
@@ -1903,11 +1904,13 @@ export default function SettingsPage() {
                 <div>
                   <h4 className="font-medium text-foreground mb-2">Smart Features</h4>
                   <ul className="space-y-1 text-muted-foreground">
+                    <li>• Smart TMDB matching with "Check Matches" review</li>
+                    <li>• Director, runtime, age rating & IMDb links</li>
                     <li>• AI movie suggestions</li>
                     <li>• Duplicate detection & management</li>
                     <li>• Editable title, year, rating & synopsis</li>
                     <li>• Cast display & bulk fetch</li>
-                    <li>• Search by title, year & actor</li>
+                    <li>• Search by title, year, actor & director</li>
                     <li>• Collections & trash management</li>
                     <li>• Backup, export & restore</li>
                   </ul>
