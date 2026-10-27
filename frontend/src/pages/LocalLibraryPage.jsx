@@ -22,6 +22,7 @@ import {
   Grid2X2,
   ArrowUpDown,
   ChevronDown,
+  ChevronUp,
   FolderHeart,
   Plus,
   Check,
@@ -2536,15 +2537,50 @@ export default function LocalLibraryPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Manage Directories</AlertDialogTitle>
             <AlertDialogDescription>
-              Rename directory paths or remove directories from your library. Your actual files and folders on disk are never modified.
+              Reorder, rename, or remove directories. Drag order is saved. Your actual files and folders on disk are never modified.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-2 max-h-64 overflow-y-auto px-1">
+          <div className="space-y-2 max-h-80 overflow-y-auto px-1">
             {directories.map(function(dir, i) {
               var count = movies.filter(function(m) { return m.file_path && m.file_path.startsWith(dir); }).length;
               var label = dir.split(/[\\/]/).pop() || dir;
               return (
-                <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/40 border border-border/50" data-testid={'dir-manage-' + i}>
+                <div key={dir} className="flex items-center gap-1.5 p-2 rounded-lg bg-secondary/40 border border-border/50" data-testid={'dir-manage-' + i}>
+                  {/* Reorder buttons */}
+                  <div className="flex flex-col shrink-0">
+                    <button
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
+                      disabled={i === 0}
+                      onClick={() => {
+                        var newDirs = [...directories];
+                        var temp = newDirs[i - 1];
+                        newDirs[i - 1] = newDirs[i];
+                        newDirs[i] = temp;
+                        setDirectories(newDirs);
+                        localStorage.setItem(DIRS_KEY, JSON.stringify(newDirs));
+                      }}
+                      title="Move up"
+                      data-testid={'dir-mgr-up-' + i}
+                    >
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
+                      disabled={i === directories.length - 1}
+                      onClick={() => {
+                        var newDirs = [...directories];
+                        var temp = newDirs[i + 1];
+                        newDirs[i + 1] = newDirs[i];
+                        newDirs[i] = temp;
+                        setDirectories(newDirs);
+                        localStorage.setItem(DIRS_KEY, JSON.stringify(newDirs));
+                      }}
+                      title="Move down"
+                      data-testid={'dir-mgr-down-' + i}
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <HardDrive className="w-4 h-4 text-muted-foreground shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{label}</p>
