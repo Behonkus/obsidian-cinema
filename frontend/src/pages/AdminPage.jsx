@@ -696,7 +696,7 @@ The Obsidian Cinema Team`;
           variant="outline" size="sm"
           onClick={() => {
             const subject = encodeURIComponent("You've been upgraded to Obsidian Cinema Pro!");
-            const body = encodeURIComponent(emailText.replace(/^Subject:.*\n\n/, ''));
+            const body = encodeURIComponent(emailText.replace(/^Subject:.*\n+/, ''));
             const to = encodeURIComponent('obsidiancinemaplus@gmail.com');
             window.open(`https://mail.google.com/mail/u/obsidiancinemaplus@gmail.com/?view=cm&to=${to}&su=${subject}&body=${body}`, '_blank');
           }}

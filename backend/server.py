@@ -1983,7 +1983,8 @@ async def process_auth_session(request: Request, response: Response):
     }
     
     # Keep other active sessions (other tabs/devices); prune only expired ones
-    await db.user_sessions.delete_many({"user_id": user_id, "expires_at": {"$lt": datetime.now(timezone.utc).isoformat()}})
+    now_utc = datetime.now(timezone.utc)
+    await db.user_sessions.delete_many({"user_id": user_id, "$or": [{"expires_at": {"$lt": now_utc.isoformat()}}, {"expires_at": {"$lt": now_utc}}]})
     await db.user_sessions.insert_one(session_doc)
     
     # Set httpOnly cookie

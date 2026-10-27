@@ -66,3 +66,5 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Usage tab: new "User" column (name + email) resolved server-side from license_key or license activated_machine_id; free desktop users show "Anonymous (free)" (they never sign in).
 - Revoke/Reactivate/Reset-machine use matched_count (no false 404 on repeat). Active badge is green.
 - Revoke/Delete verified working in preview (iteration_18). Live-site "no dialog" report sent to deployer debug; likely stale production build.
+- Login no longer wipes other sessions (only expired ones pruned) — fixes production admin 401 on Revoke/Delete when logged in on multiple tabs/domains/desktop. Admin UI shows clear "login expired" toast on 401.
+- Gift "Draft Email in Gmail": composes FROM obsidiancinemaplus@gmail.com account (/mail/u/obsidiancinemaplus@gmail.com/), TO obsidiancinemaplus@gmail.com (owner edits then forwards to recipient); body begins with "Recipient: <email>".
