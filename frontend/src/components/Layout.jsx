@@ -48,18 +48,34 @@ function BackupStatus() {
   const [ago, setAgo] = useState('');
 
   useEffect(() => {
-    var check = function() {
+    var check = async function() {
+      // Check file system backup first (new method)
+      if (window.electronAPI?.loadBackup) {
+        try {
+          var result = await window.electronAPI.loadBackup();
+          if (result.ok && result.data) {
+            var snap = JSON.parse(result.data);
+            if (snap.date) { setLastBackup(snap.date); return; }
+          }
+        } catch {}
+      }
+      // Check metadata key (set when file backup succeeds)
+      var meta = localStorage.getItem('obsidian_cinema_backup_meta');
+      if (meta) {
+        try {
+          var m = JSON.parse(meta);
+          if (m.date) { setLastBackup(m.date); return; }
+        } catch {}
+      }
+      // Legacy localStorage backup
       var raw = localStorage.getItem('obsidian_cinema_backup_1');
       if (raw) {
         try {
-          var snap = JSON.parse(raw);
-          if (snap.date) {
-            setLastBackup(snap.date);
-          }
+          var snapLs = JSON.parse(raw);
+          if (snapLs.date) { setLastBackup(snapLs.date); return; }
         } catch {}
-      } else {
-        setLastBackup(null);
       }
+      setLastBackup(null);
     };
     check();
     var interval = setInterval(check, 10000);
