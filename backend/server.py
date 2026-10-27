@@ -1982,8 +1982,8 @@ async def process_auth_session(request: Request, response: Response):
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    # Remove old sessions for this user
-    await db.user_sessions.delete_many({"user_id": user_id})
+    # Keep other active sessions (other tabs/devices); prune only expired ones
+    await db.user_sessions.delete_many({"user_id": user_id, "expires_at": {"$lt": datetime.now(timezone.utc).isoformat()}})
     await db.user_sessions.insert_one(session_doc)
     
     # Set httpOnly cookie

@@ -64,6 +64,7 @@ export default function AdminPage() {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
       console.error('Admin action failed:', endpoint, status, err.response?.data || err.message);
+      if (status === 401) { toast.error('Your admin login has expired — please sign out and sign in again, then retry.'); setConfirmAction(null); return; }
       toast.error(detail ? `${detail} (${status})` : status ? `Action failed — server error ${status}` : `Action failed — could not reach server (${err.message})`);
     }
     setConfirmAction(null);
@@ -697,7 +698,7 @@ The Obsidian Cinema Team`;
             const subject = encodeURIComponent("You've been upgraded to Obsidian Cinema Pro!");
             const body = encodeURIComponent(emailText.replace(/^Subject:.*\n\n/, ''));
             const to = encodeURIComponent('obsidiancinemaplus@gmail.com');
-            window.open(`https://mail.google.com/mail/?view=cm&to=${to}&su=${subject}&body=${body}`, '_blank');
+            window.open(`https://mail.google.com/mail/u/obsidiancinemaplus@gmail.com/?view=cm&to=${to}&su=${subject}&body=${body}`, '_blank');
           }}
           data-testid="open-mailto-btn"
         >
