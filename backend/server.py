@@ -2949,6 +2949,17 @@ async def admin_get_usage(request: Request, session_token: Optional[str] = Cooki
     await require_admin(request, session_token)
     
     records = await db.usage_tracking.find({}, {"_id": 0}).sort("last_seen", -1).to_list(1000)
+
+    # Attach owner email/name via license key or machine binding
+    licenses = await db.license_keys.find({}, {"_id": 0, "license_key": 1, "email": 1, "activated_machine_id": 1}).to_list(5000)
+    by_key = {lic["license_key"]: lic.get("email") for lic in licenses if lic.get("license_key")}
+    by_machine = {lic["activated_machine_id"]: lic.get("email") for lic in licenses if lic.get("activated_machine_id")}
+    users = await db.users.find({}, {"_id": 0, "email": 1, "name": 1}).to_list(5000)
+    names = {u["email"]: u.get("name") for u in users if u.get("email")}
+    for r in records:
+        email = by_key.get(r.get("license_key")) or by_machine.get(r.get("machine_id"))
+        r["email"] = email
+        r["name"] = names.get(email) if email else None
     
     # Calculate summary stats
     now = datetime.now(timezone.utc)

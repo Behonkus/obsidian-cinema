@@ -448,6 +448,7 @@ export default function AdminPage() {
                     <table className="w-full text-sm" data-testid="usage-table">
                       <thead>
                         <tr className="border-b border-border">
+                          <th className="text-left p-2 text-muted-foreground font-medium text-xs">User</th>
                           <th className="text-left p-2 text-muted-foreground font-medium text-xs">Machine</th>
                           <th className="text-left p-2 text-muted-foreground font-medium text-xs">Tier</th>
                           <th className="text-left p-2 text-muted-foreground font-medium text-xs">Version</th>
@@ -464,6 +465,16 @@ export default function AdminPage() {
                           var isRecent = daysAgo !== null && daysAgo <= 7;
                           return (
                             <tr key={i} className="border-b border-border/50 hover:bg-secondary/30">
+                              <td className="p-2" data-testid={`usage-user-${i}`}>
+                                {r.email ? (
+                                  <div className="leading-tight">
+                                    {r.name && <div className="text-xs font-medium">{r.name}</div>}
+                                    <div className="text-xs text-muted-foreground">{r.email}</div>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground/60 italic" title="Free desktop users don't sign in, so there is no email to show">Anonymous (free)</span>
+                                )}
+                              </td>
                               <td className="p-2">
                                 <span className="text-xs text-muted-foreground font-mono">
                                   {r.machine_id ? r.machine_id.substring(0, 16) + '...' : '—'}
