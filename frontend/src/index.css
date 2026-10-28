@@ -81,12 +81,12 @@ code {
 
 /* Hero glow effect */
 .hero-glow {
-    background: radial-gradient(circle at 50% 0%, rgba(225, 29, 72, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.15) 0%, transparent 70%);
 }
 
 /* Card hover glow */
 .card-glow:hover {
-    box-shadow: 0 0 30px -10px rgba(225, 29, 72, 0.3);
+    box-shadow: 0 0 30px -10px hsl(var(--primary) / 0.3);
 }
 
 @layer base {

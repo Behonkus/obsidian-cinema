@@ -29,6 +29,16 @@ var THEMES = [
   { id: 'pastel-green',   name: 'Pastel Mint',     hue: '150 45% 65%',  preview: '#7cc9a8' },
   { id: 'pastel-lavender',name: 'Pastel Lavender', hue: '270 50% 72%',  preview: '#b8a3d9' },
   { id: 'pastel-peach',   name: 'Pastel Peach',    hue: '20 70% 72%',   preview: '#e8b89d' },
+  { id: 'muted-graphite', name: 'Graphite',     hue: '0 0% 46%',     preview: '#757575' },
+  { id: 'muted-silver',   name: 'Silver',       hue: '220 6% 60%',   preview: '#9399a3' },
+  { id: 'muted-slate',    name: 'Slate',        hue: '215 18% 50%',  preview: '#68788f' },
+  { id: 'muted-navy',     name: 'Navy',         hue: '218 35% 42%',  preview: '#45608f' },
+  { id: 'muted-steel',    name: 'Steel Blue',   hue: '205 25% 50%',  preview: '#5f819f' },
+  { id: 'muted-sage',     name: 'Sage',         hue: '140 14% 48%',  preview: '#698c74' },
+  { id: 'muted-olive',    name: 'Olive',        hue: '70 18% 42%',   preview: '#7b7e58' },
+  { id: 'muted-taupe',    name: 'Taupe',        hue: '30 12% 50%',   preview: '#8f8070' },
+  { id: 'muted-burgundy', name: 'Burgundy',     hue: '348 38% 40%',  preview: '#8d3f50' },
+  { id: 'muted-plum',     name: 'Plum',         hue: '290 14% 45%',  preview: '#82638a' },
   { id: 'rainbow',    name: 'Rainbow',        hue: 'rainbow',      preview: 'linear-gradient(90deg, #ef4444, #f59e0b, #22c55e, #3b82f6, #8b5cf6)' },
   { id: 'disco',      name: 'Disco',          hue: 'disco',        preview: 'linear-gradient(90deg, #ff0080, #ffff00, #00ff80, #ff00ff, #00ffff, #ff0080)' },
   { id: 'icecream',   name: 'Ice Cream',      hue: 'icecream',     preview: 'linear-gradient(90deg, #fbb6ce, #c4b5fd, #a7f3d0, #fde68a, #fbcfe8)' },
@@ -177,8 +187,9 @@ export default function ThemeSelector() {
   var currentTheme = THEMES.find(function(t) { return t.id === current; });
   var customColor = localStorage.getItem('obsidian_cinema_custom_color') || '#e11d48';
 
-  var solidThemes = THEMES.filter(function(t) { return !t.id.startsWith('pastel') && t.id !== 'rainbow'; });
+  var solidThemes = THEMES.filter(function(t) { return !t.id.startsWith('pastel') && !t.id.startsWith('muted') && t.id !== 'rainbow' && t.id !== 'disco' && t.id !== 'icecream'; });
   var pastelThemes = THEMES.filter(function(t) { return t.id.startsWith('pastel'); });
+  var mutedThemes = THEMES.filter(function(t) { return t.id.startsWith('muted'); });
   var specialThemes = THEMES.filter(function(t) { return t.id === 'rainbow' || t.id === 'disco' || t.id === 'icecream'; });
 
   return (
@@ -220,6 +231,26 @@ export default function ThemeSelector() {
         <p className="text-[10px] text-muted-foreground px-2 pt-1">Pastel</p>
         <div className="grid grid-cols-6 gap-1.5 p-2">
           {pastelThemes.map(function(theme) {
+            var isActive = current === theme.id;
+            return (
+              <button
+                key={theme.id}
+                onClick={function() { selectTheme(theme.id); }}
+                className={'w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ' + (isActive ? 'border-foreground scale-110' : 'border-transparent hover:scale-105')}
+                style={{ background: theme.preview }}
+                title={theme.name}
+                data-testid={'theme-' + theme.id}
+              >
+                {isActive && <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Professional / muted */}
+        <p className="text-[10px] text-muted-foreground px-2 pt-1">Professional</p>
+        <div className="grid grid-cols-6 gap-1.5 p-2">
+          {mutedThemes.map(function(theme) {
             var isActive = current === theme.id;
             return (
               <button

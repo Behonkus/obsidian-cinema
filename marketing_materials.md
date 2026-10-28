@@ -39,7 +39,7 @@ Obsidian Cinema sits between a file manager and a full media server. Point it at
 - **TMDB setup guide** — step-by-step instructions for getting a free TMDB API key, both on the landing page and in Settings.
 - **Admin panel** — web-based admin dashboard for user management, license management (revoke, reactivate, reset machine lock, delete), gift key generation with email templates, and revenue overview.
 - **EULA** — End User License Agreement displayed on first launch of each new version, must be scrolled and accepted to proceed.
-- **21 color themes plus a custom color picker** — solid, pastel, animated rainbow, or pick any color you want.
+- **31 color themes plus a custom color picker** — including 10 muted Professional themes (Graphite, Silver, Slate, Navy, Steel Blue, Sage, Olive, Taupe, Burgundy, Plum) — solid, pastel, animated rainbow, or pick any color you want.
 - **Backup & restore** — export your entire library to a timestamped JSON file and restore it anytime. Includes favorites, activity data, collections, and all settings.
 - **Daily movie quotes** — a rotating selection of 179 iconic movie quotes greets you each day.
 - **Recently Deleted** — a 30-day trash so nothing is permanently lost by accident.

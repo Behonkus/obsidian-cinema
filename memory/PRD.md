@@ -68,3 +68,8 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Revoke/Delete verified working in preview (iteration_18). Live-site "no dialog" report sent to deployer debug; likely stale production build.
 - Login no longer wipes other sessions (only expired ones pruned) — fixes production admin 401 on Revoke/Delete when logged in on multiple tabs/domains/desktop. Admin UI shows clear "login expired" toast on 401.
 - Gift "Draft Email in Gmail": composes FROM obsidiancinemaplus@gmail.com account (/mail/u/obsidiancinemaplus@gmail.com/), TO obsidiancinemaplus@gmail.com (owner edits then forwards to recipient); body begins with "Recipient: <email>".
+
+## Professional themes (June 2026)
+- 10 muted themes in a new "Professional" group (ids muted-*): Graphite, Silver, Slate, Navy, Steel Blue, Sage, Olive, Taupe, Burgundy, Plum. Total 31 themes (About + marketing updated).
+- Hardcoded crimson glows in App.css/index.css now follow the selected theme (hsl(var(--primary) / a)).
+- Fixed: Disco/Ice Cream no longer duplicated as Solid circles in the status-bar theme picker.

@@ -955,7 +955,7 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-[10px] text-muted-foreground mb-1.5">Solid</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {THEMES.filter(function(t) { return !t.id.startsWith('pastel') && t.id !== 'rainbow' && t.id !== 'disco' && t.id !== 'icecream'; }).map(function(theme) {
+                      {THEMES.filter(function(t) { return !t.id.startsWith('pastel') && !t.id.startsWith('muted') && t.id !== 'rainbow' && t.id !== 'disco' && t.id !== 'icecream'; }).map(function(theme) {
                         var active = currentTheme === theme.id;
                         return (
                           <button
@@ -980,6 +980,30 @@ export default function SettingsPage() {
                     <p className="text-[10px] text-muted-foreground mb-1.5">Pastel</p>
                     <div className="flex flex-wrap gap-1.5">
                       {THEMES.filter(function(t) { return t.id.startsWith('pastel'); }).map(function(theme) {
+                        var active = currentTheme === theme.id;
+                        return (
+                          <button
+                            key={theme.id}
+                            onClick={function() {
+                              setCurrentTheme(theme.id);
+                              localStorage.setItem(THEME_STORAGE_KEY, theme.id);
+                              applyTheme(theme.id);
+                            }}
+                            className={'w-7 h-7 rounded-full border-2 transition-all flex items-center justify-center ' + (active ? 'border-foreground scale-110' : 'border-transparent hover:scale-105')}
+                            style={{ background: theme.preview }}
+                            title={theme.name}
+                            data-testid={'settings-theme-' + theme.id}
+                          >
+                            {active && <Check className="w-3 h-3 text-white drop-shadow-md" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-1.5">Professional</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {THEMES.filter(function(t) { return t.id.startsWith('muted'); }).map(function(theme) {
                         var active = currentTheme === theme.id;
                         return (
                           <button
@@ -1920,7 +1944,7 @@ export default function SettingsPage() {
                   <ul className="space-y-1 text-muted-foreground">
                     <li>• Library stats & cast insights</li>
                     <li>• Collection health tracking</li>
-                    <li>• 21 color themes (incl. Disco & Ice Cream)</li>
+                    <li>• 31 color themes (incl. Professional, Disco & Ice Cream)</li>
                     <li>• In-app updates</li>
                     <li>• MP4, MKV, AVI, MOV, WMV & more</li>
                     <li>• UNC & network path support</li>
