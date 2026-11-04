@@ -173,6 +173,48 @@ ipcMain.handle('fs:loadBackup', () => {
 });
 
 
+// Movie library stored as a file (no localStorage size limit). Writes are atomic: temp file + rename.
+const LIBRARY_PATH = path.join(app.getPath('userData'), 'library.json');
+const LIBRARY_TMP = LIBRARY_PATH + '.tmp';
+let libraryWriteChain = Promise.resolve();
+
+function writeLibrarySync(data) {
+  fs.writeFileSync(LIBRARY_TMP, data, 'utf-8');
+  fs.renameSync(LIBRARY_TMP, LIBRARY_PATH);
+}
+
+ipcMain.on('library:readSync', (event) => {
+  try {
+    event.returnValue = fs.existsSync(LIBRARY_PATH) ? fs.readFileSync(LIBRARY_PATH, 'utf-8') : null;
+  } catch (err) {
+    console.error('Failed to read library:', err);
+    event.returnValue = null;
+  }
+});
+
+ipcMain.on('library:writeSync', (event, data) => {
+  try {
+    writeLibrarySync(data);
+    event.returnValue = true;
+  } catch (err) {
+    console.error('Failed to write library:', err);
+    event.returnValue = false;
+  }
+});
+
+ipcMain.handle('library:write', (event, data) => {
+  libraryWriteChain = libraryWriteChain.then(async () => {
+    await fs.promises.writeFile(LIBRARY_TMP, data, 'utf-8');
+    await fs.promises.rename(LIBRARY_TMP, LIBRARY_PATH);
+    return true;
+  }).catch((err) => {
+    console.error('Failed to write library:', err);
+    return false;
+  });
+  return libraryWriteChain;
+});
+
+
 // ============ AUTO-UPDATER CONFIGURATION ============
 
 // Configure auto-updater

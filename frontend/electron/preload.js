@@ -46,4 +46,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeWindow: () => ipcRenderer.invoke('window:close'),
   saveBackup: (data) => ipcRenderer.invoke('fs:saveBackup', data),
   loadBackup: () => ipcRenderer.invoke('fs:loadBackup'),
+
+  // Movie library file storage
+  libraryReadSync: () => ipcRenderer.sendSync('library:readSync'),
+  libraryWriteSync: (data) => ipcRenderer.sendSync('library:writeSync', data),
+  libraryWrite: (data) => ipcRenderer.invoke('library:write', data),
 });

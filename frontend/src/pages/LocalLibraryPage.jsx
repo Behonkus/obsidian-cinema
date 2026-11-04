@@ -415,13 +415,29 @@ export default function LocalLibraryPage() {
 
   // Save to localStorage when movies change
   const moviesLoadedRef = useRef(false);
+  const pendingSaveRef = useRef(null);
+  const saveMoviesNow = (sync) => {
+    const data = pendingSaveRef.current;
+    if (data == null) return;
+    pendingSaveRef.current = null;
+    try {
+      const str = JSON.stringify(data);
+      if (sync && window.__ocSaveLibrarySync) window.__ocSaveLibrarySync(str);
+      else localStorage.setItem(STORAGE_KEY, str);
+      window.dispatchEvent(new Event('oc-library-updated'));
+    } catch (e) { console.error('Library save failed:', e); toast.error('Could not save library — storage is full'); }
+  };
   useEffect(() => {
     if (!moviesLoadedRef.current) { moviesLoadedRef.current = true; return; }
-    const t = setTimeout(() => {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(movies)); window.dispatchEvent(new Event('oc-library-updated')); } catch (e) { console.error('Library save failed:', e); toast.error('Could not save library — storage is full'); }
-    }, 600);
+    pendingSaveRef.current = movies;
+    const t = setTimeout(() => saveMoviesNow(false), 600);
     return () => clearTimeout(t);
   }, [movies]);
+  useEffect(() => {
+    const onUnload = () => saveMoviesNow(true);
+    window.addEventListener('beforeunload', onUnload);
+    return () => { window.removeEventListener('beforeunload', onUnload); saveMoviesNow(false); };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(DIRS_KEY, JSON.stringify(directories));
