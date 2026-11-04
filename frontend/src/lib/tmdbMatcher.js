@@ -97,10 +97,11 @@ export function titleSimilarity(a, b) {
 
 // Score a TMDB search result against the parsed query (0..1)
 export function scoreCandidate(candidate, query) {
-  const titles = [candidate.title, candidate.original_title].filter(Boolean);
+  const titles = [candidate.title, candidate.original_title, candidate.name, candidate.original_name].filter(Boolean);
   let sim = 0;
   query.titles.forEach(q => titles.forEach(t => { sim = Math.max(sim, titleSimilarity(q, t)); }));
-  const cYear = candidate.release_date ? parseInt(candidate.release_date.slice(0, 4), 10) : null;
+  const date = candidate.release_date || candidate.first_air_date;
+  const cYear = date ? parseInt(date.slice(0, 4), 10) : null;
   let yearScore = 0.5;
   if (query.year && cYear) {
     const diff = Math.abs(query.year - cYear);
@@ -126,7 +127,7 @@ async function throttle() {
   lastRequests.push(Date.now());
 }
 
-async function tmdbGet(path, apiKey, params = {}, attempt = 0) {
+export async function tmdbGet(path, apiKey, params = {}, attempt = 0) {
   await throttle();
   const qs = new URLSearchParams({ api_key: apiKey, ...params }).toString();
   try {
@@ -158,14 +159,18 @@ function titleVariants(title) {
   return [...new Set(out.map(t => t.trim()).filter(Boolean))];
 }
 
-// Find the best TMDB match for a library movie
-export async function findBestMatch(movie, apiKey) {
+// Find the best TMDB match for a library movie.
+// opts.preferTv: search TV series first (multi-part cards); opts.tvOnly: only TV series
+export async function findBestMatch(movie, apiKey, opts = {}) {
   const parsed = parseFilename(movie.file_name || movie.title);
   const imdbId = movie.imdb_id || parsed.imdb_id;
   if (imdbId) {
     const found = await tmdbGet(`/find/${imdbId}`, apiKey, { external_source: 'imdb_id' });
-    if (found && found.movie_results && found.movie_results.length) {
-      return { candidate: found.movie_results[0], confidence: 1, method: 'imdb_id' };
+    if (found && !opts.tvOnly && found.movie_results && found.movie_results.length) {
+      return { candidate: { ...found.movie_results[0], media_type: 'movie' }, confidence: 1, method: 'imdb_id' };
+    }
+    if (found && found.tv_results && found.tv_results.length) {
+      return { candidate: { ...found.tv_results[0], media_type: 'tv' }, confidence: 1, method: 'imdb_id' };
     }
   }
   const baseTitles = [...new Set([movie.title, parsed.title].filter(Boolean).map(String))];
@@ -173,27 +178,49 @@ export async function findBestMatch(movie, apiKey) {
   const query = { titles: baseTitles, year };
   const seen = new Map();
   let best = null;
-  const consider = (results) => {
+  const consider = (results, mediaType) => {
     (results || []).slice(0, 10).forEach(r => {
-      if (seen.has(r.id)) return;
-      const score = scoreCandidate(r, query);
-      seen.set(r.id, score);
-      if (!best || score > best.confidence) best = { candidate: r, confidence: score, method: 'search' };
+      const key = mediaType + r.id;
+      if (seen.has(key)) return;
+      let score = scoreCandidate(r, query);
+      if (mediaType === 'tv' && opts.preferTv) score = Math.min(1, score + 0.05);
+      seen.set(key, score);
+      if (!best || score > best.confidence) best = { candidate: { ...r, media_type: mediaType }, confidence: score, method: 'search' };
     });
   };
   const searches = [];
   baseTitles.forEach(t => titleVariants(t).forEach(v => searches.push(v)));
   const uniqueSearches = [...new Set(searches)];
+  const searchTv = async () => {
+    for (const q of uniqueSearches) {
+      if (year) {
+        const t1 = await tmdbGet('/search/tv', apiKey, { query: q, first_air_date_year: year, include_adult: 'false' });
+        consider(t1 && t1.results, 'tv');
+        if (best && best.confidence >= 0.92) return true;
+      }
+      const t2 = await tmdbGet('/search/tv', apiKey, { query: q, include_adult: 'false' });
+      consider(t2 && t2.results, 'tv');
+      if (best && best.confidence >= (year ? 0.85 : 0.8)) return true;
+    }
+    return false;
+  };
+  if (opts.preferTv || opts.tvOnly) {
+    if (await searchTv() || opts.tvOnly) {
+      return best && best.confidence >= MATCH_THRESHOLD ? best : (best ? { ...best, rejected: true } : null);
+    }
+  }
   for (const q of uniqueSearches) {
     if (year) {
       const r1 = await tmdbGet('/search/movie', apiKey, { query: q, primary_release_year: year, include_adult: 'false' });
-      consider(r1 && r1.results);
+      consider(r1 && r1.results, 'movie');
       if (best && best.confidence >= 0.92) return best;
     }
     const r2 = await tmdbGet('/search/movie', apiKey, { query: q, include_adult: 'false' });
-    consider(r2 && r2.results);
+    consider(r2 && r2.results, 'movie');
     if (best && best.confidence >= (year ? 0.85 : 0.8)) return best;
   }
+  // Weak or no movie match: documentaries and mini-series often live in TMDB's TV listings
+  if (!opts.preferTv && (!best || best.confidence < 0.8)) await searchTv();
   return best && best.confidence >= MATCH_THRESHOLD ? best : (best ? { ...best, rejected: true } : null);
 }
 
@@ -238,16 +265,62 @@ export async function fetchMovieDetails(tmdbId, apiKey) {
       character: c.character,
       profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null,
     })),
+    media_type: 'movie',
     metadata_updated_at: Date.now(),
   };
   return out;
 }
 
+// Same fields as fetchMovieDetails, for a TMDB TV series (documentaries, mini-series)
+export async function fetchTvDetails(tvId, apiKey) {
+  const d = await tmdbGet(`/tv/${tvId}`, apiKey, { append_to_response: 'credits,content_ratings,external_ids' });
+  if (!d || !d.id) return null;
+  const ratings = (d.content_ratings && d.content_ratings.results) || [];
+  const us = ratings.find(r => r.iso_3166_1 === 'US');
+  const creators = (d.created_by || []).map(c => c.name);
+  return {
+    tmdb_id: d.id,
+    media_type: 'tv',
+    poster_path: d.poster_path ? TMDB_IMG + d.poster_path : null,
+    backdrop_path: d.backdrop_path ? TMDB_BACKDROP + d.backdrop_path : null,
+    overview: d.overview || null,
+    rating: d.vote_average || null,
+    vote_count: d.vote_count || 0,
+    release_date: d.first_air_date || null,
+    year: d.first_air_date ? parseInt(d.first_air_date.slice(0, 4), 10) : null,
+    genres: (d.genres || []).map(g => g.name),
+    runtime: (d.episode_run_time && d.episode_run_time[0]) || (d.last_episode_to_air && d.last_episode_to_air.runtime) || null,
+    tagline: d.tagline || null,
+    director: creators.join(', ') || null,
+    writers: null,
+    certification: us ? us.rating : null,
+    imdb_id: (d.external_ids && d.external_ids.imdb_id) || null,
+    original_title: d.original_name || null,
+    original_language: d.original_language || null,
+    tmdb_title: d.name || null,
+    collection_name: null,
+    studios: (d.networks || []).slice(0, 3).map(n => n.name),
+    countries: d.origin_country || [],
+    season_count: d.number_of_seasons || null,
+    episode_count: d.number_of_episodes || null,
+    cast: ((d.credits && d.credits.cast) || []).slice(0, 10).map(c => ({
+      name: c.name,
+      character: c.character,
+      profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null,
+    })),
+    metadata_updated_at: Date.now(),
+  };
+}
+
+export function fetchDetails(tmdbId, mediaType, apiKey) {
+  return mediaType === 'tv' ? fetchTvDetails(tmdbId, apiKey) : fetchMovieDetails(tmdbId, apiKey);
+}
+
 // Match + details. Never overwrites a user-set year/title; returns merge-ready fields.
-export async function fetchFullMetadata(movie, apiKey) {
-  const match = await findBestMatch(movie, apiKey);
+export async function fetchFullMetadata(movie, apiKey, opts = {}) {
+  const match = await findBestMatch(movie, apiKey, opts);
   if (!match || match.rejected) return null;
-  const details = await fetchMovieDetails(match.candidate.id, apiKey);
+  const details = await fetchDetails(match.candidate.id, match.candidate.media_type, apiKey);
   if (!details) return null;
   details.match_confidence = match.confidence;
   details.match_method = match.method;

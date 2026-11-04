@@ -1,5 +1,42 @@
 // Multi-part titles (documentary episodes, CD1/CD2, Part 1/2...) consolidated into one card
-import { parseFilename } from "@/lib/tmdbMatcher";
+import { parseFilename, tmdbGet } from "@/lib/tmdbMatcher";
+
+const TMDB_STILL = 'https://image.tmdb.org/t/p/w300';
+
+// Attach TMDB episode info to each part of a series card (S01E03 -> season 1 ep 3, Part 3 -> season 1 ep 3)
+export async function attachEpisodes(parts, tvId, apiKey) {
+  const mapped = parts.map((p, i) => {
+    const info = partInfo(p.file_name);
+    if (info && info.num >= 1000) return { part: p, season: Math.floor(info.num / 1000), episode: info.num % 1000 };
+    return { part: p, season: 1, episode: info ? info.num : i + 1 };
+  });
+  const seasons = [...new Set(mapped.map(m => m.season))];
+  const bySeason = {};
+  for (const s of seasons) {
+    const data = await tmdbGet(`/tv/${tvId}/season/${s}`, apiKey);
+    bySeason[s] = (data && data.episodes) || [];
+  }
+  let found = 0;
+  const out = mapped.map(({ part, season, episode }) => {
+    const ep = (bySeason[season] || []).find(e => e.episode_number === episode);
+    const clean = { file_path: part.file_path, file_name: part.file_name };
+    if (!ep) return clean;
+    found++;
+    return {
+      ...clean,
+      episode: {
+        season,
+        number: episode,
+        name: ep.name || null,
+        overview: ep.overview || null,
+        still: ep.still_path ? TMDB_STILL + ep.still_path : null,
+        runtime: ep.runtime || null,
+        air_date: ep.air_date || null,
+      },
+    };
+  });
+  return { parts: out, found };
+}
 
 export const MULTIPART_DISMISSED_KEY = 'obsidian_cinema_multipart_dismissed';
 

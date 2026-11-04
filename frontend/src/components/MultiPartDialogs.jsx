@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Layers, Play, Scissors, Search, X } from "lucide-react";
+import { Layers, Play, Scissors, Search, X, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,21 +22,30 @@ export function PartsPlayDialog({ movie, onClose, onPlayPart }) {
 }
 
 // List of parts with play buttons (used in the play picker and the movie details)
-export function PartsList({ movie, onPlayPart, onSplit }) {
+export function PartsList({ movie, onPlayPart, onSplit, onSeriesInfo, seriesLoading }) {
   const parts = partsOf(movie);
   return (
     <div className="space-y-1.5" data-testid="parts-list">
       <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
         {parts.map((p, i) => (
-          <div key={p.file_path} className="flex items-center gap-2 p-2 rounded-md bg-secondary/40 hover:bg-secondary/70 transition-colors">
-            <span className="text-xs font-semibold text-primary w-16 shrink-0">{partLabel(p, i)}</span>
-            <span className="text-xs text-muted-foreground truncate flex-1" title={p.file_path}>{p.file_name}</span>
+          <div key={p.file_path} className="flex items-center gap-2 p-2 rounded-md bg-secondary/40 hover:bg-secondary/70 transition-colors" title={p.episode?.overview || p.file_path}>
+            {p.episode?.still && <img src={p.episode.still} alt="" className="w-16 h-9 rounded object-cover shrink-0" loading="lazy" />}
+            <span className="text-xs font-semibold text-primary w-14 shrink-0">{partLabel(p, i)}</span>
+            <div className="flex-1 min-w-0">
+              {p.episode?.name && <p className="text-xs font-medium truncate" data-testid={`part-episode-name-${i}`}>{p.episode.name}{p.episode.runtime ? <span className="text-muted-foreground font-normal"> · {p.episode.runtime} min</span> : null}</p>}
+              <p className={'truncate text-muted-foreground ' + (p.episode?.name ? 'text-[10px]' : 'text-xs')} title={p.file_path}>{p.file_name}</p>
+            </div>
             <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => onPlayPart(p)} data-testid={`play-part-${i}`}>
               <Play className="w-3.5 h-3.5" />
             </Button>
           </div>
         ))}
       </div>
+      {onSeriesInfo && (
+        <Button size="sm" variant="outline" className="h-7 text-xs w-full" onClick={onSeriesInfo} disabled={seriesLoading} data-testid="series-info-btn">
+          <Tv className="w-3 h-3 mr-1.5" /> {seriesLoading ? 'Looking up series…' : (movie.media_type === 'tv' ? 'Refresh series & episode info' : 'Get series & episode info')}
+        </Button>
+      )}
       {onSplit && (
         <Button size="sm" variant="outline" className="h-7 text-xs w-full" onClick={onSplit} data-testid="split-parts-btn">
           <Scissors className="w-3 h-3 mr-1.5" /> Split into separate cards

@@ -81,8 +81,8 @@ import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
 import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
-import { fetchFullMetadata, fetchMovieDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
-import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, allLibraryPaths, partsOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
+import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
+import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, allLibraryPaths, partsOf, attachEpisodes, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { PartsPlayDialog, PartsList, MultiPartSuggestDialog, MergePickerDialog } from "@/components/MultiPartDialogs";
 
 const FREE_TIER_MOVIE_LIMIT = 500;
@@ -556,7 +556,10 @@ export default function LocalLibraryPage() {
   const fetchPosterForMovie = async (movie) => {
     if (!tmdbApiKey) return null;
     try {
-      return await fetchFullMetadata(movie, tmdbApiKey);
+      const multi = isMultiPart(movie);
+      const d = await fetchFullMetadata(movie, tmdbApiKey, { preferTv: multi });
+      if (d && d.media_type === 'tv' && multi) d.parts = (await attachEpisodes(movie.parts, d.tmdb_id, tmdbApiKey)).parts;
+      return d;
     } catch (err) {
       console.error('TMDB fetch error:', err);
       return null;
@@ -566,10 +569,11 @@ export default function LocalLibraryPage() {
   // Fetch full details (cast, director, runtime...) for a movie that already has tmdb_id
   const fetchDetailsForMovie = async (movie) => {
     if (!tmdbApiKey || !movie.tmdb_id) return null;
-    const d = await fetchMovieDetails(movie.tmdb_id, tmdbApiKey);
+    const d = await fetchDetails(movie.tmdb_id, movie.media_type, tmdbApiKey);
     if (!d) return null;
     const keep = {};
-    ['cast', 'runtime', 'tagline', 'director', 'writers', 'certification', 'imdb_id', 'original_title', 'original_language', 'tmdb_title', 'collection_name', 'studios', 'countries', 'backdrop_path', 'vote_count', 'release_date', 'metadata_updated_at'].forEach(k => { if (d[k] != null) keep[k] = d[k]; });
+    if (d.media_type === 'tv' && isMultiPart(movie)) keep.parts = (await attachEpisodes(movie.parts, d.tmdb_id, tmdbApiKey)).parts;
+    ['media_type', 'season_count', 'episode_count', 'cast', 'runtime', 'tagline', 'director', 'writers', 'certification', 'imdb_id', 'original_title', 'original_language', 'tmdb_title', 'collection_name', 'studios', 'countries', 'backdrop_path', 'vote_count', 'release_date', 'metadata_updated_at'].forEach(k => { if (d[k] != null) keep[k] = d[k]; });
     if (!movie.poster_path && d.poster_path) keep.poster_path = d.poster_path;
     if (!movie.overview && d.overview) keep.overview = d.overview;
     if (!movie.rating && d.rating) keep.rating = d.rating;
@@ -594,7 +598,8 @@ export default function LocalLibraryPage() {
   const applyManualMatch = async (result) => {
     if (!selectedMovie) return;
     const id = selectedMovie.id;
-    const d = await fetchMovieDetails(result.id, tmdbApiKey);
+    const d = await fetchDetails(result.id, result.media_type, tmdbApiKey);
+    if (d && d.media_type === 'tv' && isMultiPart(selectedMovie)) d.parts = (await attachEpisodes(selectedMovie.parts, d.tmdb_id, tmdbApiKey)).parts;
     const data = d ? { ...d, match_confidence: 1, match_method: 'manual', needs_review: false } : { poster_path: result.poster, tmdb_id: result.id, overview: result.overview, rating: result.rating, needs_review: false };
     if (!data.poster_path) data.poster_path = result.poster;
     setMovies(prev => prev.map(m => m.id === id ? { ...m, ...data } : m));
@@ -603,6 +608,30 @@ export default function LocalLibraryPage() {
     setPosterSearch('');
     setPosterResults([]);
     toast.success('Matched to "' + (result.title || 'movie') + (result.year ? ' (' + result.year + ')' : '') + '"');
+  };
+
+  // Look up a multi-part card as a TMDB TV series and attach episode names to each part
+  const [seriesLoading, setSeriesLoading] = useState(false);
+  const refreshSeriesInfo = async (movie) => {
+    if (!tmdbApiKey) { toast.error('Please add your TMDB API key in Settings first'); return; }
+    setSeriesLoading(true);
+    try {
+      let d = null;
+      if (movie.media_type === 'tv' && movie.tmdb_id) {
+        d = await fetchDetails(movie.tmdb_id, 'tv', tmdbApiKey);
+        if (d) { d.match_confidence = movie.match_confidence; d.needs_review = movie.needs_review; }
+      } else {
+        d = await fetchFullMetadata(movie, tmdbApiKey, { tvOnly: true });
+      }
+      if (!d) { toast.info('No matching TV series found — try "Pick the right one" in the poster search'); return; }
+      const r = await attachEpisodes(movie.parts, d.tmdb_id, tmdbApiKey);
+      const data = { ...d, parts: r.parts };
+      setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, ...data } : m));
+      setSelectedMovie(prev => prev && prev.id === movie.id ? { ...prev, ...data } : prev);
+      toast.success('Matched series "' + (d.tmdb_title || movie.title) + '" — ' + r.found + ' of ' + movie.parts.length + ' episodes found');
+    } finally {
+      setSeriesLoading(false);
+    }
   };
 
   const confirmMatch = (movie) => {
@@ -653,24 +682,22 @@ export default function LocalLibraryPage() {
     setPosterSearching(true);
     try {
       const query = encodeURIComponent(searchText.trim());
-      const resp = await fetch(TMDB_API + '/search/movie?api_key=' + tmdbApiKey + '&query=' + query);
-      const data = await resp.json();
-      var results = [];
-      if (data.results) {
-        for (var i = 0; i < Math.min(data.results.length, 8); i++) {
-          var r = data.results[i];
-          if (r.poster_path) {
-            results.push({
-              id: r.id,
-              title: r.title,
-              year: r.release_date ? r.release_date.substring(0, 4) : '',
-              poster: TMDB_IMG + r.poster_path,
-              overview: r.overview,
-              rating: r.vote_average,
-            });
-          }
-        }
-      }
+      const [movieData, tvData] = await Promise.all([
+        fetch(TMDB_API + '/search/movie?api_key=' + tmdbApiKey + '&query=' + query).then(r => r.json()).catch(() => ({})),
+        fetch(TMDB_API + '/search/tv?api_key=' + tmdbApiKey + '&query=' + query).then(r => r.json()).catch(() => ({})),
+      ]);
+      const toResult = (r, type) => ({
+        id: r.id,
+        media_type: type,
+        title: type === 'tv' ? (r.name + ' (Series)') : r.title,
+        year: (r.release_date || r.first_air_date || '').substring(0, 4),
+        poster: TMDB_IMG + r.poster_path,
+        overview: r.overview,
+        rating: r.vote_average,
+      });
+      const movieResults = (movieData.results || []).filter(r => r.poster_path).slice(0, 8).map(r => toResult(r, 'movie'));
+      const tvResults = (tvData.results || []).filter(r => r.poster_path).slice(0, 4).map(r => toResult(r, 'tv'));
+      var results = selectedMovie && isMultiPart(selectedMovie) ? [...tvResults, ...movieResults].slice(0, 10) : [...movieResults, ...tvResults].slice(0, 10);
       setPosterResults(results);
       if (results.length === 0) toast.info('No posters found for that search');
     } catch (err) {
@@ -2345,7 +2372,8 @@ export default function LocalLibraryPage() {
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     {selectedMovie.certification && <span className="px-1.5 py-0.5 border border-border rounded text-[10px] font-semibold" data-testid="movie-certification">{selectedMovie.certification}</span>}
                     {selectedMovie.runtime ? <span className="flex items-center gap-1" data-testid="movie-runtime"><Clock className="w-3 h-3" />{Math.floor(selectedMovie.runtime / 60) > 0 ? Math.floor(selectedMovie.runtime / 60) + 'h ' : ''}{selectedMovie.runtime % 60}m</span> : null}
-                    {selectedMovie.director && <span data-testid="movie-director">Directed by <span className="text-foreground">{selectedMovie.director}</span></span>}
+                    {selectedMovie.media_type === 'tv' && <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold" data-testid="movie-series-badge">TV SERIES{selectedMovie.episode_count ? ' · ' + selectedMovie.episode_count + ' episodes' : ''}</span>}
+                    {selectedMovie.director && <span data-testid="movie-director">{selectedMovie.media_type === 'tv' ? 'Created by' : 'Directed by'} <span className="text-foreground">{selectedMovie.director}</span></span>}
                     {selectedMovie.imdb_id && (
                       <button className="text-amber-400 hover:underline" onClick={() => { var u = 'https://www.imdb.com/title/' + selectedMovie.imdb_id + '/'; if (window.electronAPI?.openExternal) window.electronAPI.openExternal(u); else window.open(u, '_blank'); }} data-testid="movie-imdb-link">IMDb</button>
                     )}
@@ -2581,7 +2609,7 @@ export default function LocalLibraryPage() {
               {isMultiPart(selectedMovie) && (
                 <div className="space-y-1.5" data-testid="movie-parts-section">
                   <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" />{selectedMovie.parts.length} Parts</span>
-                  <PartsList movie={selectedMovie} onPlayPart={(p) => playPart(selectedMovie, p)} onSplit={() => splitMovie(selectedMovie)} />
+                  <PartsList movie={selectedMovie} onPlayPart={(p) => playPart(selectedMovie, p)} onSplit={() => splitMovie(selectedMovie)} onSeriesInfo={() => refreshSeriesInfo(selectedMovie)} seriesLoading={seriesLoading} />
                 </div>
               )}
 
