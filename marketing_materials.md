@@ -1,4 +1,4 @@
-# Obsidian Cinema — Marketing Materials (Updated v1.6.7)
+# Obsidian Cinema — Marketing Materials (Updated v1.6.8)
 
 ---
 
@@ -22,6 +22,9 @@ Obsidian Cinema sits between a file manager and a full media server. Point it at
 - **Smart matching engine (new in 1.6.6)** — cleans messy filenames (1080p, BluRay, x264…), picks the right year, compares multiple search results and scores them, and reads IMDb IDs in filenames. Uncertain matches get a "CHECK" badge so you can confirm or pick the right movie in one click.
 - **Richer movie details (new in 1.6.6)** — director, runtime, age rating, tagline, IMDb link, franchise and top 10 cast, plus a one-click "Enrich Details" button for movies already in your library. Still only needs your free TMDB key — nothing extra to set up.
 - **Faster with huge libraries (new in 1.6.6)** — parallel metadata fetching and a smoother library for collections of 20,000+ movies.
+- **Multi-part titles in one card (new in 1.6.8)** — documentary episodes, Part 1/Part 2 and CD1/CD2 files are detected and suggested for merging into a single card (you approve, or merge by hand). Play shows a list of parts; split back anytime. Counts as one movie.
+- **TV series & episode info (new in 1.6.8)** — documentaries and mini-series are matched against TMDB's TV listings, with episode names, runtimes and stills for every part.
+- **Unlimited library size (new in 1.6.8)** — the library is now saved as a file on disk, so collections of any size save reliably.
 - **AI-powered recommendations** — personalized movie suggestions based on your viewing and browsing activity, powered by GPT-4o.
 - **One-click playback** in your default media player (VLC, MPC, Windows Media Player — your choice).
 - **Favorites** — star movies with an animated confetti burst. Persists across sessions and survives updates.
@@ -72,7 +75,7 @@ Obsidian Cinema scans your local and network drives, automatically fetches movie
 
 ### Key Facts
 - **Platform:** Windows (Electron-based desktop app)
-- **Version:** 1.6.7
+- **Version:** 1.6.8
 - **Price:** Free (500 movies, 3 collections) / Pro $25 one-time (unlimited)
 - **Data Source:** TMDB for posters, metadata, and cast data
 - **AI Engine:** GPT-4o for personalized movie recommendations

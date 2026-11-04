@@ -1947,6 +1947,7 @@ export default function SettingsPage() {
                   <h4 className="font-medium text-foreground mb-2">Smart Features</h4>
                   <ul className="space-y-1 text-muted-foreground">
                     <li>• Smart TMDB matching with "Check Matches" review</li>
+                    <li>• Multi-part titles & TV series episode info</li>
                     <li>• Director, runtime, age rating & IMDb links</li>
                     <li>• AI movie suggestions</li>
                     <li>• Duplicate detection & management</li>
