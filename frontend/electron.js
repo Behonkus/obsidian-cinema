@@ -175,12 +175,14 @@ ipcMain.handle('fs:loadBackup', () => {
 
 // Movie library stored as a file (no localStorage size limit). Writes are atomic: temp file + rename.
 const LIBRARY_PATH = path.join(app.getPath('userData'), 'library.json');
-const LIBRARY_TMP = LIBRARY_PATH + '.tmp';
 let libraryWriteChain = Promise.resolve();
+let libraryWriteGen = 0;
 
 function writeLibrarySync(data) {
-  fs.writeFileSync(LIBRARY_TMP, data, 'utf-8');
-  fs.renameSync(LIBRARY_TMP, LIBRARY_PATH);
+  const gen = ++libraryWriteGen;
+  const tmp = LIBRARY_PATH + '.' + gen + '.tmp';
+  fs.writeFileSync(tmp, data, 'utf-8');
+  fs.renameSync(tmp, LIBRARY_PATH);
 }
 
 ipcMain.on('library:readSync', (event) => {
@@ -203,9 +205,14 @@ ipcMain.on('library:writeSync', (event, data) => {
 });
 
 ipcMain.handle('library:write', (event, data) => {
+  const gen = ++libraryWriteGen;
   libraryWriteChain = libraryWriteChain.then(async () => {
-    await fs.promises.writeFile(LIBRARY_TMP, data, 'utf-8');
-    await fs.promises.rename(LIBRARY_TMP, LIBRARY_PATH);
+    // A newer save (async or sync) supersedes this one
+    if (gen !== libraryWriteGen) return true;
+    const tmp = LIBRARY_PATH + '.' + gen + '.tmp';
+    await fs.promises.writeFile(tmp, data, 'utf-8');
+    if (gen !== libraryWriteGen) { fs.promises.unlink(tmp).catch(() => {}); return true; }
+    await fs.promises.rename(tmp, LIBRARY_PATH);
     return true;
   }).catch((err) => {
     console.error('Failed to write library:', err);

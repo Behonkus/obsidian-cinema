@@ -1,5 +1,6 @@
 // Desktop only: redirect the movie library key from localStorage (size-limited) to a file on disk.
 // All existing localStorage.getItem/setItem calls for this key keep working unchanged.
+import { toast } from "sonner";
 const LIBRARY_KEY = 'obsidian_cinema_local_movies';
 
 function installLibraryStore() {
@@ -29,7 +30,7 @@ function installLibraryStore() {
     if (this === window.localStorage && key === LIBRARY_KEY) {
       cache = String(value);
       api.libraryWrite(cache).then(function (ok) {
-        if (!ok) console.error('Library file save failed');
+        if (!ok) toast.error('Could not save your library to disk — please check free disk space');
       });
       return;
     }
@@ -37,8 +38,8 @@ function installLibraryStore() {
   };
   proto.removeItem = function (key) {
     if (this === window.localStorage && key === LIBRARY_KEY) {
-      cache = '[]';
-      api.libraryWrite(cache);
+      cache = null;
+      api.libraryWrite('[]');
       return;
     }
     return origRemove.call(this, key);

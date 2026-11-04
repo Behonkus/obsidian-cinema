@@ -440,6 +440,13 @@ export default function LocalLibraryPage() {
   }, []);
 
   useEffect(() => {
+    if (!selectedMovie) return;
+    const onKey = (e) => { if (e.key === 'Escape' && !editingTitle && !posterMode) setSelectedMovie(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedMovie, editingTitle, posterMode]);
+
+  useEffect(() => {
     localStorage.setItem(DIRS_KEY, JSON.stringify(directories));
   }, [directories]);
 

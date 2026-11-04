@@ -73,3 +73,8 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - 10 muted themes in a new "Professional" group (ids muted-*): Graphite, Silver, Slate, Navy, Steel Blue, Sage, Olive, Taupe, Burgundy, Plum. Total 31 themes (About + marketing updated).
 - Hardcoded crimson glows in App.css/index.css now follow the selected theme (hsl(var(--primary) / a)).
 - Fixed: Disco/Ice Cream no longer duplicated as Solid circles in the status-bar theme picker.
+
+## Library file storage (June 2026, needs desktop build)
+- Fix for "Could not save library — storage is full" (23k movies exceeded ~10MB localStorage quota). src/lib/libraryStore.js (first import in index.js) redirects localStorage key obsidian_cinema_local_movies to userData/library.json via preload libraryReadSync/libraryWriteSync/libraryWrite. One-time migration from localStorage then legacy key removed. Atomic writes with per-write temp file + generation counter (stale async writes skipped). Toast if disk write fails.
+- LocalLibraryPage flushes pending debounced save on navigation and synchronously on window close. Escape closes the movie modal.
+- Tested iteration_20 (simulated Electron, 6/6 pass).

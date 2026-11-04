@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only test of the library-to-file storage fix (libraryStore.js), run in the preview web app with a simulated Electron bridge (Proxy window.electronAPI, fake library file kept in sessionStorage, raw Storage.prototype.getItem saved before the app patches it). Every requested scenario passed. MIGRATION: 3 legacy movies seeded in localStorage showed on the Library page, were copied to the fake file, and the real localStorage key was removed (__rawGet returned null, also after reload). QUOTA: with localStorage.setItem for the library key forced to throw QuotaExceededError, editing a title from the modal (click title, type, Enter) showed only the 'Title updated' toast, with no 'storage is full' toast. The fake file had the new title after about 1.3s and it was still there after reload. Toggling a favorite also raised no error (favorites use a separate key). NAV FLUSH: after a title edit, clicking Close and then Settings within 117ms left the change in the file. BEFOREUNLOAD: a title edit followed by an immediate reload was written through window.__ocSaveLibrarySync (exactly 1 libraryWriteSync call) and survived the reload. REGRESSION: the sidebar free badge reads 3/500 on Library and Settings, and Stats Total Movies is 3. (A screenshot taken 1.5s in showed 2 because the number animates up; after 5s it was 3.) NON-ELECTRON WEB: no electronAPI, the landing page loads, localStorage set/get/remove work normally, __ocSaveLibrarySync is undefined, and there are no libraryStore errors (only the expected 401s from unauthenticated auth checks).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "LocalLibraryPage movie modal", "issue": "Pressing Escape does not close the movie detail modal (likely existed before this change). Only the Close or X buttons close it.", "selector": "div.fixed.inset-0.bg-black/80", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "electron.js (review only, could not run): library:writeSync and library:write share one temp path (LIBRARY_TMP). If the beforeunload sync write happens while an async write is still pending, two things can go wrong: (a) the async rename fails with ENOENT and returns false, or (b) the older async write renames after the sync write and overwrites the final save with stale data. Use a unique temp name per write (e.g. tmp + pid + counter) and a write-generation counter so stale async writes are skipped, or make writeSync wait on/serialize with libraryWriteChain.",
+    "libraryStore.js: if the async libraryWrite fails (returns false), the error only goes to console.error. The user gets no toast, and LocalLibraryPage's try/catch toast can never fire on desktop. Suggest dispatching an event such as 'oc-library-save-failed' and showing a toast for it.",
+    "libraryStore.js (minor): removeItem sets the cache to '[]', so getItem returns '[]' instead of null afterwards. That is harmless for the current callers, but it differs from normal Storage behaviour."
+  ],
+  "critical_code_review_comments": [
+    "Migration is safe: if libraryWriteSync fails, it returns early without patching or removing the legacy key, so no data is lost.",
+    "Leftover localStorage copies are removed even when the file already exists, which frees the quota as intended.",
+    "Storage patching only applies to window.localStorage and the single library key; sessionStorage and other keys pass through untouched (checked).",
+    "Possible race between sync and async writes on the shared temp file in electron.js (see action_items)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% (6/6 scenarios)"},
+  "seed_data_creation": "None in a real DB. Test data (TEST_m1..3) lived only in browser localStorage/sessionStorage of throwaway Playwright contexts.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "To test the library page, inject window.electronAPI with page.add_init_script as a Proxy whose unknown methods return async () => []. Define libraryReadSync/libraryWriteSync/libraryWrite backed by sessionStorage 'fakeLibFile', and set 'obsidian_cinema_eula_accepted'='1.6.7'. Start at '/' (HashRouter, e.g. '#/settings'); going straight to '/#/stats' showed the landing page in one run. The movie modal ignores Escape, so close it with the 'Close' button before clicking sidebar nav. Stats numbers animate up, so wait at least 3s before reading them."
+}
