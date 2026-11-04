@@ -78,3 +78,9 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Fix for "Could not save library — storage is full" (23k movies exceeded ~10MB localStorage quota). src/lib/libraryStore.js (first import in index.js) redirects localStorage key obsidian_cinema_local_movies to userData/library.json via preload libraryReadSync/libraryWriteSync/libraryWrite. One-time migration from localStorage then legacy key removed. Atomic writes with per-write temp file + generation counter (stale async writes skipped). Toast if disk write fails.
 - LocalLibraryPage flushes pending debounced save on navigation and synchronously on window close. Escape closes the movie modal.
 - Tested iteration_20 (simulated Electron, 6/6 pass).
+
+## Multi-part titles (June 2026, needs desktop build)
+- src/lib/multiPart.js + components/MultiPartDialogs.jsx. Card gets parts:[{file_path,file_name}]; extra cards folded in, so it counts as ONE movie (stats, 500 limit).
+- Auto-suggest (same folder + same base name + Part/Pt/CD/Disc/DVD/Episode/Ep/E01/S01E01/"N of M"; skipped if parts have different years) via toolbar "Multi-Part (N)"; "Not multi-part" dismissals persisted (obsidian_cinema_multipart_dismissed). Manual merge via Layers button in movie modal (search + tick). Split back anytime.
+- Play on multi-part card opens part picker; modal lists parts with play buttons. Rescan/add/relink aware of part paths; deleting part 1 promotes next part (card kept).
+- Tested iteration_21 (8/8) + self-test of Escape/rescan fixes.

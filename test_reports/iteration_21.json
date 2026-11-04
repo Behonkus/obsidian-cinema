@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only test of the multi-part title feature, run in a simulated Electron bridge (Proxy electronAPI, library file kept in sessionStorage, openPath calls recorded). Seed data: 5 'The Green Planet - Part N.mkv' files in C:\\Docs\\Green, Heat (1995), and HP Deathly Hallows Part 1 (2010) and Part 2 (2011) in C:\\HP. Every requested scenario passed. AUTO-SUGGEST: the toolbar showed 'Multi-Part (1)'. The dialog listed only The Green Planet (5 parts, in order); HP was not suggested because the years differ. MERGE: produced one 'The Green Planet' card with parts-badge-gp1 '5 PARTS'. The header read '4 movies', the sidebar badge 4/500 and 496 remaining. The suggest button disappeared, and the library file had 4 entries (gp1 with 5 parts). PLAY: the hover Play button on the merged card opened parts-play-dialog with Part 1..5. play-part-2 called openPath('C:\\Docs\\Green\\The Green Planet - Part 3.mkv') and closed the dialog. Heat's Play called openPath directly with no dialog. PERSISTENCE: after reload the card still shows 5 PARTS and no suggestion. RESCAN: with dirs set and scanForVideos mocked to return all files, Update Library said 'All directories are up to date — no changes found' both before and after the merge, and the library stayed at 4 cards. MODAL: movie-parts-section showed '5 Parts' with 5 play rows. The main button reads 'Play a Part…' and opens the picker. SPLIT: split-parts-btn returned 8 cards. gp1 keeps the title 'The Green Planet'; the others are re-parsed as 'The Green Planet - Part 2..5'. The modal closed and the suggestion came back. MANUAL MERGE: on HP Part 1, merge-parts-btn opened merge-picker-dialog. Typing 'Deathly' gave 1 result (hp2, the current card is excluded). After ticking it and confirming, the toast read '\"...Part 1\" now has 2 parts', the modal showed 2 parts, the card showed '2 PARTS', and it persisted after reload. DISMISS: 'Not multi-part' removed the group. localStorage obsidian_cinema_multipart_dismissed = [\"c:\\\\docs\\\\green|thegreenplanet\"], and the button stayed hidden after reload.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "PartsPlayDialog / MergePickerDialog opened from the movie modal", "issue": "Pressing Escape while the nested parts picker or merge picker is open closes both the dialog and the movie details modal; it should close only the top dialog. Repro: open The Green Planet modal, click 'Play a Part…', press Escape. Both close. The same happens with the merge-parts-btn picker. Likely cause: the modal's window keydown handler (LocalLibraryPage ~line 458) runs after Radix has already cleared partsMovie/mergeTarget, so its guard sees null. Fix: check e.defaultPrevented (Radix calls preventDefault on Escape) or keep partsMovie/mergeTarget in refs.", "selector": "[data-testid='parts-play-dialog'], [data-testid='merge-picker-dialog']", "priority": "LOW"},
+      {"component": "MultiPartSuggestDialog", "issue": "After clicking 'Not multi-part' on the last remaining group, the dialog stays open with an empty list and a disabled 'Merge 0 titles' button. It should close itself (or show 'No suggestions') once groups.length === 0.", "selector": "[data-testid='multipart-suggest-dialog']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "LOW: The modal's Escape handler should not close the movie modal when a nested Radix dialog (parts picker or merge picker) handled the Escape. Check e.defaultPrevented or use refs.",
+    "LOW: Auto-close MultiPartSuggestDialog when multipartGroups becomes empty after a dismiss.",
+    "Review: in rescanAllDirectories (lines ~1104-1111), if the FIRST part file of a multi-part card is deleted from disk, the whole card is filtered out (filter on m.file_path), even though the other parts still exist. The remaining parts drop out of the library in that scan. On the next rescan they come back as new separate cards, losing their metadata. Suggest mapping the parts first, then promoting parts[0] to file_path/file_name and dropping the card only when no parts are left. Also drop the `parts` field when only 1 part remains."
+  ],
+  "critical_code_review_comments": [
+    "rescanAllDirectories: removing the primary part's file drops the whole multi-part card (see action_items). Not exercised in the UI test (code review only).",
+    "rescanAllDirectories: existingInDirs is chosen by m.file_path (first part) only. Parts that live in a different scanned directory than part 1 are not in existingPaths, so they would be re-added as new cards on rescan (edge case for manual merges across folders).",
+    "Dev-only artifact (not part of this feature): under React.StrictMode, the DIRS_KEY save effect writes '[]' on the first mount, so directories saved in localStorage show '0 folders' in the preview. I worked around it in the test. Production (non-StrictMode) Electron builds are probably unaffected.",
+    "findPartGroups year check uses the movie.year field; cards with no year in the same folder are grouped, which is the intended behaviour."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% of requested scenarios (8/8); 2 low-priority UX bugs found"},
+  "seed_data_creation": "None in a real DB. All data was kept in throwaway Playwright browser sessionStorage/localStorage.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Same electronAPI Proxy mock as iteration_20. To test Update Library (update-library-btn), directories must be loaded. In the dev preview StrictMode wipes obsidian_cinema_local_dirs, so set the key in the init script and patch Storage.prototype.setItem to ignore '[]' writes for that key. Mock scanForVideos(dir) to return the seed files filtered by startsWith(dir). On cards, hover div.group.relative and click the 'Play' role button. Open the modal by clicking the h3 title."
+}

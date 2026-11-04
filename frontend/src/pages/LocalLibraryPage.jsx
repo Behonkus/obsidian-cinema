@@ -82,7 +82,7 @@ import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
 import { fetchFullMetadata, fetchMovieDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
-import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, allLibraryPaths, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
+import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, allLibraryPaths, partsOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { PartsPlayDialog, PartsList, MultiPartSuggestDialog, MergePickerDialog } from "@/components/MultiPartDialogs";
 
 const FREE_TIER_MOVIE_LIMIT = 500;
@@ -455,9 +455,14 @@ export default function LocalLibraryPage() {
 
   useEffect(() => {
     if (!selectedMovie) return;
-    const onKey = (e) => { if (e.key === 'Escape' && !editingTitle && !posterMode && !mergeTarget && !partsMovie) setSelectedMovie(null); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || editingTitle || posterMode || mergeTarget || partsMovie) return;
+      if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) return;
+      setSelectedMovie(null);
+    };
+    // Capture phase: runs before nested dialogs close themselves
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [selectedMovie, editingTitle, posterMode, mergeTarget, partsMovie]);
 
   useEffect(() => {
@@ -1089,14 +1094,15 @@ export default function LocalLibraryPage() {
 
       const scannedPaths = new Set(allScanned.map(f => f.file_path));
       const dirSet = new Set(directories);
-      const existingInDirs = movies.filter(m => {
-        return directories.some(d => m.file_path.startsWith(d));
-      });
-      const existingPaths = allLibraryPaths(existingInDirs);
+      const inDirs = (p) => directories.some(d => p.startsWith(d));
+      const existingInDirs = movies.filter(m => partsOf(m).some(p => p.file_path && inDirs(p.file_path)));
+      const existingPaths = new Set();
+      existingInDirs.forEach(m => partsOf(m).forEach(p => { if (p.file_path && inDirs(p.file_path)) existingPaths.add(p.file_path); }));
+      const knownPaths = allLibraryPaths(movies);
 
       const now = Date.now();
       const newMovies = allScanned
-        .filter(f => !existingPaths.has(f.file_path))
+        .filter(f => !knownPaths.has(f.file_path))
         .map(f => withParsedName({ ...f, added_at: now }));
 
       const removedPaths = [...existingPaths].filter(p => !scannedPaths.has(p));
@@ -1104,10 +1110,14 @@ export default function LocalLibraryPage() {
       let updated = movies;
       if (removedPaths.length > 0) {
         const removedSet = new Set(removedPaths);
-        updated = updated.filter(m => !removedSet.has(m.file_path)).map(m => {
-          if (!isMultiPart(m)) return m;
+        updated = updated.flatMap(m => {
+          if (!isMultiPart(m)) return removedSet.has(m.file_path) ? [] : [m];
           const kept = m.parts.filter(p => !removedSet.has(p.file_path));
-          return kept.length === m.parts.length ? m : { ...m, parts: kept };
+          if (kept.length === m.parts.length) return [m];
+          if (kept.length === 0) return [];
+          const next = { ...m, parts: kept, file_path: kept[0].file_path, file_name: kept[0].file_name };
+          if (kept.length === 1) delete next.parts;
+          return [next];
         });
       }
       if (newMovies.length > 0) {
@@ -1600,7 +1610,7 @@ export default function LocalLibraryPage() {
           {/* PDF Export */}
           <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
           <MergePickerDialog movie={mergeTarget} movies={movies} onClose={() => setMergeTarget(null)} onMerge={mergeManual} />
-          {showMultiPart && (
+          {showMultiPart && multipartGroups.length > 0 && (
             <MultiPartSuggestDialog open={showMultiPart} onOpenChange={setShowMultiPart} groups={multipartGroups} onMerge={mergeGroups} onDismiss={dismissMultipartGroup} />
           )}
           {movies.length > 0 && (
