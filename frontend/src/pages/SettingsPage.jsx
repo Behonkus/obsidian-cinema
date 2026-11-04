@@ -1680,8 +1680,16 @@ export default function SettingsPage() {
                         var byTitleYear = {};
                         var byFileName = {};
                         var byFilePath = {};
+                        var byPartFileName = {};
                         existing.forEach(function(m) {
                           if (m.file_path) byFilePath[m.file_path] = m;
+                          if (Array.isArray(m.parts) && m.parts.length > 1) {
+                            m.parts.forEach(function(p) {
+                              if (p.file_path) byFilePath[p.file_path] = m;
+                              if (p.file_name) byPartFileName[p.file_name.toLowerCase()] = { movie: m, part: p };
+                            });
+                            return;
+                          }
                           if (m.tmdb_id) {
                             if (!byTmdbId[m.tmdb_id]) byTmdbId[m.tmdb_id] = m;
                           }
@@ -1708,9 +1716,19 @@ export default function SettingsPage() {
                             return;
                           }
                           
-                          // Try matching: 1) filename exact, 2) title+year
+                          // Try matching: 0) part of a multi-part card, 1) filename exact, 2) title+year
                           var match = null;
                           var fn = (item.file_name || '').toLowerCase();
+                          var partHit = fn && byPartFileName[fn];
+                          if (partHit) {
+                            partHit.part.file_path = item.file_path;
+                            partHit.part.file_name = item.file_name;
+                            partHit.movie.file_path = partHit.movie.parts[0].file_path;
+                            partHit.movie.file_name = partHit.movie.parts[0].file_name;
+                            updatedIds.add(partHit.movie.id);
+                            relinked++;
+                            return;
+                          }
                           if (fn && byFileName[fn] && !updatedIds.has(byFileName[fn].id)) {
                             match = byFileName[fn];
                           }

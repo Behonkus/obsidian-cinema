@@ -38,7 +38,8 @@ import {
   Tag,
   AlertTriangle,
   Crown,
-  FileDown
+  FileDown,
+  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,6 +82,8 @@ import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
 import { fetchFullMetadata, fetchMovieDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
+import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, allLibraryPaths, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
+import { PartsPlayDialog, PartsList, MultiPartSuggestDialog, MergePickerDialog } from "@/components/MultiPartDialogs";
 
 const FREE_TIER_MOVIE_LIMIT = 500;
 const FREE_TIER_COLLECTION_LIMIT = 3;
@@ -212,6 +215,11 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
           {movie.needs_review && (
             <span className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded bg-amber-500/90 text-black text-[9px] font-bold" title="Uncertain match — open to verify" data-testid={`needs-review-badge-${movie.id}`}>CHECK</span>
           )}
+          {isMultiPart(movie) && (
+            <span className="absolute bottom-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded bg-black/75 text-white text-[9px] font-bold flex items-center gap-1 backdrop-blur-sm" title={movie.parts.length + ' parts'} data-testid={`parts-badge-${movie.id}`}>
+              <Layers className="w-2.5 h-2.5" />{movie.parts.length} PARTS
+            </span>
+          )}
           {/* Favorite star - top right */}
           <button
             className={'absolute top-1.5 right-1.5 z-10 p-1 rounded-full backdrop-blur-sm transition-all ' + (isFavorite ? 'bg-amber-500/20 animate-[favGlow_2s_ease-in-out_infinite]' : 'bg-black/40 hover:bg-black/60')}
@@ -318,6 +326,12 @@ export default function LocalLibraryPage() {
   const [sortBy, setSortBy] = useState(() => localStorage.getItem(SORT_KEY) || 'added-desc');
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [posterMode, setPosterMode] = useState(null); // 'search' | 'url' | null
+  const [partsMovie, setPartsMovie] = useState(null);
+  const [mergeTarget, setMergeTarget] = useState(null);
+  const [showMultiPart, setShowMultiPart] = useState(false);
+  const [multipartDismissed, setMultipartDismissed] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(MULTIPART_DISMISSED_KEY) || '[]'); } catch (e) { return []; }
+  });
   const [posterSearch, setPosterSearch] = useState('');
   const [posterResults, setPosterResults] = useState([]);
   const [posterSearching, setPosterSearching] = useState(false);
@@ -441,10 +455,10 @@ export default function LocalLibraryPage() {
 
   useEffect(() => {
     if (!selectedMovie) return;
-    const onKey = (e) => { if (e.key === 'Escape' && !editingTitle && !posterMode) setSelectedMovie(null); };
+    const onKey = (e) => { if (e.key === 'Escape' && !editingTitle && !posterMode && !mergeTarget && !partsMovie) setSelectedMovie(null); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedMovie, editingTitle, posterMode]);
+  }, [selectedMovie, editingTitle, posterMode, mergeTarget, partsMovie]);
 
   useEffect(() => {
     localStorage.setItem(DIRS_KEY, JSON.stringify(directories));
@@ -956,7 +970,7 @@ export default function LocalLibraryPage() {
     }
 
     // Merge movies, avoiding duplicates by file path
-    const existingPaths = new Set(movies.map(m => m.file_path));
+    const existingPaths = allLibraryPaths(movies);
     const now = Date.now();
     let uniqueNewMovies = newMovies
       .filter(m => !existingPaths.has(m.file_path))
@@ -1013,7 +1027,7 @@ export default function LocalLibraryPage() {
       });
       if (result.canceled || !result.filePaths?.length) return;
 
-      const existingPaths = new Set(movies.map(m => m.file_path));
+      const existingPaths = allLibraryPaths(movies);
       const now = Date.now();
       const newMovies = result.filePaths
         .filter(fp => !existingPaths.has(fp))
@@ -1078,7 +1092,7 @@ export default function LocalLibraryPage() {
       const existingInDirs = movies.filter(m => {
         return directories.some(d => m.file_path.startsWith(d));
       });
-      const existingPaths = new Set(existingInDirs.map(m => m.file_path));
+      const existingPaths = allLibraryPaths(existingInDirs);
 
       const now = Date.now();
       const newMovies = allScanned
@@ -1090,7 +1104,11 @@ export default function LocalLibraryPage() {
       let updated = movies;
       if (removedPaths.length > 0) {
         const removedSet = new Set(removedPaths);
-        updated = updated.filter(m => !removedSet.has(m.file_path));
+        updated = updated.filter(m => !removedSet.has(m.file_path)).map(m => {
+          if (!isMultiPart(m)) return m;
+          const kept = m.parts.filter(p => !removedSet.has(p.file_path));
+          return kept.length === m.parts.length ? m : { ...m, parts: kept };
+        });
       }
       if (newMovies.length > 0) {
         updated = [...updated, ...newMovies];
@@ -1115,6 +1133,7 @@ export default function LocalLibraryPage() {
   };
 
   const playMovie = (movie) => {
+    if (isMultiPart(movie)) { setPartsMovie(movie); return; }
     trackActivity(movie.id, 'play');
     if (isElectron()) {
       // Open with system default player
@@ -1332,6 +1351,50 @@ export default function LocalLibraryPage() {
   const openMovieDetailCb = useCallback((m) => { setSelectedMovie(m); trackActivity(m.id, 'view'); }, []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const playMovieCb = useCallback((m) => playMovie(m), []);
+  const multipartGroups = useMemo(() => findPartGroups(movies, multipartDismissed), [movies, multipartDismissed]);
+
+  const mergeGroups = (groups) => {
+    const byId = {};
+    const removeIds = new Set();
+    groups.forEach(g => {
+      const merged = mergeIntoOne(g.members, g.title);
+      g.members.forEach(m => removeIds.add(m.id));
+      byId[merged.id] = merged;
+    });
+    setMovies(prev => prev.filter(m => !removeIds.has(m.id) || byId[m.id]).map(m => byId[m.id] || m));
+    setShowMultiPart(false);
+    toast.success('Merged ' + groups.length + ' multi-part ' + (groups.length === 1 ? 'title' : 'titles') + ' into single cards');
+  };
+
+  const dismissMultipartGroup = (group) => {
+    const next = [...multipartDismissed, group.key];
+    setMultipartDismissed(next);
+    localStorage.setItem(MULTIPART_DISMISSED_KEY, JSON.stringify(next));
+  };
+
+  const mergeManual = (target, ids) => {
+    const idSet = new Set(ids);
+    const cards = [target, ...movies.filter(m => idSet.has(m.id))];
+    const merged = mergeIntoOne(cards, target.title);
+    setMovies(prev => prev.filter(m => !idSet.has(m.id) && m.id !== target.id || m.id === merged.id).map(m => m.id === merged.id ? merged : m));
+    setSelectedMovie(merged);
+    setMergeTarget(null);
+    toast.success('"' + merged.title + '" now has ' + merged.parts.length + ' parts');
+  };
+
+  const splitMovie = (movie) => {
+    const cards = splitParts(movie);
+    setMovies(prev => prev.flatMap(m => m.id === movie.id ? cards : [m]));
+    setSelectedMovie(null);
+    toast.success('Split into ' + cards.length + ' separate cards');
+  };
+
+  const playPart = (movie, part) => {
+    trackActivity(movie.id, 'play');
+    if (window.electronAPI?.openPath) window.electronAPI.openPath(part.file_path);
+    else if (window.electronAPI?.openExternal) window.electronAPI.openExternal(part.file_path);
+    toast.success('Opening: ' + part.file_name);
+  };
   const libraryCounts = useMemo(() => {
     const dirCounts = {};
     let missingPoster = 0, needsReview = 0, needsDetails = 0;
@@ -1437,6 +1500,12 @@ export default function LocalLibraryPage() {
               <span className="text-xs">Check Matches ({libraryCounts.needsReview})</span>
             </Button>
           )}
+          {multipartGroups.length > 0 && (
+            <Button variant="outline" size="sm" className="border-primary/40" onClick={() => setShowMultiPart(true)} data-testid="multipart-suggest-btn" title="Files that look like parts of one title">
+              <Layers className="w-4 h-4 mr-1.5" />
+              <span className="text-xs">Multi-Part ({multipartGroups.length})</span>
+            </Button>
+          )}
           {fetchingCast && (
             <Button variant="ghost" size="sm" className="text-amber-400" onClick={abortFetch} data-testid="abort-enrich-btn">
               <span className="text-xs">Pause</span>
@@ -1529,6 +1598,11 @@ export default function LocalLibraryPage() {
           </DropdownMenu>
           
           {/* PDF Export */}
+          <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
+          <MergePickerDialog movie={mergeTarget} movies={movies} onClose={() => setMergeTarget(null)} onMerge={mergeManual} />
+          {showMultiPart && (
+            <MultiPartSuggestDialog open={showMultiPart} onOpenChange={setShowMultiPart} groups={multipartGroups} onMerge={mergeGroups} onDismiss={dismissMultipartGroup} />
+          )}
           {movies.length > 0 && (
             <PdfExportDialog
               movies={filteredMovies}
@@ -2494,10 +2568,20 @@ export default function LocalLibraryPage() {
                 </div>
               )}
 
+              {isMultiPart(selectedMovie) && (
+                <div className="space-y-1.5" data-testid="movie-parts-section">
+                  <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" />{selectedMovie.parts.length} Parts</span>
+                  <PartsList movie={selectedMovie} onPlayPart={(p) => playPart(selectedMovie, p)} onSplit={() => splitMovie(selectedMovie)} />
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button className="flex-1" onClick={() => playMovie(selectedMovie)}>
                   <Play className="w-4 h-4 mr-2" />
-                  Play (Default Player)
+                  {isMultiPart(selectedMovie) ? 'Play a Part…' : 'Play (Default Player)'}
+                </Button>
+                <Button variant="outline" onClick={() => setMergeTarget(selectedMovie)} title="Merge other cards into this one as parts" data-testid="merge-parts-btn">
+                  <Layers className="w-4 h-4" />
                 </Button>
                 <Button variant="outline" onClick={() => copyPath(selectedMovie.file_path)}>
                   <Copy className="w-4 h-4" />
