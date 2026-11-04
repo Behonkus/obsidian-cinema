@@ -135,7 +135,7 @@ export function mergeIntoOne(cards, title) {
     if (!p.file_path || seen.has(p.file_path)) return false;
     seen.add(p.file_path);
     return true;
-  }).map(p => ({ file_path: p.file_path, file_name: p.file_name }));
+  }).map(p => (p.episode ? { file_path: p.file_path, file_name: p.file_name, episode: p.episode } : { file_path: p.file_path, file_name: p.file_name }));
   const addedAt = Math.min.apply(null, cards.map(c => c.added_at || Date.now()));
   return {
     ...primary,

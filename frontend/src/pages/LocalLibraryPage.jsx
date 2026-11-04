@@ -599,7 +599,11 @@ export default function LocalLibraryPage() {
     if (!selectedMovie) return;
     const id = selectedMovie.id;
     const d = await fetchDetails(result.id, result.media_type, tmdbApiKey);
-    if (d && d.media_type === 'tv' && isMultiPart(selectedMovie)) d.parts = (await attachEpisodes(selectedMovie.parts, d.tmdb_id, tmdbApiKey)).parts;
+    if (d && isMultiPart(selectedMovie)) {
+      d.parts = d.media_type === 'tv'
+        ? (await attachEpisodes(selectedMovie.parts, d.tmdb_id, tmdbApiKey)).parts
+        : selectedMovie.parts.map(p => ({ file_path: p.file_path, file_name: p.file_name }));
+    }
     const data = d ? { ...d, match_confidence: 1, match_method: 'manual', needs_review: false } : { poster_path: result.poster, tmdb_id: result.id, overview: result.overview, rating: result.rating, needs_review: false };
     if (!data.poster_path) data.poster_path = result.poster;
     setMovies(prev => prev.map(m => m.id === id ? { ...m, ...data } : m));
@@ -607,7 +611,7 @@ export default function LocalLibraryPage() {
     setPosterMode(null);
     setPosterSearch('');
     setPosterResults([]);
-    toast.success('Matched to "' + (result.title || 'movie') + (result.year ? ' (' + result.year + ')' : '') + '"');
+    toast.success('Matched to "' + (result.name || result.title || 'movie') + (result.year ? ' (' + result.year + ')' : '') + '"');
   };
 
   // Look up a multi-part card as a TMDB TV series and attach episode names to each part
@@ -690,6 +694,7 @@ export default function LocalLibraryPage() {
         id: r.id,
         media_type: type,
         title: type === 'tv' ? (r.name + ' (Series)') : r.title,
+        name: type === 'tv' ? r.name : r.title,
         year: (r.release_date || r.first_air_date || '').substring(0, 4),
         poster: TMDB_IMG + r.poster_path,
         overview: r.overview,
@@ -912,7 +917,7 @@ export default function LocalLibraryPage() {
   const startFetchPosters = () => {
     if (!tmdbApiKey) {
       toast.error('Please add your TMDB API key in settings first');
-      setShowSettings(true);
+      navigate("/settings");
       return;
     }
     const moviesNeedingPosters = movies.filter(m => !m.poster_path);
@@ -940,7 +945,7 @@ export default function LocalLibraryPage() {
   const fetchAllPosters = async () => {
     if (!tmdbApiKey) {
       toast.error('Please add your TMDB API key in settings first');
-      setShowSettings(true);
+      navigate("/settings");
       return;
     }
 
@@ -2464,10 +2469,10 @@ export default function LocalLibraryPage() {
                           {posterResults.map(function(result) {
                             return (
                               <div
-                                key={result.id}
+                                key={result.media_type + '-' + result.id}
                                 className="relative cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors"
                                 onClick={() => applyManualMatch(result)}
-                                data-testid={'poster-result-' + result.id}
+                                data-testid={'poster-result-' + result.media_type + '-' + result.id}
                               >
                                 <img src={result.poster} alt={result.title} className="w-full aspect-[2/3] object-cover" />
                                 {result.year && (

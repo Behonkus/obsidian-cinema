@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only test of the Series Metadata (TMDB TV) feature. It ran in a simulated Electron bridge (Proxy electronAPI, library file in sessionStorage) with TMDB mocked through page.context.route and every request URL recorded. All 7 requested scenarios passed. FETCH POSTERS (multi-part 'The Green Planet', Part 1..3): only /search/tv was called, never /search/movie. The card got media_type tv, tmdb_id 500, the poster, overview 'Plants', genres [Documentary], cast David Attenborough, episode_count 5 and director 'Mike Gunton'. The parts got episodes 1..3 (Tropical Worlds 58 min, Water Worlds, Seasonal Worlds) from /tv/500/season/1. The modal showed movie-series-badge 'TV SERIES · 5 episodes', 'Created by Mike Gunton', TV-PG, part-episode-name-0..2, and the button read 'Refresh series & episode info'. S01E0x: 'Planet.Earth.S01E01/E02' mapped to S1E1 'From Pole to Pole' and S1E2 'Mountains'. SINGLE MOVIE: Heat (1995) matched as a movie (949, 'Directed by Michael Mann') and no /search/tv call was made for Heat. Our Planet (2019), a single file with no movie hit, fell back to /search/tv with first_air_date_year=2019 and matched as tv 700. REGRESSION CHECK: Incepshun -> Inception at confidence 0.717 shows the CHECK badge (needs_review true), and the TV fallback was tried. SERIES BUTTON: on Blue Planet II, /search/tv -> /tv/800 -> /tv/800/season/1 gave the toast 'Matched series \"Blue Planet II\" — 2 of 2 episodes found' and the button changed to Refresh. Clicking Refresh calls /tv/800 and the season directly, with no search. 'Mystery Docs' with no TV hit gave the info toast 'No matching TV series found — try \"Pick the right one\"...' and the button stayed 'Get series & episode info'. MANUAL SEARCH on the multi-part 'Frozen Planet' listed 'Frozen Planet (Series)' first, then the movie 'Frozen'. Clicking the series called /tv/900 and its season and attached the episodes ('TV SERIES · 7 episodes'). ENRICH on a card with tmdb_id 950 and media_type tv called /tv/950 only, never /movie/950. Toast: 'Full details added for 1 of 1 movies'. MULTI-PART REGRESSION: play-part-1 opened Part 2's path. Split gave separate cards. The suggest dialog 'Multi-Part (2)' merged both groups. All good.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "applyManualMatch (LocalLibraryPage.jsx ~598)", "issue": "Re-matching a TV-series multi-part card to a MOVIE via the poster search leaves stale part.episode data. The modal shows 'Directed by Chris Buck' (movie) but the parts list still shows the old TV episode names (EpName1/EpName2). Fix: when d.media_type !== 'tv', set data.parts = parts.map(({file_path,file_name}) => ({file_path,file_name})).", "selector": "[data-testid^='part-episode-name-']", "priority": "LOW"},
+      {"component": "applyManualMatch toast", "issue": "The '(Series)' display label leaks into the success toast: 'Matched to \"Frozen Planet (Series) (2011)\"'. Keep the raw name separate from the label.", "selector": "[data-sonner-toast]", "priority": "LOW"},
+      {"component": "Poster search results grid", "issue": "React key and data-testid are both 'poster-result-' + result.id. A TMDB movie and a TV show can share the same numeric id, which gives a duplicate key and an ambiguous testid. Use media_type + id.", "selector": "[data-testid^='poster-result-']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Clear part.episode when applyManualMatch switches a multi-part card to a movie",
+    "Strip the '(Series)' label from the manual-match toast",
+    "Use media_type+id as the React key and testid for poster results"
+  ],
+  "critical_code_review_comments": [
+    "mergeIntoOne strips episode info from parts. This is acceptable, but after merging a TV card the user must click 'Get series & episode info' again. Consider re-running attachEpisodes automatically when the primary is media_type tv.",
+    "splitParts keeps media_type 'tv' and episode_count on the main single-file card. This is fine, but the card still shows 'TV SERIES · N episodes' for a single file.",
+    "LocalLibraryPage.jsx is ~2994 lines, well over the 700-line guideline (the request said not to refactor it, so this is noted only)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% of requested scenarios (3 low-priority edge issues)"},
+  "seed_data_creation": "None in DB. All seed data was in sessionStorage 'fakeLibFile' inside the browser session.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Mock: an init script sets the electronAPI Proxy (unknown methods -> async () => null) with getDrives: async () => ['C:\\\\'] and listDirectory: async () => []. Without these, LocalDirectoryBrowser crashes on null.map. Also set localStorage obsidian_cinema_local_dirs and patch Storage.setItem to ignore '[]' for that key. Mock TMDB with page.context.route('https://api.themoviedb.org/**'), dispatching on path (/search/tv, /search/movie, /tv/{id}, /tv/{id}/season/{n}, /movie/{id}), and fulfill image.tmdb.org with 404. Open the modal by clicking the h3 title. The poster search is opened by [data-testid=poster-change-trigger]."
+}

@@ -84,3 +84,9 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Auto-suggest (same folder + same base name + Part/Pt/CD/Disc/DVD/Episode/Ep/E01/S01E01/"N of M"; skipped if parts have different years) via toolbar "Multi-Part (N)"; "Not multi-part" dismissals persisted (obsidian_cinema_multipart_dismissed). Manual merge via Layers button in movie modal (search + tick). Split back anytime.
 - Play on multi-part card opens part picker; modal lists parts with play buttons. Rescan/add/relink aware of part paths; deleting part 1 promotes next part (card kept).
 - Tested iteration_21 (8/8) + self-test of Escape/rescan fixes.
+
+## TV series metadata (June 2026, needs desktop build)
+- tmdbMatcher: findBestMatch opts {preferTv (multi-part cards), tvOnly}; TV fallback when movie match weak (<0.8) or none; fetchTvDetails (/tv/{id} + credits,content_ratings,external_ids) mapped to same fields + media_type "tv", season_count, episode_count; creators shown as "Created by"; networks as studios.
+- multiPart.attachEpisodes: Part N -> S1EN, SxxEyy direct; parts get episode {name, overview, still, runtime, air_date}.
+- Modal: TV SERIES badge, episode names/stills in parts list, "Get/Refresh series & episode info" button. Poster search returns movie + "(Series)" results (TV first for multi-part). Enrich uses /tv for tv cards.
+- Tested iteration_22 (7/7) + 3 low fixes.
