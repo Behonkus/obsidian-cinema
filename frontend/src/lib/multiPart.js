@@ -97,10 +97,18 @@ const EXTRAS_DIR = /(?:^|[\s._-])(?:extras?|bonus(?:[\s._-]*(?:features|material
 // Folder role of a file: inside a Season N / Specials folder, or an Extras folder of a show
 export function partFolder(filePath) {
   const dir = dirOf(filePath);
+  // Extras anywhere in the path (Show\\Extras\\Sub\\file, Show\\Season 1\\Extras\\file) belong to the show
+  const segs = dir.split(/[\\/]/);
+  for (let i = 2; i < segs.length; i++) {
+    if (!EXTRAS_DIR.test(segs[i].trim())) continue;
+    let showSegs = segs.slice(0, i);
+    const last = showSegs[showSegs.length - 1].trim();
+    if (showSegs.length > 2 && (SEASON_DIR.test(last) || SPECIALS_DIR.test(last))) showSegs = showSegs.slice(0, -1);
+    return { showDir: showSegs.join(dir.includes('\\') ? '\\' : '/'), extra: true };
+  }
   const name = baseName(dir).trim();
   const showDir = dirOf(dir);
   if (!showDir || showDir === dir) return {};
-  if (EXTRAS_DIR.test(name)) return { showDir, extra: true };
   const sm = name.match(SEASON_DIR);
   if (sm) return { showDir, season: parseInt(sm[1], 10) };
   if (SPECIALS_DIR.test(name)) return { showDir, season: 0 };
@@ -218,7 +226,7 @@ export function findPartGroups(movies, dismissed) {
   // 2) Numbered parts in the same folder with the same base name
   const loose = {};
   movies.forEach(m => {
-    if (isMultiPart(m) || inShow.has(m.id)) return;
+    if (isMultiPart(m) || inShow.has(m.id) || partFolder(m.file_path).extra) return;
     const info = partInfo(m.file_name);
     if (!info) return;
     const key = dirOf(m.file_path).toLowerCase() + '|' + normKey(info.base);

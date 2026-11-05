@@ -124,14 +124,14 @@ function SuggestionGroup({ group, checked, onToggle, onDismiss }) {
 }
 
 // Auto-detected groups for the user to approve
-export function MultiPartSuggestDialog({ open, onOpenChange, groups, onMerge, onDismiss }) {
+export function MultiPartSuggestDialog({ open, onOpenChange, groups, onMerge, onDismiss, heading }) {
   const [unchecked, setUnchecked] = useState({});
   const selected = groups.filter(g => !unchecked[g.key]);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl" data-testid="multipart-suggest-dialog">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Multi-Part Titles Found</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />{heading || "Multi-Part Titles Found"}</DialogTitle>
           <DialogDescription>
             These files look like parts of the same title (numbered Part / CD / Episode in one folder, or a show's Season and Extras folders). Merged parts share one card and count as one movie. No files are moved or changed, and you can split them again anytime.
           </DialogDescription>

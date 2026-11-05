@@ -84,7 +84,7 @@ import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
-import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, allLibraryPaths, partsOf, attachEpisodes, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
+import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, allLibraryPaths, partsOf, attachEpisodes, partSection as partSectionName, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
 import { PartsPlayDialog, PartsList, MultiPartSuggestDialog, MergePickerDialog } from "@/components/MultiPartDialogs";
 
@@ -659,6 +659,10 @@ export default function LocalLibraryPage() {
   };
 
   // New files found by Update Library / Browse / Add Files are matched automatically
+  // Auto multi-part check: new files that belong with a show / multi-part title trigger a merge prompt
+  const autoMultiIdsRef = useRef(new Set());
+  const [autoMultiKeys, setAutoMultiKeys] = useState(null);
+
   // Queue is saved so titles added while paused / without a key are matched later
   const autoMatchQueueRef = useRef(null);
   if (autoMatchQueueRef.current === null) {
@@ -668,6 +672,7 @@ export default function LocalLibraryPage() {
   const [autoMatchTick, setAutoMatchTick] = useState(0);
   const queueAutoMatch = (list) => {
     if (!list || list.length === 0) return;
+    list.forEach(m => autoMultiIdsRef.current.add(m.id));
     list.forEach(m => autoMatchQueueRef.current.add(m.id));
     saveAutoMatchQueue();
     setAutoMatchTick(t => t + 1);
@@ -1456,18 +1461,38 @@ export default function LocalLibraryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const playMovieCb = useCallback((m) => playMovie(m), []);
   const multipartGroups = useMemo(() => findPartGroups(movies, multipartDismissed), [movies, multipartDismissed]);
+  useEffect(() => {
+    const ids = autoMultiIdsRef.current;
+    if (ids.size === 0) return;
+    const keys = multipartGroups.filter(g => g.members.some(m => ids.has(m.id))).map(g => g.key);
+    autoMultiIdsRef.current = new Set();
+    if (keys.length > 0) setAutoMultiKeys(keys);
+  }, [multipartGroups]);
+  const autoMultiGroups = autoMultiKeys ? multipartGroups.filter(g => autoMultiKeys.includes(g.key)) : [];
 
   const mergeGroups = (groups) => {
+    // Use the latest card data (auto-match may have updated members since the suggestion was made)
+    const current = new Map(movies.map(m => [m.id, m]));
     const byId = {};
     const removeIds = new Set();
     groups.forEach(g => {
-      const merged = mergeIntoOne(g.members, g.title, g.year);
-      g.members.forEach(m => removeIds.add(m.id));
+      const cards = g.members.map(m => current.get(m.id)).filter(Boolean);
+      if (cards.length < 2) return;
+      const merged = mergeIntoOne(cards, g.title, g.year);
+      cards.forEach(m => removeIds.add(m.id));
       byId[merged.id] = merged;
     });
     setMovies(prev => prev.filter(m => !removeIds.has(m.id) || byId[m.id]).map(m => byId[m.id] || m));
     setShowMultiPart(false);
+    setAutoMultiKeys(null);
     toast.success('Merged ' + groups.length + ' multi-part ' + (groups.length === 1 ? 'title' : 'titles') + ' into single cards');
+    // Series cards: add episode names for newly merged episodes
+    Object.values(byId).forEach(async (card) => {
+      if (card.media_type !== 'tv' || !card.tmdb_id || !tmdbApiKey) return;
+      if (card.parts.every(p => p.episode || partSectionName(p) === 'Extras')) return;
+      const r = await attachEpisodes(card.parts, card.tmdb_id, tmdbApiKey);
+      setMovies(prev => prev.map(m => m.id === card.id ? { ...m, parts: r.parts } : m));
+    });
   };
 
   const dismissMultipartGroup = (group) => {
@@ -1773,6 +1798,16 @@ export default function LocalLibraryPage() {
           <MergePickerDialog movie={mergeTarget} movies={movies} onClose={() => setMergeTarget(null)} onMerge={mergeManual} />
           {showMultiPart && multipartGroups.length > 0 && (
             <MultiPartSuggestDialog open={showMultiPart} onOpenChange={setShowMultiPart} groups={multipartGroups} onMerge={mergeGroups} onDismiss={dismissMultipartGroup} />
+          )}
+          {!showMultiPart && autoMultiGroups.length > 0 && (
+            <MultiPartSuggestDialog
+              open
+              onOpenChange={(o) => { if (!o) setAutoMultiKeys(null); }}
+              groups={autoMultiGroups}
+              onMerge={mergeGroups}
+              onDismiss={dismissMultipartGroup}
+              heading="New files belong with existing titles"
+            />
           )}
           {movies.length > 0 && (
             <PdfExportDialog
