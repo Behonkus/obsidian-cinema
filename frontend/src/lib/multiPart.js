@@ -68,7 +68,7 @@ export function partInfo(fileName) {
     if (i === 0 && m[3]) {
       const extra = (m[3].match(/\d{1,3}/g) || []).map(n => parseInt(n, 10));
       const last = extra[extra.length - 1];
-      if (last > parseInt(m[2], 10)) endNum = parseInt(m[1], 10) * 1000 + last;
+      if (last > parseInt(m[2], 10) && last - parseInt(m[2], 10) <= 10) endNum = parseInt(m[1], 10) * 1000 + last;
     }
     return { base, num, endNum };
   }

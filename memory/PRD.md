@@ -90,3 +90,4 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - multiPart.attachEpisodes: Part N -> S1EN, SxxEyy direct; parts get episode {name, overview, still, runtime, air_date}.
 - Modal: TV SERIES badge, episode names/stills in parts list, "Get/Refresh series & episode info" button. Poster search returns movie + "(Series)" results (TV first for multi-part). Enrich uses /tv for tv cards.
 - Tested iteration_22 (7/7) + 3 low fixes.
+- Double/multi episodes (S07E12E13, S07E12-E13, S07E12-13, s07e12.e13, S07E12E13E14) detected; label S07E12-E13; attachEpisodes maps range (names joined " / ", runtimes summed). Range capped at 10 eps to avoid "-720" false ranges. Tested iteration_23.

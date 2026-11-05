@@ -30,7 +30,7 @@ export function PartsList({ movie, onPlayPart, onSplit, onSeriesInfo, seriesLoad
         {parts.map((p, i) => (
           <div key={p.file_path} className="flex items-center gap-2 p-2 rounded-md bg-secondary/40 hover:bg-secondary/70 transition-colors" title={p.episode?.overview || p.file_path}>
             {p.episode?.still && <img src={p.episode.still} alt="" className="w-16 h-9 rounded object-cover shrink-0" loading="lazy" />}
-            <span className="text-xs font-semibold text-primary w-14 shrink-0">{partLabel(p, i)}</span>
+            <span className="text-xs font-semibold text-primary min-w-[3.5rem] whitespace-nowrap shrink-0">{partLabel(p, i)}</span>
             <div className="flex-1 min-w-0">
               {p.episode?.name && <p className="text-xs font-medium truncate" data-testid={`part-episode-name-${i}`}>{p.episode.name}{p.episode.runtime ? <span className="text-muted-foreground font-normal"> · {p.episode.runtime} min</span> : null}</p>}
               <p className={'truncate text-muted-foreground ' + (p.episode?.name ? 'text-[10px]' : 'text-xs')} title={p.file_path}>{p.file_name}</p>
