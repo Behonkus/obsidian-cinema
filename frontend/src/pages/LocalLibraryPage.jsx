@@ -646,7 +646,8 @@ export default function LocalLibraryPage() {
       const data = { ...d, parts: r.parts };
       setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, ...data } : m));
       setSelectedMovie(prev => prev && prev.id === movie.id ? { ...prev, ...data } : prev);
-      toast.success('Matched series "' + (d.tmdb_title || movie.title) + '" — ' + r.found + ' of ' + mainParts(movie).length + ' episodes found');
+      const msg = 'Matched series "' + (d.tmdb_title || movie.title) + '" — ' + r.found + ' of ' + mainParts(movie).length + ' episodes found';
+      if (r.found > 0) toast.success(msg); else toast.warning(msg + ' (episode details unavailable right now)');
     } finally {
       setSeriesLoading(false);
     }
@@ -670,11 +671,11 @@ export default function LocalLibraryPage() {
   }
   const saveAutoMatchQueue = () => localStorage.setItem(AUTO_MATCH_QUEUE_KEY, JSON.stringify([...autoMatchQueueRef.current]));
   const [autoMatchTick, setAutoMatchTick] = useState(0);
-  const queueAutoMatch = (list) => {
+  const queueAutoMatch = (list, matchOnly) => {
     if (!list || list.length === 0) return;
-    list.forEach(m => autoMultiIdsRef.current.add(m.id));
+    if (!matchOnly) list.forEach(m => autoMultiIdsRef.current.add(m.id));
     // Episodes / extras inside a show folder are matched as the show (after merging), not as separate movies
-    list.forEach(m => { if (!partFolderOf(m.file_path).showDir) autoMatchQueueRef.current.add(m.id); });
+    list.forEach(m => { if (matchOnly || !partFolderOf(m.file_path).showDir) autoMatchQueueRef.current.add(m.id); });
     saveAutoMatchQueue();
     setAutoMatchTick(t => t + 1);
   };
@@ -1465,9 +1466,13 @@ export default function LocalLibraryPage() {
   useEffect(() => {
     const ids = autoMultiIdsRef.current;
     if (ids.size === 0) return;
-    const keys = multipartGroups.filter(g => g.members.some(m => ids.has(m.id))).map(g => g.key);
+    const hit = multipartGroups.filter(g => g.members.some(m => ids.has(m.id)));
+    const grouped = new Set(hit.flatMap(g => g.members.map(m => m.id)));
     autoMultiIdsRef.current = new Set();
-    if (keys.length > 0) setAutoMultiKeys(keys);
+    if (hit.length > 0) setAutoMultiKeys(hit.map(g => g.key));
+    // Lone show-folder files that join no group are matched on their own (as TV)
+    const lone = movies.filter(m => ids.has(m.id) && !grouped.has(m.id) && partFolderOf(m.file_path).showDir && !partFolderOf(m.file_path).extra);
+    if (lone.length > 0) queueAutoMatch(lone, true);
   }, [multipartGroups]);
   const autoMultiGroups = autoMultiKeys ? multipartGroups.filter(g => autoMultiKeys.includes(g.key)) : [];
 

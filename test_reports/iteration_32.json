@@ -1,0 +1,40 @@
+{
+  "summary": "Frontend-only retest of the iteration_31 fixes (Extras folders at any depth, auto multi-part check after Update Library). Used the simulated electronAPI harness, with TMDB mocked through ctx.route (Mock2 adds a 'Lost' TV hit and a failing-season toggle). All 8 requested scenarios pass. Two new low-priority edge cases were found: a single new episode in a show folder is never auto-matched, and the 'Extras' show-name check only works when file names start with the show name.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "multiPart.js partFolder ('Extras' show check)", "issue": "The check only skips the Extras rule when the file title starts with the folder name. Files D:\\TV\\Extras\\Season 1\\01 - Pilot.mkv and 02 - Second.mkv are still treated as extras of D:\\TV: no Multi-Part button and TV Shows count 0. The suggested 'parent is a library root (or the next folder is a Season folder)' rule was not implemented.", "selector": "[data-testid='multipart-suggest-btn'], [data-testid='qf-tv-shows']", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Auto-match (auto='on') + queueAutoMatch show-folder skip", "issue": "If only ONE new file is added inside a show folder (D:\\TV\\Lost\\Season 1\\Lost.S01E01.mkv) and no other card of that show exists, no multi-part group forms. queueAutoMatch skips the file because partFolder().showDir is set, so it is never matched: 0 TMDB calls, no dialog, an empty queue, and the card stays 'Lost S01E01' with no poster. Before this change such a file was auto-matched. Fix: skip only files that end up in an autoMulti group with an existing card, or match lone show-folder files as TV (tvOnly/preferTv).", "affected_selectors": ["[data-testid='update-library-btn']"]}
+    ],
+    "design_issues": []
+  },
+  "verified_passing": [
+    "Show named 'Extras' (Extras.S01E01, S01E02, Season 2\\Extras.S02E01): Multi-Part shows group 'Extras', '3 files · whole show' (Season 1 x2, Season 2). TV Shows count is 3 and the TV filter lists the 3 Extras cards.",
+    "The Interview Part 1/2 in D:\\Movies\\The Interview: suggested as a normal group 'The Interview · 2 parts'.",
+    "Primary flip fixed: batman_lib(None) + auto='on' + Update Library. Zero TMDB calls before the merge (no search/movie for 'Batman S02E01' or 'Bloopers'), and n1/n2 stayed unmatched. The auto dialog 'New files belong with existing titles' lists Batman with 4 files. After the merge the card is bat, tmdb 5, tv, /bat.jpg, with 4 parts. The only calls were /tv/5/season/1 and /tv/5/season/2. S02E01 got 'S2E1 Name' and the old S1 names were replaced with fresh ones. TV count is 1.",
+    "New show Lost (2 new cards, no existing card): no per-episode auto-match and the auto dialog suggests 'Lost'. The merge automatically called /search/tv?query=Lost, then /tv/9 and /tv/9/season/1. The card l1 became tmdb 9 / tv with 2 parts, both with episode names.",
+    "Heat + Extras\\Trailer: parts list shows sections 'Feature' (row label 'Feature') and 'Extras'. There is no parts-section-parts and no series-info-btn. With Fetch Posters, Heat queried /search/movie first; /search/tv came only as the low-confidence fallback, because the mock's year did not match.",
+    "Series toast: 7-file Batman (2 episodes + 5 extras) -> 'Matched series \"Batman\" — 2 of 2 episodes found'. Merged Batman (3 episodes + 1 extra) -> '3 of 3 episodes found'.",
+    "attachEpisodes on a failed season: with season requests returning 500 and Refresh series clicked, all 3 previously attached episode names are kept in storage and in the UI.",
+    "Regression: the 7 Batman cards (extras at any depth) form 1 group with Season 1 (2) and Extras (5) sections. Green Planet Part 1..3 is grouped. The merge of 2 titles works (the manual Multi-Part merge of a show now also auto-runs the series lookup). Escape closes the auto dialog without merging and the button stays. 'Not multi-part' closes it, saves the dismissed key ['show|d:\\\\tv\\\\batman (1966)'] and hides the button. No page errors in any scenario."
+  ],
+  "test_report_links": ["/app/tests/test_iter32_multipart.py", "/app/tests/test_iter32_edges.py", "/app/tests/test_auto_multipart_ui.py", "/app/tests/multipart_extras_harness.py", "/app/tests/auto_match_harness.py"],
+  "action_items": [
+    "LOW/MEDIUM: Lone new files in a show folder that join no multi-part group are never auto-matched (queueAutoMatch skips every file with showDir). Queue them for matching (prefer TV) when the autoMulti effect finds no group for them.",
+    "LOW: 'Extras' show detection should not depend on file names starting with 'Extras'. Treat a segment as a show folder when its parent is a library root dir or its child is a Season folder."
+  ],
+  "critical_code_review_comments": [
+    "If every season request fails, refreshSeriesInfo shows a success toast '0 of 3 episodes found' (the data is kept). A warning toast would be clearer.",
+    "mergeGroups now calls refreshSeriesInfo for any merged show group whose card is not tv, including manual Multi-Part merges. That is intended, but it means TMDB calls and a toast on every manual show merge. It also passes the pre-merge closure card, so fine for now.",
+    "The test mock's /tv/{id} details always returns the name 'Batman', so the Lost toast read 'Matched series \"Batman\"'. This is a mock artifact, not an app bug.",
+    "LocalLibraryPage.jsx is ~3147 lines (not refactored, as requested)."
+  ],
+  "updated_files": ["/app/tests/test_iter32_multipart.py (new)", "/app/tests/test_iter32_edges.py (new)"],
+  "success_rate": {"backend": "N/A", "frontend": "100% of requested scenarios (8/8); 2 new low-priority edge cases"},
+  "seed_data_creation": "None. Isolated browser contexts only (sessionStorage/localStorage).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "g={'page':page}; exec(open('/app/tests/test_iter32_multipart.py').read(), g); await g['run_names'|'run_batman_flip'|'run_lost'|'run_regression']() inside browser_automation. Edge probes: /app/tests/test_iter32_edges.py run_edges. Mock2 extends X.TmdbMock with a 'lost' -> tv id 9 hit and fail_season=True (500 on season requests)."
+}

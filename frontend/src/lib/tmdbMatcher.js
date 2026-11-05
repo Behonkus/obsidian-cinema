@@ -173,7 +173,9 @@ export async function findBestMatch(movie, apiKey, opts = {}) {
       return { candidate: { ...found.tv_results[0], media_type: 'tv' }, confidence: 1, method: 'imdb_id' };
     }
   }
-  const baseTitles = [...new Set([movie.title, parsed.title].filter(Boolean).map(String))];
+  // Episode files ("Lost S01E01 Pilot") are searched by the show name
+  const stripEpisode = t => String(t).replace(/[\s._-]*\bS\d{1,2}[\s._-]?E\d{1,3}\b.*$/i, '').trim() || String(t);
+  const baseTitles = [...new Set([movie.title, parsed.title].filter(Boolean).map(stripEpisode))];
   const year = movie.year || parsed.year || null;
   const query = { titles: baseTitles, year };
   const seen = new Map();
