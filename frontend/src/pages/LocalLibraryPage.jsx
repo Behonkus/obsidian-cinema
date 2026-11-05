@@ -108,6 +108,15 @@ async function verifyProStatus() {
   return localStorage.getItem('obsidian_cinema_is_pro') === 'true';
 }
 
+// True when a file path is inside a folder (D:\\TV must not match D:\\TVShows)
+function inDir(filePath, dir) {
+  if (!filePath || !dir) return false;
+  const d = dir.replace(/[\\/]+$/, '');
+  if (!filePath.startsWith(d)) return false;
+  const next = filePath.charAt(d.length);
+  return next === '' || next === '\\' || next === '/';
+}
+
 // Re-parse a scanned file name with the smarter parser (keeps fallback title)
 function withParsedName(m) {
   const p = parseFilename(m.file_name);
@@ -807,10 +816,16 @@ export default function LocalLibraryPage() {
 
   // Remove a directory and all its movies
   const removeDirectory = (dirPath) => {
-    const count = movies.filter(m => m.file_path && m.file_path.startsWith(dirPath)).length;
-    setMovies(prev => prev.filter(m => !m.file_path || !m.file_path.startsWith(dirPath)));
+    const count = movies.filter(m => inDir(m.file_path, dirPath)).length;
+    setMovies(prev => prev.filter(m => !inDir(m.file_path, dirPath)));
     setDirectories(prev => prev.filter(d => d !== dirPath));
     if (activeDirectory === dirPath) setActiveDirectory(null);
+    if (dirCategories[dirPath]) {
+      const nextCats = { ...dirCategories };
+      delete nextCats[dirPath];
+      setDirCategories(nextCats);
+      localStorage.setItem(DIR_CATEGORIES_KEY, JSON.stringify(nextCats));
+    }
     setDirToRemove(null);
     toast.success('Removed directory and ' + count + ' movies');
   };
@@ -822,13 +837,21 @@ export default function LocalLibraryPage() {
     const newPath = dirNewPath.trim();
     if (oldPath === newPath) { setDirToRename(null); return; }
     setDirectories(prev => prev.map(d => d === oldPath ? newPath : d));
+    const move = (fp) => (inDir(fp, oldPath) ? newPath + fp.substring(oldPath.length) : fp);
     setMovies(prev => prev.map(m => {
-      if (m.file_path && m.file_path.startsWith(oldPath)) {
-        return { ...m, file_path: newPath + m.file_path.substring(oldPath.length) };
-      }
-      return m;
+      const movedParts = Array.isArray(m.parts) && m.parts.some(p => inDir(p.file_path, oldPath));
+      if (!inDir(m.file_path, oldPath) && !movedParts) return m;
+      const next = { ...m, file_path: move(m.file_path) };
+      if (Array.isArray(m.parts)) next.parts = m.parts.map(p => ({ ...p, file_path: move(p.file_path) }));
+      return next;
     }));
     if (activeDirectory === oldPath) setActiveDirectory(newPath);
+    if (dirCategories[oldPath]) {
+      const nextCats = { ...dirCategories, [newPath]: dirCategories[oldPath] };
+      delete nextCats[oldPath];
+      setDirCategories(nextCats);
+      localStorage.setItem(DIR_CATEGORIES_KEY, JSON.stringify(nextCats));
+    }
     setDirToRename(null);
     setDirNewPath('');
     toast.success('Directory path updated');
@@ -1136,7 +1159,7 @@ export default function LocalLibraryPage() {
 
       const scannedPaths = new Set(allScanned.map(f => f.file_path));
       const dirSet = new Set(directories);
-      const inDirs = (p) => directories.some(d => p.startsWith(d));
+      const inDirs = (p) => directories.some(d => inDir(p, d));
       const existingInDirs = movies.filter(m => partsOf(m).some(p => p.file_path && inDirs(p.file_path)));
       const existingPaths = new Set();
       existingInDirs.forEach(m => partsOf(m).forEach(p => { if (p.file_path && inDirs(p.file_path)) existingPaths.add(p.file_path); }));
@@ -1390,9 +1413,9 @@ export default function LocalLibraryPage() {
       }
       // Directory filter
       if (activeDirectory) {
-        if (!movie.file_path?.startsWith(activeDirectory)) return false;
+        if (!inDir(movie.file_path, activeDirectory)) return false;
       } else if (activeCategoryDirs) {
-        if (!activeCategoryDirs.some(d => movie.file_path?.startsWith(d))) return false;
+        if (!activeCategoryDirs.some(d => inDir(movie.file_path, d))) return false;
       }
       // Collection filter
       if (activeCollectionIds && !activeCollectionIds.has(movie.id)) return false;
@@ -1462,7 +1485,8 @@ export default function LocalLibraryPage() {
       if (m.needs_review) needsReview++;
       if (m.tmdb_id && !m.metadata_updated_at) needsDetails++;
     });
-    directories.forEach(d => { dirCounts[d] = movies.filter(m => m.file_path?.startsWith(d)).length; });
+    directories.forEach(d => { dirCounts[d] = 0; });
+    movies.forEach(m => { directories.forEach(d => { if (inDir(m.file_path, d)) dirCounts[d]++; }); });
     return { dirCounts, missingPoster, needsReview, needsDetails };
   }, [movies, directories]);
 
@@ -2768,7 +2792,7 @@ export default function LocalLibraryPage() {
           </AlertDialogHeader>
           <div className="space-y-2 max-h-80 overflow-y-auto px-1">
             {directories.map(function(dir, i) {
-              var count = movies.filter(function(m) { return m.file_path && m.file_path.startsWith(dir); }).length;
+              var count = libraryCounts.dirCounts[dir] || 0;
               var label = dir.split(/[\\/]/).pop() || dir;
               return (
                 <div key={dir} className="flex items-center gap-1.5 p-2 rounded-lg bg-secondary/40 border border-border/50" data-testid={'dir-manage-' + i}>
@@ -2858,7 +2882,7 @@ export default function LocalLibraryPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remove directory?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove <strong className="text-foreground">{dirToRemove && (dirToRemove.split(/[\\/]/).pop() || dirToRemove)}</strong> and all {dirToRemove ? movies.filter(m => m.file_path && m.file_path.startsWith(dirToRemove)).length : 0} of its movies from your library.
+              This will remove <strong className="text-foreground">{dirToRemove && (dirToRemove.split(/[\\/]/).pop() || dirToRemove)}</strong> and all {dirToRemove ? movies.filter(m => inDir(m.file_path, dirToRemove)).length : 0} of its movies from your library.
               <span className="block mt-2 text-muted-foreground">
                 No files will be deleted from your system. Your actual movie files will remain untouched.
               </span>

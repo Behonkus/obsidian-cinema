@@ -1,0 +1,28 @@
+{
+  "summary": "Frontend-only test of the TV Shows quick filter and the 4 colored directory-category dropdowns. I used the simulated Electron harness and guarded setItem so '[]' is never written for the dirs and collections keys. Seeded data: 10 cards across D:\\Movies, D:\\TV, D:\\Docs, D:\\Anime and D:\\TVShows. PASS: The row order is dir-filter-all (9/10), then dir-cat-movies (sky), dir-cat-tv (emerald), dir-cat-docs (amber), dir-cat-anim (fuchsia), then manage-dirs-btn. At first every folder is Movies: the Movies menu shows 'All Movies 9' plus the 4 folders with counts, and the other menus show the 'No folders set as TV Shows yet...' text. Manage Directories: dir-type-{i} lists Movies/TV Shows/Documentaries/Animations. Changing the types saves to obsidian_cinema_dir_categories and moves each folder into its dropdown. Picking a folder sets the label (e.g. 'TV Shows: TV'), the count and emerald highlight. Picking it again toggles it off, 'All Documentaries' filters to all docs folders, and 'All' clears everything. TV Shows quick filter: the count is 4. It shows Batman (Season folders), Show.S01E01, Planet Earth (media_type tv) and Lost (Season 1\\01 - Pilot.mkv only). It correctly excludes Heat (movie + Extras), Inception, Harry Potter Part 1 and others. Clicking again clears it, and #/?qf=tv-shows works. It combines correctly with All Documentaries (Planet Earth only). Regression: search 'bat' returns Batman, the collection filter works and combines with All TV Shows, and the types persist after reload. FAIL: Renaming a directory loses its type. FAIL: Folder matching by path prefix leaks between folders with similar names.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "LocalLibraryPage renameDirectory (~line 819)", "issue": "Renaming a directory does NOT keep its type. Repro: set D:\\Docs to Documentaries, then rename it to D:\\Documentaries. obsidian_cinema_dir_categories still holds {'D:\\\\Docs':'docs'}, so the renamed folder falls back to Movies. After the rename and after a reload, Documentaries shows 0 and Movies goes from 3 to 5. renameDirectory never moves dirCategories[oldPath] to newPath. Fix: in renameDirectory, if dirCategories[oldPath] exists, write next = {...dirCategories, [newPath]: dirCategories[oldPath]}, delete next[oldPath], then save it to state and localStorage.", "selector": "[data-testid='confirm-rename-dir-btn']", "priority": "HIGH"},
+      {"component": "Directory filter / dirCounts (LocalLibraryPage ~line 1394 and ~line 1465)", "issue": "Folders are matched with movie.file_path.startsWith(dir) and no path separator. So D:\\TV also matches files in D:\\TVShows. Picking the folder 'TV' showed the D:\\TVShows card, and its count was 4 instead of 3. 'All TV Shows' shows a total of 5 but only 4 unique cards because one is counted twice. If the two folders have different types, cards leak into the wrong category. Fix: match when file_path === d or file_path starts with d + '\\\\' or d + '/' (strip any trailing separator from d first). Apply this to the filter, dirCounts and renameDirectory.", "selector": "[data-testid='dir-cat-item-tv-TV']", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "HIGH: In renameDirectory, move dirCategories[oldPath] to newPath and save it to localStorage, so the folder keeps its type.",
+    "MEDIUM: Replace startsWith(dir) with a check that includes the path separator, in the directory filter, activeCategoryDirs, dirCounts and renameDirectory.",
+    "LOW: In removeDirectory, also delete the folder's entry from dirCategories (it is left behind as a stale entry)."
+  ],
+  "critical_code_review_comments": [
+    "isSeries treats any file inside a folder named 'Specials' or 'S1' to 'S99' as a series, even in a Movies folder. This is acceptable but worth knowing.",
+    "dirCounts runs a filter over all movies for each directory on every movies change. That is fine at the 500 free limit but O(dirs*movies) for big libraries."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "~90% (2 bugs out of ~20 checks)"},
+  "seed_data_creation": "Only in the browser (sessionStorage fakeLibFile and the test browser's localStorage). Nothing was written to the server or DB.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Harness: same as iteration_24 (isElectron is a function, Proxy electronAPI, library in sessionStorage 'fakeLibFile'). Seed once using a sessionStorage 'seeded' flag. Wrap Storage.prototype.setItem to ignore '[]' for obsidian_cinema_local_dirs AND obsidian_cinema_collections, because StrictMode wipes both on first mount. The router is a HashRouter, so use BASE + '/#/?qf=tv-shows'. Card ids: the cards have no testid, so collect [data-testid^='fav-star-'] and strip the prefix. Seed obsidian_cinema_dir_categories directly to skip the Manage step. Retest: renaming a typed folder keeps its type, and the D:\\TV vs D:\\TVShows prefix case."
+}
