@@ -22,12 +22,12 @@ export function PartsPlayDialog({ movie, onClose, onPlayPart }) {
 }
 
 // List of parts with play buttons (used in the play picker and the movie details)
-function PartRow({ part, index, onPlayPart }) {
+function PartRow({ part, index, onPlayPart, label }) {
   const p = part;
   return (
     <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/40 hover:bg-secondary/70 transition-colors" title={p.episode?.overview || p.file_path}>
       {p.episode?.still && <img src={p.episode.still} alt="" className="w-16 h-9 rounded object-cover shrink-0" loading="lazy" />}
-      <span className="text-xs font-semibold text-primary min-w-[3.5rem] whitespace-nowrap shrink-0">{partLabel(p, index)}</span>
+      <span className="text-xs font-semibold text-primary min-w-[3.5rem] whitespace-nowrap shrink-0">{label || partLabel(p, index)}</span>
       <div className="flex-1 min-w-0">
         {p.episode?.name && <p className="text-xs font-medium truncate" data-testid={`part-episode-name-${index}`}>{p.episode.name}{p.episode.runtime ? <span className="text-muted-foreground font-normal"> · {p.episode.runtime} min</span> : null}</p>}
         <p className={'truncate text-muted-foreground ' + (p.episode?.name ? 'text-[10px]' : 'text-xs')} title={p.file_path}>{p.file_name}</p>
@@ -49,6 +49,10 @@ function useSections(parts) {
       if (!byName[name]) { byName[name] = { name, items: [] }; list.push(byName[name]); }
       byName[name].items.push({ part: p, index: i });
     });
+    // Movie + Extras: the movie file itself is the Feature
+    if (byName.Parts && byName.Extras && !list.some(sec => sec.name.startsWith('Season') || sec.name === 'Specials')) {
+      byName.Parts.name = 'Feature';
+    }
     return list;
   }, [parts]);
 }
@@ -81,7 +85,7 @@ export function PartsList({ movie, onPlayPart, onSplit, onSeriesInfo, seriesLoad
               </button>
               {isOpen && (
                 <div className="space-y-1 pl-2 pb-1">
-                  {sec.items.map(it => <PartRow key={it.part.file_path} part={it.part} index={it.index} onPlayPart={onPlayPart} />)}
+                  {sec.items.map(it => <PartRow key={it.part.file_path} part={it.part} index={it.index} onPlayPart={onPlayPart} label={sec.name === 'Feature' && sec.items.length === 1 ? 'Feature' : null} />)}
                 </div>
               )}
             </div>

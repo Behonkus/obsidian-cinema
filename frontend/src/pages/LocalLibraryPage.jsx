@@ -84,7 +84,7 @@ import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
-import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, allLibraryPaths, partsOf, attachEpisodes, partSection as partSectionName, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
+import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
 import { PartsPlayDialog, PartsList, MultiPartSuggestDialog, MergePickerDialog } from "@/components/MultiPartDialogs";
 
@@ -571,7 +571,7 @@ export default function LocalLibraryPage() {
     if (!tmdbApiKey) return null;
     try {
       const multi = isMultiPart(movie);
-      const d = await fetchFullMetadata(movie, tmdbApiKey, { preferTv: multi });
+      const d = await fetchFullMetadata(movie, tmdbApiKey, { preferTv: mainParts(movie).length > 1 || isSeries(movie) });
       if (d && d.media_type === 'tv' && multi) d.parts = (await attachEpisodes(movie.parts, d.tmdb_id, tmdbApiKey)).parts;
       return d;
     } catch (err) {
@@ -646,7 +646,7 @@ export default function LocalLibraryPage() {
       const data = { ...d, parts: r.parts };
       setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, ...data } : m));
       setSelectedMovie(prev => prev && prev.id === movie.id ? { ...prev, ...data } : prev);
-      toast.success('Matched series "' + (d.tmdb_title || movie.title) + '" — ' + r.found + ' of ' + movie.parts.length + ' parts matched to episodes');
+      toast.success('Matched series "' + (d.tmdb_title || movie.title) + '" — ' + r.found + ' of ' + mainParts(movie).length + ' episodes found');
     } finally {
       setSeriesLoading(false);
     }
@@ -673,7 +673,8 @@ export default function LocalLibraryPage() {
   const queueAutoMatch = (list) => {
     if (!list || list.length === 0) return;
     list.forEach(m => autoMultiIdsRef.current.add(m.id));
-    list.forEach(m => autoMatchQueueRef.current.add(m.id));
+    // Episodes / extras inside a show folder are matched as the show (after merging), not as separate movies
+    list.forEach(m => { if (!partFolderOf(m.file_path).showDir) autoMatchQueueRef.current.add(m.id); });
     saveAutoMatchQueue();
     setAutoMatchTick(t => t + 1);
   };
@@ -1492,6 +1493,11 @@ export default function LocalLibraryPage() {
       if (card.parts.every(p => p.episode || partSectionName(p) === 'Extras')) return;
       const r = await attachEpisodes(card.parts, card.tmdb_id, tmdbApiKey);
       setMovies(prev => prev.map(m => m.id === card.id ? { ...m, parts: r.parts } : m));
+    });
+    // Brand-new show cards with no match yet: look them up as a TV series
+    groups.forEach(g => {
+      const card = Object.values(byId).find(c => g.members.some(m => m.id === c.id));
+      if (g.show && card && card.media_type !== 'tv' && tmdbApiKey) refreshSeriesInfo(card);
     });
   };
 
@@ -2747,7 +2753,7 @@ export default function LocalLibraryPage() {
               {isMultiPart(selectedMovie) && (
                 <div className="space-y-1.5" data-testid="movie-parts-section">
                   <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" />{selectedMovie.parts.length} Parts</span>
-                  <PartsList movie={selectedMovie} onPlayPart={(p) => playPart(selectedMovie, p)} onSplit={() => splitMovie(selectedMovie)} onSeriesInfo={() => refreshSeriesInfo(selectedMovie)} seriesLoading={seriesLoading} />
+                  <PartsList movie={selectedMovie} onPlayPart={(p) => playPart(selectedMovie, p)} onSplit={() => splitMovie(selectedMovie)} onSeriesInfo={(isSeries(selectedMovie) || mainParts(selectedMovie).length > 1) ? () => refreshSeriesInfo(selectedMovie) : null} seriesLoading={seriesLoading} />
                 </div>
               )}
 

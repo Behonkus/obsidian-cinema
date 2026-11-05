@@ -3,6 +3,7 @@ import json
 import asyncio
 import re
 import zlib
+VERSION = json.load(open('/app/frontend/package.json'))['version']
 from urllib.parse import urlparse, parse_qs
 
 
@@ -40,7 +41,7 @@ def init_script(lib=None, key=True, auto=None, scan=None, dialog_paths=None, dir
     localStorage.setItem('obsidian_cinema_local_dirs', %s);
     localStorage.setItem('obsidian_cinema_dir_categories', %s);
     localStorage.setItem('obsidian_cinema_collections', '[]');
-    localStorage.setItem('obsidian_cinema_eula_accepted', '1.6.8');
+    localStorage.setItem('obsidian_cinema_eula_accepted', '%s');
     localStorage.setItem('obsidian_cinema_skip_poster_tip', 'true');
     localStorage.setItem('obsidian_cinema_skip_naming_tip', 'true');
     %s
@@ -64,7 +65,7 @@ def init_script(lib=None, key=True, auto=None, scan=None, dialog_paths=None, dir
   };
   window.electronAPI = new Proxy(impl, { get(t,k){ if (k in t) return t[k]; if (typeof k==='symbol') return undefined; return () => Promise.resolve(null); } });
 })();
-""" % (json.dumps(json.dumps(lib)), json.dumps(json.dumps(list(dirs))), json.dumps(json.dumps(cats)), extra,
+""" % (json.dumps(json.dumps(lib)), json.dumps(json.dumps(list(dirs))), json.dumps(json.dumps(cats)), VERSION, extra,
        json.dumps(scan), json.dumps(dialog_paths))
 
 

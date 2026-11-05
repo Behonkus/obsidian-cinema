@@ -25,7 +25,7 @@ export async function attachEpisodes(parts, tvId, apiKey) {
     const eps = (bySeason[season] || []).filter(e => e.episode_number >= episode && e.episode_number <= lastEpisode)
       .sort((a, b) => a.episode_number - b.episode_number);
     const clean = { file_path: part.file_path, file_name: part.file_name };
-    if (eps.length === 0) return clean;
+    if (eps.length === 0) return part.episode ? { ...clean, episode: part.episode } : clean;
     matchedPaths.add(part.file_path);
     found++;
     const first = eps[0];
@@ -92,7 +92,7 @@ function baseName(p) {
 
 const SEASON_DIR = /^(?:season|series|staffel|saison|temporada|s)[\s._-]*(\d{1,2})(?:\b.*)?$/i;
 const SPECIALS_DIR = /^specials?$/i;
-const EXTRAS_DIR = /(?:^|[\s._-])(?:extras?|bonus(?:[\s._-]*(?:features|material|content))?|featurettes?|special[\s._-]*features|behind[\s._-]*the[\s._-]*scenes|deleted[\s._-]*scenes|interviews?|trailers?|making[\s._-]*of)$/i;
+const EXTRAS_DIR = /^(?:(?:season|series|s)[\s._-]*\d{1,2}[\s._-]+)?(?:extras?|bonus(?:[\s._-]*(?:features|material|content))?|featurettes?|special[\s._-]*features|behind[\s._-]*the[\s._-]*scenes|deleted[\s._-]*scenes|interviews?|trailers?|making[\s._-]*of)$/i;
 
 // Folder role of a file: inside a Season N / Specials folder, or an Extras folder of a show
 export function partFolder(filePath) {
@@ -101,6 +101,10 @@ export function partFolder(filePath) {
   const segs = dir.split(/[\\/]/);
   for (let i = 2; i < segs.length; i++) {
     if (!EXTRAS_DIR.test(segs[i].trim())) continue;
+    // A show actually called "Extras" (D:\\TV\\Extras\\Season 1\\Extras.S01E01.mkv) is not an extras folder
+    const seg = normKey(segs[i]);
+    const fileKey = normKey(parseFilename(baseName(filePath)).title);
+    if (seg && fileKey.startsWith(seg)) continue;
     let showSegs = segs.slice(0, i);
     const last = showSegs[showSegs.length - 1].trim();
     if (showSegs.length > 2 && (SEASON_DIR.test(last) || SPECIALS_DIR.test(last))) showSegs = showSegs.slice(0, -1);
@@ -158,6 +162,11 @@ export function partsOf(movie) {
 
 export function isMultiPart(movie) {
   return Array.isArray(movie.parts) && movie.parts.length > 1;
+}
+
+// Parts that are real content (not Extras)
+export function mainParts(movie) {
+  return partsOf(movie).filter(p => !partFolder(p.file_path).extra);
 }
 
 // A TV series card: matched as TMDB TV, or its files sit in season folders / are named S01E02
@@ -252,8 +261,9 @@ function sortParts(parts) {
 
 // Merge cards into one; keeps the card with the best metadata as the main one
 export function mergeIntoOne(cards, title, year) {
-  const score = m => (m.tmdb_id ? 4 : 0) + (m.poster_path ? 2 : 0) + (m.overview ? 1 : 0);
-  const primary = cards.slice().sort((a, b) => score(b) - score(a))[0];
+  // Existing show / multi-part cards win over newly added single files
+  const score = m => (m.media_type === 'tv' ? 16 : 0) + (isMultiPart(m) ? 8 : 0) + (m.tmdb_id ? 4 : 0) + (m.poster_path ? 2 : 0) + (m.overview ? 1 : 0);
+  const primary = cards.slice().sort((a, b) => (score(b) - score(a)) || ((a.added_at || 0) - (b.added_at || 0)))[0];
   const seen = new Set();
   const parts = sortParts(cards.flatMap(partsOf)).filter(p => {
     if (!p.file_path || seen.has(p.file_path)) return false;

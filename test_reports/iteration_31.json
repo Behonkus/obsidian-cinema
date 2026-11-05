@@ -1,0 +1,45 @@
+{
+  "summary": "Frontend-only test of (1) 'Extras' folders at any depth treated as one 'Extras' part section of the show/movie and (2) the auto multi-part check after Update Library. Used the simulated electronAPI harness with TMDB mocked via ctx.route. All requested scenarios pass except one auto-match interaction bug (the primary card flips when the existing show card has no overview). Also found 2 edge cases from the new 'Extras anywhere' rule and 1 related older TV-first issue.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "multiPart.js partFolder / EXTRAS_DIR", "issue": "EXTRAS_DIR matches any folder segment at depth >= 2 whose name ENDS with an extras word, so real titles are swallowed. (a) The TV show 'Extras' (D:\\TV\\Extras\\Season 1\\Extras.S01E01.mkv, S01E02, Season 2\\S02E01) is not grouped (no Multi-Part button). Its files are treated as extras of D:\\TV, and the TV Shows count is 0 even with S01E01 names. (b) D:\\Movies\\The Interview\\The Interview Part 1/Part 2.mkv: the regex matches 'The Interview' (ends with ' Interview'), so rule 2 skips them and no group is suggested.", "selector": "[data-testid='multipart-suggest-btn'], [data-testid='qf-tv-shows']", "priority": "MEDIUM"},
+      {"component": "Heat movie+extras parts list (older behavior)", "issue": "The main movie file is shown under a 'Parts' section labelled 'Part 1', and the card shows 'Get series & episode info'. Cosmetic: label it 'Movie'/'Main feature' and hide the series button for movieExtras cards.", "selector": "[data-testid='parts-list']", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Auto multi-part check + TMDB auto-match (auto='on')", "issue": "Setup: an existing show card Batman has media_type tv, tmdb_id 5 and poster_path but NO overview. Update Library adds Season 2\\Batman.S02E01.mkv and Extras\\Bloopers.mkv, and auto-match matches both as MOVIES (search/movie 'Batman S02E01' -> movie 7074 with an overview). If the user merges after auto-match finishes, mergeIntoOne scores n1 at 7 and the show at 6, so n1 becomes primary. Result: the merged card id is n1, media_type 'movie', tmdb_id 7074, the movie poster, the show's tmdb_id 5 is lost, and no episode info is fetched for S02E01. When the show card has an overview (tie, stable order) the result is correct: bat keeps tmdb 5/tv/poster, 4 parts, and /tv/5/season/1 and /season/2 are requested.", "affected_selectors": ["[data-testid='multipart-merge-selected-btn']"]},
+      {"flow": "Fetch Posters / auto-match on movie+extras cards", "issue": "fetchFullMetadata uses preferTv: isMultiPart(movie). A movie card that is multi-part only because of Extras (Heat + Extras) searches /search/tv FIRST ('/3/search/tv?query=Heat' seen). Any TV series with the same name could then be matched as a TV show. Deep Extras now make many more movie cards multi-part, so the impact grows.", "affected_selectors": ["[data-testid='fetch-posters-btn']"]}
+    ],
+    "design_issues": []
+  },
+  "verified_passing": [
+    "Extras at any depth: 7 separate Batman cards -> Multi-Part (1). Exactly one group 'Batman', '7 files · whole show': Season 1 x2, then Extras: Gag Reel, Part 1, Part 2, Batman.S01E01.Commentary, Promo. No separate Interviews group.",
+    "Merge -> 1 card (id b1). Sections parts-section-season-1 (2: S01E01, S01E02) and parts-section-extras (5, all labelled 'Extra'). The Commentary file is NOT an episode.",
+    "Series info: calls were exactly /search/tv, /tv/5, /tv/5/season/1, with no extras season request. Toast: '2 of 7 parts matched'. TV Shows count went 2 -> 1 after the merge and stayed 1 after series info.",
+    "Auto check (auto off): Update Library -> toast 'Library updated: 2 added' and the dialog pops up by itself, heading 'New files belong with existing titles'. Only the Batman group is listed (Season 1: Batman (2 parts), Season 2: S02E01, Extras: Bloopers). Merge -> one card 'bat' with 4 parts, tmdb_id 5, media_type tv, poster kept. Calls /tv/5/season/1 + /season/2 gave S2E1 episode info. Card count 2 (Batman + Heat), TV count 1.",
+    "Unrelated new movie (Alien) -> no auto dialog.",
+    "Escape closes the auto dialog without merging (n1/n2 stay separate). Multi-Part (1) still offers it with the regular heading, and Close works. After a reload there is no auto popup and the button is still shown.",
+    "'Not multi-part' in the auto dialog closes it. dismissed key = ['show|d:\\\\tv\\\\batman (1966)'], and the button stays hidden after reload.",
+    "Merge DURING an in-flight auto-match (3s TMDB delay): the final card is bat with tmdb 5/tv, 4 parts and S2E1 info. Removed n1/n2 are not resurrected, the result persists after reload, and the queue is [].",
+    "Regression: Green Planet Part 1..3 (flat) is grouped and labelled Part 1..3. Heat (1995) + Extras\\Trailer + Extras\\Interviews\\Mann Part 1/2 form one 'movie + extras' group (4 files), and the Mann parts are not grouped separately. Multi-Part (2) merges both. Fetch Posters (3) finished with the 'Done!' toast. TV Shows filter works. No page errors."
+  ],
+  "test_report_links": ["/app/tests/multipart_extras_harness.py", "/app/tests/test_auto_multipart_ui.py", "/app/tests/auto_match_harness.py"],
+  "action_items": [
+    "MEDIUM: In mergeIntoOne (or in mergeGroups for auto groups), prefer the existing card: media_type 'tv' / an already multi-part card / the oldest added_at should beat an auto-matched single new file. Alternatively skip TMDB auto-match for new files that land in an autoMulti group with an existing matched card (and for files inside Extras folders). Otherwise new episodes/extras get matched as random movies (e.g. 'Bloopers').",
+    "MEDIUM: Anchor EXTRAS_DIR to the whole segment (^(extras?|bonus...|interviews?|trailers?|...)$) so that 'The Interview' is not matched. Do not treat a segment as Extras when its parent is the library root (D:\\TV\\Extras\\Season 1\\Extras.S01E01 is the show 'Extras').",
+    "LOW: preferTv should use the number of non-Extras parts (> 1) or isSeries, not isMultiPart, so movie+extras cards search movie first. Hide 'Get series & episode info' for movie+extras cards.",
+    "LOW: Series toast '2 of 7 parts matched' counts extras in the total. Consider '2 of 2 episodes'."
+  ],
+  "critical_code_review_comments": [
+    "mergeGroups post-merge attachEpisodes overwrites parts with r.parts. If a season request fails (tmdbGet returns null), the existing episode info of already-matched parts is wiped, because attachEpisodes returns clean parts. Keep the old p.episode when the season fetch fails.",
+    "The autoMulti effect clears autoMultiIdsRef on the first multipartGroups change after queueAutoMatch. It works because setMovies and queueAutoMatch are batched together, but it is fragile if a future caller queues before setMovies.",
+    "Auto-match still spends TMDB calls (search + details) on cards that were merged away mid-flight, and the toast 'New titles matched: 2 of 2' shows even though those cards no longer exist.",
+    "LocalLibraryPage.jsx is ~3140 lines; consider extracting the auto-match/auto-multipart hooks."
+  ],
+  "updated_files": ["/app/tests/auto_match_harness.py (EULA version now read from package.json, so the harness works after the 1.6.9 bump)", "/app/tests/multipart_extras_harness.py (new)", "/app/tests/test_auto_multipart_ui.py (new helper module)"],
+  "success_rate": {"backend": "N/A", "frontend": "~88% (requested scenarios 7/8 pass; 1 auto-match primary-flip bug + 2 extras-regex edge cases found)"},
+  "seed_data_creation": "None. Isolated browser contexts only (sessionStorage/localStorage).",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Use g={'page':page}; exec(open('/app/tests/test_auto_multipart_ui.py').read(), g) inside browser_automation. It provides batman_lib(overview), NEW, UNRELATED, base_scan, open_ctx(lib, scan, auto, delay) and summarize. X.TmdbMock handles search/movie, search/tv (batman -> 5) and /tv/{id}/season/N (3 episodes). Cards have no movie-card testid: use 'div.cursor-pointer.overflow-hidden'. The D1 bug reproduces with batman_lib(None) + auto='on': wait for the 'New titles matched' toast, then merge."
+}
