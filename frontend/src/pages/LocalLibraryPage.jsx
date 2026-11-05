@@ -125,6 +125,7 @@ const isElectron = () => {
 const STORAGE_KEY = 'obsidian_cinema_local_movies';
 const DIRS_KEY = 'obsidian_cinema_local_dirs';
 const AUTO_ENRICH_KEY = 'obsidian_cinema_auto_enrich';
+const AUTO_MATCH_QUEUE_KEY = 'obsidian_cinema_auto_match_queue';
 const TMDB_KEY = 'obsidian_cinema_tmdb_key';
 const TRASH_KEY = 'obsidian_cinema_trash';
 const GRID_SIZE_KEY = 'obsidian_cinema_grid_size';
@@ -658,11 +659,17 @@ export default function LocalLibraryPage() {
   };
 
   // New files found by Update Library / Browse / Add Files are matched automatically
-  const autoMatchQueueRef = useRef(new Set());
+  // Queue is saved so titles added while paused / without a key are matched later
+  const autoMatchQueueRef = useRef(null);
+  if (autoMatchQueueRef.current === null) {
+    try { autoMatchQueueRef.current = new Set(JSON.parse(localStorage.getItem(AUTO_MATCH_QUEUE_KEY) || '[]')); } catch (e) { autoMatchQueueRef.current = new Set(); }
+  }
+  const saveAutoMatchQueue = () => localStorage.setItem(AUTO_MATCH_QUEUE_KEY, JSON.stringify([...autoMatchQueueRef.current]));
   const [autoMatchTick, setAutoMatchTick] = useState(0);
   const queueAutoMatch = (list) => {
     if (!list || list.length === 0) return;
     list.forEach(m => autoMatchQueueRef.current.add(m.id));
+    saveAutoMatchQueue();
     setAutoMatchTick(t => t + 1);
   };
 
@@ -1555,12 +1562,14 @@ export default function LocalLibraryPage() {
     return () => clearTimeout(t);
   }, [autoEnrich, tmdbApiKey, fetchingPosters, fetchingCast, bgEnrich, bgPending]);
   useEffect(() => () => { bgStopRef.current = true; }, []);
+  const libraryReady = movies.length > 0;
   useEffect(() => {
-    if (!autoEnrich || !tmdbApiKey || fetchingPosters || fetchingCast || autoMatchQueueRef.current.size === 0) return;
+    if (!libraryReady || !autoEnrich || !tmdbApiKey || fetchingPosters || fetchingCast || autoMatchQueueRef.current.size === 0) return;
     const ids = new Set(autoMatchQueueRef.current);
     autoMatchQueueRef.current.clear();
+    saveAutoMatchQueue();
     fetchAllPosters(ids);
-  }, [autoMatchTick, autoEnrich, tmdbApiKey, fetchingPosters, fetchingCast]);
+  }, [autoMatchTick, autoEnrich, tmdbApiKey, fetchingPosters, fetchingCast, libraryReady]);
   const toggleAutoEnrich = () => {
     const next = !autoEnrich;
     setAutoEnrich(next);
@@ -1636,7 +1645,7 @@ export default function LocalLibraryPage() {
               </span>
             </Button>
           )}
-          {(bgEnrich || (libraryCounts.needsDetails > 0 && tmdbApiKey)) && (
+          {tmdbApiKey && movies.length > 0 && (
             <button
               type="button"
               onClick={toggleAutoEnrich}

@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only test of Auto-Match New Files (LocalLibraryPage.jsx). Used a simulated electronAPI (scanForVideos, openFileDialog) and mocked TMDB with ctx.route. Auto-match works for Update Library, Add Individual Movies, the paused-then-resumed case and the no-key case. The manual Fetch Posters button still processes the old poster-less cards. One failure: the Auto-fill chip is NOT always visible when a TMDB key is set and the library is not empty. It still only renders when bgEnrich is active or needsDetails > 0. So when auto-fill is paused and the only pending items are new poster-less files, the user cannot turn it back on.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Auto-fill chip (LocalLibraryPage.jsx ~line 1639)", "issue": "The render condition is still `(bgEnrich || (libraryCounts.needsDetails > 0 && tmdbApiKey))`. With a key set and 2-4 cards that are poster-less or fully enriched, the chip count is 0. The claimed change (always visible when key + non-empty library) is not in the code. Result: if obsidian_cinema_auto_enrich='off' and no card has a tmdb_id without metadata_updated_at, Update Library adds files, the chip is hidden, and the queued new titles can never be auto-matched from the UI.", "selector": "[data-testid='auto-enrich-toggle']", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_passing": [
+    "S1 Update Library (2 old poster-less cards without tmdb_id + 2 new files): the first search came about 0.44s after the click. Toasts appeared in this order: 'Auto-matching 2 new titles with TMDB…', 'Library updated: 2 added', 'New titles matched: 2 of 2.' Searches went out ONLY for 'Heat' and 'Alien' (none for the old cards). The new cards got poster_path, tmdb_id and metadata_updated_at, with needs_review=false. The old cards were left untouched.",
+    "S2 paused: Update Library added 2 cards with no TMDB requests. A seeded matched-but-not-enriched card was used to make the chip visible; clicking it ('Auto-fill paused' -> 'Auto-fill on', localStorage set to 'on') triggered auto-match of exactly the 2 queued new titles, with 'New titles matched: 2 of 2.'",
+    "S3 no TMDB key: 2 cards added, zero TMDB requests, no navigation to settings, no page errors.",
+    "S4 Add Individual Movies (openFileDialog returns E:\\Other\\The.Matrix.1999.mkv): 'Auto-matching 1 new title with TMDB…' then 'New titles matched: 1 of 1.' The card got tmdb_id, poster and metadata_updated_at.",
+    "S5 manual Fetch Posters after the auto-match: searched TEST_OldOne and TEST_OldTwo, toast 'Done! Found metadata for 2 of 2 movies.', and the button label went from 'Fetch Posters (2)' to 'Fetch Posters'."
+  ],
+  "test_report_links": ["/app/tests/auto_match_harness.py"],
+  "action_items": [
+    "Change the auto-enrich-toggle render condition to something like `(bgEnrich || (tmdbApiKey && movies.length > 0))` so the chip is visible (showing 'Auto-fill on' or 'Auto-fill paused') whenever a key is set and the library is not empty."
+  ],
+  "critical_code_review_comments": [
+    "autoMatchQueueRef is a per-mount ref. New titles queued while paused or while there is no key are lost if the user navigates away (e.g. to Settings to add a key) and comes back. Consider persisting the queue, or on resume/key-set falling back to matching poster-less cards with recent added_at.",
+    "fetchAllPosters(onlyIds) sets bgStopRef=true, but bg-enrich requests already in flight still finish and queueUpdate. That is harmless, but both runs share pendingUpdatesRef/flushUpdates.",
+    "LocalLibraryPage.jsx is about 3100 lines; it should be split (hooks for auto-match/background enrich)."
+  ],
+  "updated_files": ["/app/tests/auto_match_harness.py"],
+  "success_rate": {"backend": "N/A", "frontend": "83% (5/6 scenarios; chip visibility failed)"},
+  "seed_data_creation": "None. All data was in isolated browser contexts (sessionStorage/localStorage).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Use /app/tests/auto_match_harness.py: init_script(lib, key, auto, scan, dialog_paths, dirs) mocks electronAPI.scanForVideos/openFileDialog (scan items need an 'id', like the real electron.js returning crypto.randomUUID()). TmdbSearchMock records .searches (query strings) and .details, and returns an exact-title candidate per query. old_cards() gives old1/old2 with no poster and no tmdb_id; NEW_FILES gives new_heat/new_alien. Use page.context.browser.new_context() + add_init_script, then read_lib(p) and toasts(p). Retest: the chip should be visible with key + non-empty library (auto='off', lib=old_cards(), no tmdb_id cards) and toggling it should auto-match the queued titles."
+}
