@@ -152,6 +152,15 @@ export function isMultiPart(movie) {
   return Array.isArray(movie.parts) && movie.parts.length > 1;
 }
 
+// A TV series card: matched as TMDB TV, or its files sit in season folders / are named S01E02
+export function isSeries(movie) {
+  if (movie.media_type === 'tv') return true;
+  return partsOf(movie).some(p => {
+    const sec = partSection(p);
+    return !!sec && sec !== 'Extras';
+  });
+}
+
 // Every file path the library knows about, including merged parts
 export function allLibraryPaths(movies) {
   const set = new Set();

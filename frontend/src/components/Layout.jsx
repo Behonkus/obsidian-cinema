@@ -25,8 +25,10 @@ import {
   Clock,
   AlertTriangle,
   Star,
-  TagsIcon
+  TagsIcon,
+  Tv
 } from "lucide-react";
+import { isSeries } from "@/lib/multiPart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -152,6 +154,7 @@ function SidebarWidgets() {
         recentCount: recentIds.size,
         recentIds: recentIds,
         favCount: favList.length,
+        tvCount: movies.filter(isSeries).length,
         dirs: dirCount
       });
     } catch {}
@@ -200,6 +203,7 @@ function SidebarWidgets() {
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 mb-1.5 px-2">Quick Filters</p>
         <div className="space-y-0.5">
           {qfBtn("Favorites", <Star className="w-3.5 h-3.5" />, "favorites", stats.favCount)}
+          {qfBtn("TV Shows", <Tv className="w-3.5 h-3.5" />, "tv-shows", stats.tvCount)}
           {qfBtn("No Poster", <ImageOff className="w-3.5 h-3.5" />, "no-poster", stats.noPoster)}
           {qfBtn("No Rating", <StarOff className="w-3.5 h-3.5" />, "no-rating", stats.noRating)}
           {qfBtn("No Year", <CalendarOff className="w-3.5 h-3.5" />, "no-year", stats.noYear)}
@@ -411,6 +415,9 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       {desktopMode && !collapsed && <SidebarWidgets />}
       {desktopMode && collapsed && (
         <div className="px-3 mt-2 space-y-1">
+          <NavLink to="/?qf=tv-shows" className="flex justify-center p-2 rounded-lg text-muted-foreground hover:bg-white/5 hover:text-white" title="TV Shows" data-testid="qf-collapsed-tv-shows">
+            <Tv className="w-4 h-4" />
+          </NavLink>
           <NavLink to="/?qf=no-poster" className="flex justify-center p-2 rounded-lg text-muted-foreground hover:bg-white/5 hover:text-white" title="No Poster">
             <ImageOff className="w-4 h-4" />
           </NavLink>

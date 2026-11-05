@@ -82,7 +82,8 @@ import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
-import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, allLibraryPaths, partsOf, attachEpisodes, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
+import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, allLibraryPaths, partsOf, attachEpisodes, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
+import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory } from "@/components/DirectoryDropdowns";
 import { PartsPlayDialog, PartsList, MultiPartSuggestDialog, MergePickerDialog } from "@/components/MultiPartDialogs";
 
 const FREE_TIER_MOVIE_LIMIT = 500;
@@ -352,6 +353,15 @@ export default function LocalLibraryPage() {
   const [skipRemoveConfirm, setSkipRemoveConfirm] = useState(() => localStorage.getItem(SKIP_REMOVE_CONFIRM_KEY) === 'true');
   const [dontShowAgainChecked, setDontShowAgainChecked] = useState(false);
   const [activeDirectory, setActiveDirectory] = useState(null);
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [dirCategories, setDirCategories] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(DIR_CATEGORIES_KEY) || '{}'); } catch (e) { return {}; }
+  });
+  const setDirType = (dir, type) => {
+    const next = { ...dirCategories, [dir]: type };
+    setDirCategories(next);
+    localStorage.setItem(DIR_CATEGORIES_KEY, JSON.stringify(next));
+  };
   const [dirToRemove, setDirToRemove] = useState(null);
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []; } catch { return []; }
@@ -1358,6 +1368,10 @@ export default function LocalLibraryPage() {
     const col = collections.find(c => c.id === activeCollection);
     return col ? new Set(col.movie_ids) : null;
   }, [activeCollection, collections]);
+  const activeCategoryDirs = useMemo(
+    () => (activeCategory ? directories.filter(d => dirCategory(dirCategories, d) === activeCategory) : null),
+    [activeCategory, directories, dirCategories]
+  );
   const filteredMovies = useMemo(() => sortMovies(
     movies.filter(movie => {
       // Quick filter
@@ -1367,6 +1381,7 @@ export default function LocalLibraryPage() {
       if (quickFilter === 'no-genre' && movie.genres && movie.genres.length > 0) return false;
       if (quickFilter === 'favorites' && !favoriteSet.has(movie.id)) return false;
       if (quickFilter === 'needs-review' && !movie.needs_review) return false;
+      if (quickFilter === 'tv-shows' && !isSeries(movie)) return false;
       if (quickFilter === 'recent' && !recentIds.has(movie.id)) return false;
       // Genre filter
       if (selectedGenre) {
@@ -1376,6 +1391,8 @@ export default function LocalLibraryPage() {
       // Directory filter
       if (activeDirectory) {
         if (!movie.file_path?.startsWith(activeDirectory)) return false;
+      } else if (activeCategoryDirs) {
+        if (!activeCategoryDirs.some(d => movie.file_path?.startsWith(d))) return false;
       }
       // Collection filter
       if (activeCollectionIds && !activeCollectionIds.has(movie.id)) return false;
@@ -1388,7 +1405,7 @@ export default function LocalLibraryPage() {
              (movie.cast && movie.cast.some(c => c.name?.toLowerCase().includes(query)));
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [movies, quickFilter, selectedGenre, activeDirectory, activeCollectionIds, deferredSearch, sortBy, favoriteSet]);
+  ), [movies, quickFilter, selectedGenre, activeDirectory, activeCategoryDirs, activeCollectionIds, deferredSearch, sortBy, favoriteSet]);
 
   const openMovieDetailCb = useCallback((m) => { setSelectedMovie(m); trackActivity(m.id, 'view'); }, []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1455,7 +1472,7 @@ export default function LocalLibraryPage() {
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(100);
-  }, [activeDirectory, activeCollection, searchQuery, sortBy, quickFilter, selectedGenre]);
+  }, [activeDirectory, activeCategory, activeCollection, searchQuery, sortBy, quickFilter, selectedGenre]);
 
   // Sync quickFilter with URL search params
   useEffect(() => {
@@ -1648,7 +1665,7 @@ export default function LocalLibraryPage() {
           {movies.length > 0 && (
             <PdfExportDialog
               movies={filteredMovies}
-              listTitle={activeCollection ? 'Collection' : (activeDirectory ? activeDirectory.split(/[\\/]/).pop() : 'My Movie Library')}
+              listTitle={activeCollection ? 'Collection' : (activeDirectory ? activeDirectory.split(/[\\/]/).pop() : (activeCategory ? 'All ' + (DIR_CATEGORIES.find(c => c.id === activeCategory) || {}).label : 'My Movie Library'))}
               trigger={
                 <Button variant="outline" size="sm" className="gap-1.5" data-testid="pdf-export-trigger">
                   <FileDown className="w-3.5 h-3.5" />
@@ -1723,51 +1740,20 @@ export default function LocalLibraryPage() {
       )}
 
 
-      {/* Directory Filter */}
-      {directories.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2" data-testid="directory-filter">
-          <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
-          <Button
-            variant={activeDirectory === null ? "default" : "outline"}
-            size="sm"
-            className="h-7 text-xs rounded-full px-3"
-            onClick={() => setActiveDirectory(null)}
-            data-testid="dir-filter-all"
-          >
-            All Directories
-            <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-1">{movies.length}</Badge>
-          </Button>
-          {directories.map((dir, i) => {
-            const count = libraryCounts.dirCounts[dir] || 0;
-            const label = dir.split(/[\\/]/).pop() || dir;
-            return (
-              <Button
-                key={i}
-                variant={activeDirectory === dir ? "default" : "outline"}
-                size="sm"
-                className="h-7 text-xs rounded-full px-3 gap-1"
-                onClick={() => setActiveDirectory(activeDirectory === dir ? null : dir)}
-                title={dir}
-                data-testid={`dir-filter-${i}`}
-              >
-                {label}
-                <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{count}</Badge>
-              </Button>
-            );
-          })}
-          {directories.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:text-foreground"
-              onClick={() => setShowDirManager(true)}
-              title="Manage directories"
-              data-testid="manage-dirs-btn"
-            >
-              <Settings className="w-3.5 h-3.5" />
-            </Button>
-          )}
-        </div>
+      {/* Directory Filter: one colored dropdown per folder type */}
+      {directories.length > 0 && (
+        <DirectoryDropdowns
+          directories={directories}
+          categories={dirCategories}
+          counts={libraryCounts.dirCounts}
+          totalCount={movies.length}
+          activeDirectory={activeDirectory}
+          activeCategory={activeCategory}
+          onPickDir={(d) => { setActiveCategory(null); setActiveDirectory(activeDirectory === d ? null : d); }}
+          onPickCategory={(c) => { setActiveDirectory(null); setActiveCategory(activeCategory === c ? null : c); }}
+          onClearAll={() => { setActiveDirectory(null); setActiveCategory(null); }}
+          onManage={() => setShowDirManager(true)}
+        />
       )}
 
       {/* Collections Filter */}
@@ -2826,7 +2812,16 @@ export default function LocalLibraryPage() {
                     <p className="text-sm font-medium truncate">{label}</p>
                     <p className="text-[11px] text-muted-foreground truncate">{dir}</p>
                   </div>
-                  <span className="text-xs text-muted-foreground shrink-0">{count} movies</span>
+                  <select
+                    value={dirCategory(dirCategories, dir)}
+                    onChange={(e) => setDirType(dir, e.target.value)}
+                    className="h-7 text-xs rounded-md bg-background border border-border px-1.5 shrink-0"
+                    title="Folder type"
+                    data-testid={'dir-type-' + i}
+                  >
+                    {DIR_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                  </select>
+                  <span className="text-xs text-muted-foreground shrink-0">{count} titles</span>
                   <Button
                     variant="ghost"
                     size="sm"
