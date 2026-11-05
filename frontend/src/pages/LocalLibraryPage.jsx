@@ -39,7 +39,9 @@ import {
   AlertTriangle,
   Crown,
   FileDown,
-  Layers
+  Layers,
+  Pause,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,6 +124,7 @@ const isElectron = () => {
 // Local storage keys
 const STORAGE_KEY = 'obsidian_cinema_local_movies';
 const DIRS_KEY = 'obsidian_cinema_local_dirs';
+const AUTO_ENRICH_KEY = 'obsidian_cinema_auto_enrich';
 const TMDB_KEY = 'obsidian_cinema_tmdb_key';
 const TRASH_KEY = 'obsidian_cinema_trash';
 const GRID_SIZE_KEY = 'obsidian_cinema_grid_size';
@@ -916,6 +919,7 @@ export default function LocalLibraryPage() {
       toast.info('All matched movies already have full details');
       return;
     }
+    bgStopRef.current = true;
     fetchAbortRef.current = false;
     setFetchingCast(true);
     setCastFetchProgress(0);
@@ -1496,6 +1500,49 @@ export default function LocalLibraryPage() {
     if (qf !== quickFilter) setQuickFilter(qf);
   }, [searchParams]);
 
+  // Background auto-fill: quietly fetch full details (runtime, cast...) for matched titles, in small slow batches
+  const bgTriedRef = useRef(new Set());
+  const bgStopRef = useRef(false);
+  const [autoEnrich, setAutoEnrich] = useState(() => localStorage.getItem(AUTO_ENRICH_KEY) !== 'off');
+  const [bgEnrich, setBgEnrich] = useState(null);
+  const bgPending = useMemo(
+    () => movies.filter(m => m.tmdb_id && !m.metadata_updated_at && !bgTriedRef.current.has(m.id)).length,
+    [movies, bgEnrich]
+  );
+  const runBackgroundEnrich = async () => {
+    const batch = movies.filter(m => m.tmdb_id && !m.metadata_updated_at && !bgTriedRef.current.has(m.id)).slice(0, 200);
+    if (batch.length === 0) return;
+    batch.forEach(m => bgTriedRef.current.add(m.id));
+    bgStopRef.current = false;
+    setBgEnrich({ done: 0, total: batch.length });
+    let done = 0;
+    let lastFlush = Date.now();
+    await runPool(batch, m => fetchDetailsForMovie(m), {
+      concurrency: 2,
+      shouldStop: () => bgStopRef.current,
+      onResult: (movie, data) => {
+        done++;
+        if (data) queueUpdate(movie.id, data);
+        if (Date.now() - lastFlush > 3000) { lastFlush = Date.now(); flushUpdates(); setBgEnrich({ done, total: batch.length }); }
+      },
+    });
+    flushUpdates();
+    setBgEnrich(null);
+  };
+  useEffect(() => {
+    if (!autoEnrich || !tmdbApiKey || fetchingPosters || fetchingCast || bgEnrich || bgPending === 0) return;
+    const t = setTimeout(runBackgroundEnrich, 10000);
+    return () => clearTimeout(t);
+  }, [autoEnrich, tmdbApiKey, fetchingPosters, fetchingCast, bgEnrich, bgPending]);
+  useEffect(() => () => { bgStopRef.current = true; }, []);
+  const toggleAutoEnrich = () => {
+    const next = !autoEnrich;
+    setAutoEnrich(next);
+    localStorage.setItem(AUTO_ENRICH_KEY, next ? 'on' : 'off');
+    if (!next) bgStopRef.current = true;
+    toast.info(next ? 'Auto-fill details turned on' : 'Auto-fill details paused');
+  };
+
   if (!isElectron()) {
     return (
       <div className="p-8 text-center">
@@ -1562,6 +1609,20 @@ export default function LocalLibraryPage() {
               }
               </span>
             </Button>
+          )}
+          {(bgEnrich || (libraryCounts.needsDetails > 0 && tmdbApiKey)) && (
+            <button
+              type="button"
+              onClick={toggleAutoEnrich}
+              className={'h-8 px-2.5 rounded-md border text-[11px] flex items-center gap-1.5 transition-colors ' + (autoEnrich ? 'border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10' : 'border-border text-muted-foreground hover:bg-secondary/60')}
+              title={autoEnrich ? 'Details (runtime, cast, director) are filled in quietly in the background. Click to pause.' : 'Click to fill in missing details automatically in the background'}
+              data-testid="auto-enrich-toggle"
+            >
+              {bgEnrich ? <Loader2 className="w-3 h-3 animate-spin" /> : (autoEnrich ? <Sparkles className="w-3 h-3" /> : <Pause className="w-3 h-3" />)}
+              <span data-testid="auto-enrich-status">
+                {bgEnrich ? 'Auto-filling ' + bgEnrich.done + '/' + bgEnrich.total : (autoEnrich ? 'Auto-fill on' : 'Auto-fill paused')}
+              </span>
+            </button>
           )}
           {libraryCounts.needsDetails > 0 && (
             <Button variant="outline" size="sm" onClick={fetchAllCast} disabled={fetchingCast || fetchingPosters} data-testid="enrich-metadata-btn" title="Add cast, director, runtime, rating and more to already-matched movies">
