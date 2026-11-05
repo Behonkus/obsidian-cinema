@@ -657,6 +657,15 @@ export default function LocalLibraryPage() {
     toast.success('Match confirmed');
   };
 
+  // New files found by Update Library / Browse / Add Files are matched automatically
+  const autoMatchQueueRef = useRef(new Set());
+  const [autoMatchTick, setAutoMatchTick] = useState(0);
+  const queueAutoMatch = (list) => {
+    if (!list || list.length === 0) return;
+    list.forEach(m => autoMatchQueueRef.current.add(m.id));
+    setAutoMatchTick(t => t + 1);
+  };
+
   // Update a single movie's poster
   const updateMoviePoster = (movieId, posterPath, metadata) => {
     setMovies(prev => prev.map(m => {
@@ -971,17 +980,24 @@ export default function LocalLibraryPage() {
     fetchAllPosters();
   };
 
-  const fetchAllPosters = async () => {
+  // onlyIds: auto-match just these newly added titles (quiet, no navigation)
+  const fetchAllPosters = async (onlyIds) => {
+    const auto = onlyIds instanceof Set;
     if (!tmdbApiKey) {
+      if (auto) return;
       toast.error('Please add your TMDB API key in settings first');
       navigate("/settings");
       return;
     }
 
-    const moviesNeedingPosters = movies.filter(m => !m.poster_path);
+    const moviesNeedingPosters = movies.filter(m => !m.poster_path && (!auto || onlyIds.has(m.id)));
     if (moviesNeedingPosters.length === 0) {
-      toast.info('All movies already have posters');
+      if (!auto) toast.info('All movies already have posters');
       return;
+    }
+    if (auto) {
+      bgStopRef.current = true;
+      toast.info('Auto-matching ' + moviesNeedingPosters.length + ' new ' + (moviesNeedingPosters.length === 1 ? 'title' : 'titles') + ' with TMDB…');
     }
 
     fetchAbortRef.current = false;
@@ -1021,7 +1037,7 @@ export default function LocalLibraryPage() {
     if (fetchAbortRef.current) {
       toast.info('Fetch paused — ' + found + ' of ' + fetched + ' processed saved. Click "Fetch Posters" to continue.' + reviewMsg);
     } else {
-      toast.success('Done! Found metadata for ' + found + ' of ' + fetched + ' movies.' + reviewMsg);
+      toast.success((auto ? 'New titles matched: ' : 'Done! Found metadata for ') + found + ' of ' + fetched + (auto ? '.' : ' movies.') + reviewMsg);
     }
   };
 
@@ -1063,6 +1079,7 @@ export default function LocalLibraryPage() {
     }
     
     setMovies([...movies, ...uniqueNewMovies]);
+    queueAutoMatch(uniqueNewMovies);
     toast.success(`Added ${uniqueNewMovies.length} new movies to library`);
   };
 
@@ -1127,6 +1144,7 @@ export default function LocalLibraryPage() {
           }
         }
         setMovies(prev => [...prev, ...moviesToAdd]);
+        queueAutoMatch(moviesToAdd);
         toast.success(`Added ${moviesToAdd.length} movie${moviesToAdd.length > 1 ? 's' : ''} to library`);
       } else {
         toast.info('Selected files are already in your library');
@@ -1186,6 +1204,7 @@ export default function LocalLibraryPage() {
       }
 
       setMovies(updated);
+      queueAutoMatch(newMovies);
 
       const parts = [];
       if (newMovies.length > 0) parts.push(`${newMovies.length} added`);
@@ -1536,6 +1555,12 @@ export default function LocalLibraryPage() {
     return () => clearTimeout(t);
   }, [autoEnrich, tmdbApiKey, fetchingPosters, fetchingCast, bgEnrich, bgPending]);
   useEffect(() => () => { bgStopRef.current = true; }, []);
+  useEffect(() => {
+    if (!autoEnrich || !tmdbApiKey || fetchingPosters || fetchingCast || autoMatchQueueRef.current.size === 0) return;
+    const ids = new Set(autoMatchQueueRef.current);
+    autoMatchQueueRef.current.clear();
+    fetchAllPosters(ids);
+  }, [autoMatchTick, autoEnrich, tmdbApiKey, fetchingPosters, fetchingCast]);
   const toggleAutoEnrich = () => {
     const next = !autoEnrich;
     setAutoEnrich(next);
@@ -1616,7 +1641,7 @@ export default function LocalLibraryPage() {
               type="button"
               onClick={toggleAutoEnrich}
               className={'h-8 px-2.5 rounded-md border text-[11px] flex items-center gap-1.5 transition-colors ' + (autoEnrich ? 'border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10' : 'border-border text-muted-foreground hover:bg-secondary/60')}
-              title={autoEnrich ? 'Details (runtime, cast, director) are filled in quietly in the background. Click to pause.' : 'Click to fill in missing details automatically in the background'}
+              title={autoEnrich ? 'New files are matched automatically and missing details (runtime, cast, director) are filled in quietly in the background. Click to pause.' : 'Click to fill in missing details automatically in the background'}
               data-testid="auto-enrich-toggle"
             >
               {bgEnrich ? <Loader2 className="w-3 h-3 animate-spin" /> : (autoEnrich ? <Sparkles className="w-3 h-3" /> : <Pause className="w-3 h-3" />)}
