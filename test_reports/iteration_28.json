@@ -1,0 +1,28 @@
+{
+  "summary": "Frontend-only test of Library background auto-enrich (runtime backfill), using a simulated Electron bridge and TMDB mocked with page.route (/app/tests/auto_enrich_harness.py). Seed: movies 101-104 and tv 500 with tmdb_id but no metadata_updated_at or runtime, plus one TEST_NoMatch card without tmdb_id in the Docs folder. Passing: (1) The chip shows 'Auto-fill on' and switches to 'Auto-filling 0/5' about 10.8s after load. All 5 cards got a runtime (101-104 to 101-104, tv to 45), plus metadata_updated_at and director, saved to the simulated library file. The chip and the Enrich button then disappeared. The no-tmdb card was never requested. (2) At most 2 requests were in flight at once (1s mocked delay). (3) Paused before load: chip shows 'Auto-fill paused' and there were 0 requests in 20s. Clicking the chip shows the toast 'Auto-fill details turned on' and sets localStorage to 'on', and the first request came 10.1s later. (4) Pausing mid-run stopped further requests (only 2 in-flight requests completed in the next 8s). (5) A card returning 404 was requested exactly once in 40s. (6) No TMDB key: no chip and no requests. (7) Stats page: movies went from '≈5.9 / 0% real runtimes' to '6.8 / 100% real runtimes' and tv from '≈0.8' to '0.8 / 100%'. (8) The manual Enrich Details button during a background run took over and enriched all 5. Failing: resuming after a mid-run pause never fetches the remaining cards (bug below).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "LocalLibraryPage runBackgroundEnrich (~line 1513-1515)", "issue": "Pausing mid-run and then resuming never fetches the rest of the batch for the rest of the session. Reproduced: paused after movie/101 and movie/102 were requested, then resumed. After 16s there were still only 2 requests, the chip said 'Auto-fill on' and 'Enrich Details (3)' remained. Root cause: batch.forEach(m => bgTriedRef.current.add(m.id)) marks all 200 cards as tried before any request is made, so cards skipped by shouldStop are never picked again (bgPending becomes 0 and the effect never schedules a run). Fix: add the id to bgTriedRef inside the worker when the request is actually made, or remove unrequested ids from bgTriedRef after runPool returns with bgStopRef set.", "selector": "[data-testid='auto-enrich-toggle']", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Library toolbar", "issues": ["The progress count only updates on the 3s flush, so short runs stay at 'Auto-filling 0/5' the whole time. Consider updating done/total on every result (cheap), or every N results.", "When a card's details request has failed (for example a 404), the chip keeps showing 'Auto-fill on' for the rest of the session even though nothing more will run. This matches the spec, but users may find it confusing."]}
+    ]
+  },
+  "test_report_links": ["/app/tests/auto_enrich_harness.py"],
+  "action_items": [
+    "Fix the mid-run pause/resume bug: only mark cards as tried in bgTriedRef once they are actually requested (inside the runPool worker), or un-mark the ones not processed when the run is stopped."
+  ],
+  "critical_code_review_comments": [
+    "runBackgroundEnrich is called from a setTimeout closure created when the effect last ran. The effect depends on bgPending, not on movies, so if movies change without bgPending changing (for example edits to other fields), the stale snapshot is used for the batch and queued updates are merged onto the newer state. This is low risk because the updates are merged by id.",
+    "Starting manual Enrich Details during a background run re-requests the 2 items the background run has in flight (we saw duplicate movie/101 and movie/102 requests). Harmless, but it could be avoided by excluding in-flight ids.",
+    "The bgPending useMemo reads bgTriedRef (a ref) and uses bgEnrich only as a trigger to recompute. This works, but it is fragile."
+  ],
+  "updated_files": ["/app/tests/auto_enrich_harness.py"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "8/9 scenarios passed (89%)"},
+  "seed_data_creation": "Only simulated data: library in sessionStorage 'fakeLibFile' inside isolated browser contexts. No real data touched.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Use /app/tests/auto_enrich_harness.py: init_script(lib=None, key=True, auto=None|'on'|'off'), TmdbMock(delay, fail_ids) with .handle for page.route('**/api.themoviedb.org/**'), which records .requests and .max_inflight, and read_lib(page). Create isolated contexts with page.context.browser.new_context() and add_init_script. Background run starts about 10s after idle. Retest scenario C: pause right after the first requests, resume, wait more than 12s, and expect movie/103, movie/104 and tv/500 to be requested."
+}

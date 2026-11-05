@@ -1512,18 +1512,19 @@ export default function LocalLibraryPage() {
   const runBackgroundEnrich = async () => {
     const batch = movies.filter(m => m.tmdb_id && !m.metadata_updated_at && !bgTriedRef.current.has(m.id)).slice(0, 200);
     if (batch.length === 0) return;
-    batch.forEach(m => bgTriedRef.current.add(m.id));
     bgStopRef.current = false;
     setBgEnrich({ done: 0, total: batch.length });
     let done = 0;
     let lastFlush = Date.now();
-    await runPool(batch, m => fetchDetailsForMovie(m), {
+    let lastUi = 0;
+    await runPool(batch, m => { bgTriedRef.current.add(m.id); return fetchDetailsForMovie(m); }, {
       concurrency: 2,
       shouldStop: () => bgStopRef.current,
       onResult: (movie, data) => {
         done++;
         if (data) queueUpdate(movie.id, data);
-        if (Date.now() - lastFlush > 3000) { lastFlush = Date.now(); flushUpdates(); setBgEnrich({ done, total: batch.length }); }
+        if (Date.now() - lastFlush > 3000) { lastFlush = Date.now(); flushUpdates(); }
+        if (Date.now() - lastUi > 1000) { lastUi = Date.now(); setBgEnrich({ done, total: batch.length }); }
       },
     });
     flushUpdates();
