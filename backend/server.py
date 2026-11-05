@@ -2894,6 +2894,33 @@ async def admin_get_stats(request: Request, session_token: Optional[str] = Cooki
     }
 
 
+# ── Changelog (shown in the desktop update pop-up and What's New screen) ──
+
+CHANGELOG = [
+    {
+        "version": "1.7.0",
+        "date": "2026-06",
+        "highlights": [
+            "Whole TV shows in one card: every season plus Specials and Extras, with episode names",
+            "Double episodes like S07E12E13 are detected",
+            "TV Shows quick filter and folder types: Movies, TV Shows, Documentaries, Animations",
+            "Stats by type with real total hours for each category",
+            "New files are matched with TMDB automatically after Update Library",
+            "Missing runtimes and details are filled in quietly in the background",
+            "Multi-part titles in one card (Part 1/Part 2, CD1/CD2, documentary episodes)",
+            "Unlimited library size for huge collections",
+            "Smarter movie matching with director, runtime, age rating and IMDb links",
+            "Update pop-up on launch and this What's New screen",
+        ],
+    },
+]
+
+
+@api_router.get("/changelog")
+async def get_changelog():
+    return {"releases": CHANGELOG}
+
+
 # ── Usage Tracking ──
 
 @api_router.post("/usage/ping")

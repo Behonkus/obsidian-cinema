@@ -625,7 +625,7 @@ Recipient: ${gift.email}
 
 Hey there,
 
-Great news — release 1.6.9 brings whole TV shows in one card (every season plus extras, with episode names), a TV Shows filter, folder dropdowns for Movies, TV Shows, Documentaries and Animations, stats with real total hours for each, new files matched automatically, multi-part titles in one card (documentary episodes, Part 1/Part 2, CD1/CD2), unlimited library size for huge collections, plus a smarter movie-matching engine with director, runtime, age rating and IMDb links, uncertain matches flagged for you to check, much faster fetching, and 10 Professional color themes. The free tier also includes up to 500 movies. But...
+Great news — release 1.7.0 brings whole TV shows in one card (every season plus extras, with episode names), a TV Shows filter, folder dropdowns for Movies, TV Shows, Documentaries and Animations, stats with real total hours for each, new files matched automatically, multi-part titles in one card (documentary episodes, Part 1/Part 2, CD1/CD2), unlimited library size for huge collections, plus a smarter movie-matching engine with director, runtime, age rating and IMDb links, uncertain matches flagged for you to check, much faster fetching, and 10 Professional color themes. The free tier also includes up to 500 movies. But...
 
 You've just been gifted a complimentary Obsidian Cinema PRO license! Consider this your all-access pass to the full cinematic experience.
 
@@ -634,7 +634,7 @@ ${gift.key}
 
 Here's how to activate it:
 
-If you haven't grabbed the latest Obsidian Cinema yet, download v1.6.9 here:
+If you haven't grabbed the latest Obsidian Cinema yet, download v1.7.0 here:
 https://www.obsidiancinema.com
 
 1. Download and Install the newest version of Obsidian Cinema

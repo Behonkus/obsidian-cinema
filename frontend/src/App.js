@@ -30,6 +30,8 @@ import StatsPage from "@/pages/StatsPage";
 import AdminPage from "@/pages/AdminPage";
 import LandingPage from "@/pages/LandingPage";
 import { RefreshCw } from "lucide-react";
+import WhatsNewDialog from "@/components/WhatsNewDialog";
+import UpdatePrompt from "@/components/UpdatePrompt";
 
 // Check if running in Electron
 const isElectron = () => {
@@ -104,7 +106,13 @@ function DesktopProtectedRoute({ children }) {
   }
 
   // Free tier and Pro users can access the app
-  return children;
+  return (
+    <>
+      {children}
+      <WhatsNewDialog />
+      <UpdatePrompt />
+    </>
+  );
 }
 
 // Smart protected route that switches between web auth and desktop license

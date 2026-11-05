@@ -621,7 +621,7 @@ export default function SettingsPage() {
       });
       
       // Listen for update status
-      window.electronAPI.onUpdateStatus(({ status, data }) => {
+      const unsubscribeUpdates = window.electronAPI.onUpdateStatus(({ status, data }) => {
         setUpdateStatus({ status, data });
         
         if (status === 'available') {
@@ -649,7 +649,7 @@ export default function SettingsPage() {
       });
       
       return () => {
-        window.electronAPI.removeUpdateListener();
+        if (typeof unsubscribeUpdates === 'function') unsubscribeUpdates();
       };
     }
   }, []);

@@ -245,6 +245,7 @@ autoUpdater.logger = {
 let updateAvailable = null;
 let downloadProgress = 0;
 let isDownloading = false;
+let isDownloaded = false;
 
 // Auto-updater event handlers
 autoUpdater.on('checking-for-update', () => {
@@ -308,6 +309,7 @@ autoUpdater.on('download-progress', (progressObj) => {
 autoUpdater.on('update-downloaded', (info) => {
   console.log('Update downloaded');
   isDownloading = false;
+  isDownloaded = true;
   sendUpdateStatus('downloaded', {
     version: info.version,
     releaseNotes: info.releaseNotes
@@ -392,6 +394,7 @@ ipcMain.handle('update:getStatus', () => {
     updateAvailable,
     downloadProgress,
     isDownloading,
+    isDownloaded,
     currentVersion: app.getVersion()
   };
 });
