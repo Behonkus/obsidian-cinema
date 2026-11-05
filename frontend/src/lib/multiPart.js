@@ -5,8 +5,10 @@ const TMDB_STILL = 'https://image.tmdb.org/t/p/w300';
 
 // Attach TMDB episode info to each part of a series card (S01E03 -> season 1 ep 3, Part 3 -> season 1 ep 3)
 export async function attachEpisodes(parts, tvId, apiKey) {
-  const mapped = parts.map((p, i) => {
-    const info = partInfo(p.file_name);
+  const mapped = parts.filter(p => !partFolder(p.file_path).extra).map((p, i) => {
+    const info = partNum(p);
+    const folderSeason = partFolder(p.file_path).season;
+    if (folderSeason != null && info && info.num < 1000) return { part: p, season: folderSeason, episode: info.num, lastEpisode: info.num };
     if (info && info.num >= 1000) return { part: p, season: Math.floor(info.num / 1000), episode: info.num % 1000, lastEpisode: info.endNum % 1000 };
     const n = info ? info.num : i + 1;
     return { part: p, season: 1, episode: n, lastEpisode: n };
@@ -18,11 +20,13 @@ export async function attachEpisodes(parts, tvId, apiKey) {
     bySeason[s] = (data && data.episodes) || [];
   }
   let found = 0;
-  const out = mapped.map(({ part, season, episode, lastEpisode }) => {
+  const matchedPaths = new Set();
+  const episodeParts = mapped.map(({ part, season, episode, lastEpisode }) => {
     const eps = (bySeason[season] || []).filter(e => e.episode_number >= episode && e.episode_number <= lastEpisode)
       .sort((a, b) => a.episode_number - b.episode_number);
     const clean = { file_path: part.file_path, file_name: part.file_name };
     if (eps.length === 0) return clean;
+    matchedPaths.add(part.file_path);
     found++;
     const first = eps[0];
     const runtime = eps.reduce((t, e) => t + (e.runtime || 0), 0);
@@ -40,6 +44,9 @@ export async function attachEpisodes(parts, tvId, apiKey) {
       },
     };
   });
+  const byPath = {};
+  episodeParts.forEach(p => { byPath[p.file_path] = p; });
+  const out = parts.map(p => byPath[p.file_path] || { file_path: p.file_path, file_name: p.file_name });
   return { parts: out, found };
 }
 
@@ -79,6 +86,57 @@ function dirOf(p) {
   return String(p || '').replace(/[\\/][^\\/]*$/, '');
 }
 
+function baseName(p) {
+  return String(p || '').split(/[\\/]/).pop();
+}
+
+const SEASON_DIR = /^(?:season|series|staffel|saison|temporada|s)[\s._-]*(\d{1,2})(?:\b.*)?$/i;
+const SPECIALS_DIR = /^specials?$/i;
+const EXTRAS_DIR = /^(?:extras?|bonus(?:[\s._-]*(?:features|material|content))?|featurettes?|special[\s._-]*features|behind[\s._-]*the[\s._-]*scenes|deleted[\s._-]*scenes|interviews?|trailers?|making[\s._-]*of)$/i;
+
+// Folder role of a file: inside a Season N / Specials folder, or an Extras folder of a show
+export function partFolder(filePath) {
+  const dir = dirOf(filePath);
+  const name = baseName(dir).trim();
+  const showDir = dirOf(dir);
+  if (!showDir || showDir === dir) return {};
+  const sm = name.match(SEASON_DIR);
+  if (sm) return { showDir, season: parseInt(sm[1], 10) };
+  if (SPECIALS_DIR.test(name)) return { showDir, season: 0 };
+  if (EXTRAS_DIR.test(name)) return { showDir, extra: true };
+  return {};
+}
+
+// Episode number of a part: from the name (S01E03 / Part 3 / E03) or, inside a season folder, a leading "03 - Title"
+function partNum(part) {
+  const info = partInfo(part.file_name);
+  if (info) return info;
+  if (partFolder(part.file_path).season == null) return null;
+  const m = String(part.file_name || '').match(/^\s*(?:e|ep|episode)?[\s._-]*(\d{1,3})(?=[\s._\-)\]]|$)/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return { base: '', num: n, endNum: n };
+}
+
+// Section a part belongs to in the parts list: 'Season 2', 'Specials', 'Extras' or null
+export function partSection(part) {
+  const f = partFolder(part.file_path);
+  if (f.extra) return 'Extras';
+  const info = partNum(part);
+  const season = info && info.num >= 1000 ? Math.floor(info.num / 1000) : f.season;
+  if (season == null) return null;
+  return season === 0 ? 'Specials' : 'Season ' + season;
+}
+
+function partSortKey(part) {
+  const f = partFolder(part.file_path);
+  if (f.extra) return 1e7;
+  const info = partNum(part);
+  if (info && info.num >= 1000) return info.num;
+  if (f.season != null) return f.season * 1000 + (info ? info.num : 999);
+  return info ? info.num : 999;
+}
+
 function normKey(s) {
   return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -100,7 +158,12 @@ export function allLibraryPaths(movies) {
 }
 
 export function partLabel(part, index) {
-  const info = partInfo(part.file_name);
+  const f = partFolder(part.file_path);
+  if (f.extra) return 'Extra';
+  const info = partNum(part);
+  if (info && info.num < 1000 && f.season != null) {
+    return 'S' + String(f.season).padStart(2, '0') + 'E' + String(info.num).padStart(2, '0');
+  }
   if (info && info.num >= 1000) {
     const s = Math.floor(info.num / 1000);
     const e = info.num % 1000;
@@ -114,33 +177,57 @@ export function partLabel(part, index) {
 export function findPartGroups(movies, dismissed) {
   const dismissedSet = new Set(dismissed || []);
   const groups = {};
+  // 1) Whole shows: cards inside Season N / Specials / Extras folders of the same show folder
+  const shows = {};
   movies.forEach(m => {
-    if (isMultiPart(m)) return;
+    const f = partFolder(partsOf(m)[0].file_path);
+    if (!f.showDir) return;
+    const key = 'show|' + f.showDir.toLowerCase();
+    if (!shows[key]) shows[key] = { key, showDir: f.showDir, cards: [], hasSeason: false };
+    shows[key].cards.push(m);
+    if (f.season != null) shows[key].hasSeason = true;
+  });
+  const inShow = new Set();
+  Object.values(shows).forEach(sh => {
+    const loose = movies.filter(m => !isMultiPart(m) && dirOf(m.file_path).toLowerCase() === sh.showDir.toLowerCase());
+    // A single movie in the show folder with an Extras folder also counts (movie + extras)
+    if (!sh.hasSeason && loose.length !== 1) return;
+    const cards = loose.length === 1 && !sh.hasSeason ? [...loose, ...sh.cards] : sh.cards;
+    if (cards.length < 2 || dismissedSet.has(sh.key)) return;
+    cards.forEach(c => inShow.add(c.id));
+    const parsed = parseFilename(baseName(sh.showDir));
+    const sorted = cards.slice().sort((a, b) => partSortKey(partsOf(a)[0]) - partSortKey(partsOf(b)[0]));
+    groups[sh.key] = { key: sh.key, title: parsed.title || baseName(sh.showDir), year: parsed.year || null, show: true, members: sorted };
+  });
+  // 2) Numbered parts in the same folder with the same base name
+  const loose = {};
+  movies.forEach(m => {
+    if (isMultiPart(m) || inShow.has(m.id)) return;
     const info = partInfo(m.file_name);
     if (!info) return;
     const key = dirOf(m.file_path).toLowerCase() + '|' + normKey(info.base);
     if (dismissedSet.has(key)) return;
-    if (!groups[key]) groups[key] = { key, title: info.base, members: [] };
-    groups[key].members.push({ movie: m, num: info.num });
+    if (!loose[key]) loose[key] = { key, title: info.base, members: [] };
+    loose[key].members.push({ movie: m, num: info.num });
   });
-  return Object.values(groups)
+  const partGroups = Object.values(loose)
     .filter(g => g.members.length > 1 && new Set(g.members.map(x => x.num)).size > 1)
     .filter(g => new Set(g.members.map(x => x.movie.year).filter(Boolean)).size <= 1)
-    .map(g => ({ ...g, members: g.members.sort((a, b) => a.num - b.num).map(x => x.movie) }))
-    .sort((a, b) => a.title.localeCompare(b.title));
+    .map(g => ({ ...g, members: g.members.sort((a, b) => a.num - b.num).map(x => x.movie) }));
+  return [...Object.values(groups), ...partGroups].sort((a, b) => a.title.localeCompare(b.title));
 }
 
 function sortParts(parts) {
   return parts.slice().sort((a, b) => {
-    const ia = partInfo(a.file_name);
-    const ib = partInfo(b.file_name);
-    if (ia && ib && ia.num !== ib.num) return ia.num - ib.num;
+    const ka = partSortKey(a);
+    const kb = partSortKey(b);
+    if (ka !== kb) return ka - kb;
     return String(a.file_name).localeCompare(String(b.file_name), undefined, { numeric: true });
   });
 }
 
 // Merge cards into one; keeps the card with the best metadata as the main one
-export function mergeIntoOne(cards, title) {
+export function mergeIntoOne(cards, title, year) {
   const score = m => (m.tmdb_id ? 4 : 0) + (m.poster_path ? 2 : 0) + (m.overview ? 1 : 0);
   const primary = cards.slice().sort((a, b) => score(b) - score(a))[0];
   const seen = new Set();
@@ -153,6 +240,7 @@ export function mergeIntoOne(cards, title) {
   return {
     ...primary,
     title: title || primary.title,
+    year: primary.year || year || null,
     parts,
     file_path: parts[0].file_path,
     file_name: parts[0].file_name,

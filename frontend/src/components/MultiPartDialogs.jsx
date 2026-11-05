@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
-import { Layers, Play, Scissors, Search, X, Tv } from "lucide-react";
+import { Layers, Play, Scissors, Search, X, Tv, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { partsOf, partLabel, isMultiPart } from "@/lib/multiPart";
+import { partsOf, partLabel, partSection, isMultiPart } from "@/lib/multiPart";
 
 // Pick which part to play
 export function PartsPlayDialog({ movie, onClose, onPlayPart }) {
@@ -22,24 +22,69 @@ export function PartsPlayDialog({ movie, onClose, onPlayPart }) {
 }
 
 // List of parts with play buttons (used in the play picker and the movie details)
+function PartRow({ part, index, onPlayPart }) {
+  const p = part;
+  return (
+    <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/40 hover:bg-secondary/70 transition-colors" title={p.episode?.overview || p.file_path}>
+      {p.episode?.still && <img src={p.episode.still} alt="" className="w-16 h-9 rounded object-cover shrink-0" loading="lazy" />}
+      <span className="text-xs font-semibold text-primary min-w-[3.5rem] whitespace-nowrap shrink-0">{partLabel(p, index)}</span>
+      <div className="flex-1 min-w-0">
+        {p.episode?.name && <p className="text-xs font-medium truncate" data-testid={`part-episode-name-${index}`}>{p.episode.name}{p.episode.runtime ? <span className="text-muted-foreground font-normal"> · {p.episode.runtime} min</span> : null}</p>}
+        <p className={'truncate text-muted-foreground ' + (p.episode?.name ? 'text-[10px]' : 'text-xs')} title={p.file_path}>{p.file_name}</p>
+      </div>
+      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => onPlayPart(p)} data-testid={`play-part-${index}`}>
+        <Play className="w-3.5 h-3.5" />
+      </Button>
+    </div>
+  );
+}
+
+// Group parts into Season N / Specials / Extras sections (in part order)
+function useSections(parts) {
+  return useMemo(() => {
+    const list = [];
+    const byName = {};
+    parts.forEach((p, i) => {
+      const name = partSection(p) || 'Parts';
+      if (!byName[name]) { byName[name] = { name, items: [] }; list.push(byName[name]); }
+      byName[name].items.push({ part: p, index: i });
+    });
+    return list;
+  }, [parts]);
+}
+
 export function PartsList({ movie, onPlayPart, onSplit, onSeriesInfo, seriesLoading }) {
   const parts = partsOf(movie);
+  const sections = useSections(parts);
+  const [open, setOpen] = useState(() => ({ [sections[0]?.name]: true }));
+  const grouped = sections.length > 1;
   return (
     <div className="space-y-1.5" data-testid="parts-list">
-      <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
-        {parts.map((p, i) => (
-          <div key={p.file_path} className="flex items-center gap-2 p-2 rounded-md bg-secondary/40 hover:bg-secondary/70 transition-colors" title={p.episode?.overview || p.file_path}>
-            {p.episode?.still && <img src={p.episode.still} alt="" className="w-16 h-9 rounded object-cover shrink-0" loading="lazy" />}
-            <span className="text-xs font-semibold text-primary min-w-[3.5rem] whitespace-nowrap shrink-0">{partLabel(p, i)}</span>
-            <div className="flex-1 min-w-0">
-              {p.episode?.name && <p className="text-xs font-medium truncate" data-testid={`part-episode-name-${i}`}>{p.episode.name}{p.episode.runtime ? <span className="text-muted-foreground font-normal"> · {p.episode.runtime} min</span> : null}</p>}
-              <p className={'truncate text-muted-foreground ' + (p.episode?.name ? 'text-[10px]' : 'text-xs')} title={p.file_path}>{p.file_name}</p>
+      <div className="max-h-80 overflow-y-auto space-y-1 pr-1">
+        {!grouped && parts.map((p, i) => <PartRow key={p.file_path} part={p} index={i} onPlayPart={onPlayPart} />)}
+        {grouped && sections.map(sec => {
+          const slug = sec.name.toLowerCase().replace(/\s+/g, '-');
+          const isOpen = !!open[sec.name];
+          return (
+            <div key={sec.name} data-testid={`parts-section-${slug}`}>
+              <button
+                type="button"
+                className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-semibold hover:bg-secondary/60 transition-colors"
+                onClick={() => setOpen(o => ({ ...o, [sec.name]: !o[sec.name] }))}
+                data-testid={`parts-section-toggle-${slug}`}
+              >
+                {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-primary" /> : <ChevronRight className="w-3.5 h-3.5 text-primary" />}
+                <span className="flex-1 text-left">{sec.name}</span>
+                <span className="text-[10px] font-normal text-muted-foreground">{sec.items.length}</span>
+              </button>
+              {isOpen && (
+                <div className="space-y-1 pl-2 pb-1">
+                  {sec.items.map(it => <PartRow key={it.part.file_path} part={it.part} index={it.index} onPlayPart={onPlayPart} />)}
+                </div>
+              )}
             </div>
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => onPlayPart(p)} data-testid={`play-part-${i}`}>
-              <Play className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        ))}
+          );
+        })}
       </div>
       {onSeriesInfo && (
         <Button size="sm" variant="outline" className="h-7 text-xs w-full" onClick={onSeriesInfo} disabled={seriesLoading} data-testid="series-info-btn">
@@ -61,12 +106,15 @@ function SuggestionGroup({ group, checked, onToggle, onDismiss }) {
       <div className="flex items-center gap-2">
         <Checkbox checked={checked} onCheckedChange={onToggle} data-testid="multipart-group-checkbox" />
         <span className="text-sm font-medium flex-1 truncate">{group.title}</span>
-        <span className="text-[10px] text-muted-foreground">{group.members.length} parts</span>
+        <span className="text-[10px] text-muted-foreground">{group.show ? group.members.reduce((t, m) => t + partsOf(m).length, 0) + ' files · whole show' : group.members.length + ' parts'}</span>
         <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={onDismiss} data-testid="multipart-dismiss-btn">Not multi-part</Button>
       </div>
       <div className="mt-1.5 pl-6 space-y-0.5">
         {group.members.map(m => (
-          <p key={m.id} className="text-[11px] text-muted-foreground truncate" title={m.file_path}>{m.file_name}</p>
+          <p key={m.id} className="text-[11px] text-muted-foreground truncate" title={m.file_path}>
+            {group.show && partSection(partsOf(m)[0]) ? <span className="text-primary/80">{partSection(partsOf(m)[0])}: </span> : null}
+            {isMultiPart(m) ? m.title + ' (' + m.parts.length + ' parts)' : m.file_name}
+          </p>
         ))}
       </div>
     </div>
@@ -83,7 +131,7 @@ export function MultiPartSuggestDialog({ open, onOpenChange, groups, onMerge, on
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Multi-Part Titles Found</DialogTitle>
           <DialogDescription>
-            These files look like parts of the same title (same folder, numbered Part / CD / Episode). Merged parts share one card and count as one movie. No files are moved or changed, and you can split them again anytime.
+            These files look like parts of the same title (numbered Part / CD / Episode in one folder, or a show's Season and Extras folders). Merged parts share one card and count as one movie. No files are moved or changed, and you can split them again anytime.
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1">

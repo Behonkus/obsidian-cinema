@@ -1399,7 +1399,7 @@ export default function LocalLibraryPage() {
     const byId = {};
     const removeIds = new Set();
     groups.forEach(g => {
-      const merged = mergeIntoOne(g.members, g.title);
+      const merged = mergeIntoOne(g.members, g.title, g.year);
       g.members.forEach(m => removeIds.add(m.id));
       byId[merged.id] = merged;
     });
