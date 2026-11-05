@@ -632,7 +632,7 @@ export default function LocalLibraryPage() {
       const data = { ...d, parts: r.parts };
       setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, ...data } : m));
       setSelectedMovie(prev => prev && prev.id === movie.id ? { ...prev, ...data } : prev);
-      toast.success('Matched series "' + (d.tmdb_title || movie.title) + '" — ' + r.found + ' of ' + movie.parts.length + ' episodes found');
+      toast.success('Matched series "' + (d.tmdb_title || movie.title) + '" — ' + r.found + ' of ' + movie.parts.length + ' parts matched to episodes');
     } finally {
       setSeriesLoading(false);
     }

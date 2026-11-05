@@ -7,8 +7,9 @@ const TMDB_STILL = 'https://image.tmdb.org/t/p/w300';
 export async function attachEpisodes(parts, tvId, apiKey) {
   const mapped = parts.map((p, i) => {
     const info = partInfo(p.file_name);
-    if (info && info.num >= 1000) return { part: p, season: Math.floor(info.num / 1000), episode: info.num % 1000 };
-    return { part: p, season: 1, episode: info ? info.num : i + 1 };
+    if (info && info.num >= 1000) return { part: p, season: Math.floor(info.num / 1000), episode: info.num % 1000, lastEpisode: info.endNum % 1000 };
+    const n = info ? info.num : i + 1;
+    return { part: p, season: 1, episode: n, lastEpisode: n };
   });
   const seasons = [...new Set(mapped.map(m => m.season))];
   const bySeason = {};
@@ -17,21 +18,25 @@ export async function attachEpisodes(parts, tvId, apiKey) {
     bySeason[s] = (data && data.episodes) || [];
   }
   let found = 0;
-  const out = mapped.map(({ part, season, episode }) => {
-    const ep = (bySeason[season] || []).find(e => e.episode_number === episode);
+  const out = mapped.map(({ part, season, episode, lastEpisode }) => {
+    const eps = (bySeason[season] || []).filter(e => e.episode_number >= episode && e.episode_number <= lastEpisode)
+      .sort((a, b) => a.episode_number - b.episode_number);
     const clean = { file_path: part.file_path, file_name: part.file_name };
-    if (!ep) return clean;
+    if (eps.length === 0) return clean;
     found++;
+    const first = eps[0];
+    const runtime = eps.reduce((t, e) => t + (e.runtime || 0), 0);
     return {
       ...clean,
       episode: {
         season,
         number: episode,
-        name: ep.name || null,
-        overview: ep.overview || null,
-        still: ep.still_path ? TMDB_STILL + ep.still_path : null,
-        runtime: ep.runtime || null,
-        air_date: ep.air_date || null,
+        last_number: eps.length > 1 ? eps[eps.length - 1].episode_number : null,
+        name: eps.map(e => e.name).filter(Boolean).join(' / ') || null,
+        overview: eps.map(e => e.overview).filter(Boolean).join('\n\n') || null,
+        still: first.still_path ? TMDB_STILL + first.still_path : null,
+        runtime: runtime || null,
+        air_date: first.air_date || null,
       },
     };
   });
@@ -41,7 +46,7 @@ export async function attachEpisodes(parts, tvId, apiKey) {
 export const MULTIPART_DISMISSED_KEY = 'obsidian_cinema_multipart_dismissed';
 
 const PART_PATTERNS = [
-  /\bS(\d{1,2})[\s._-]?E(\d{1,3})\b/i,
+  /\bS(\d{1,2})[\s._-]?E(\d{1,3})((?:(?:[-_.]?E|-)\d{1,3})*)\b/i,
   /(?:^|[\s._\-([])(?:part|pt|cd|disc|disk|dvd|episode|ep)[\s._-]*(\d{1,2})(?=$|[\s._\-)\]]|of\b)/i,
   /(?:^|[\s._\-([])(\d{1,2})[\s._-]*of[\s._-]*\d{1,2}(?=$|[\s._\-)\]])/i,
   /(?:^|[\s._-])E(\d{1,3})(?=$|[\s._-])/,
@@ -58,7 +63,14 @@ export function partInfo(fileName) {
     if (!before) continue;
     const base = parseFilename(before).title;
     if (!base) continue;
-    return { base, num };
+    // Double/multi episodes: S07E12E13, S07E12-E13, S07E12-13
+    let endNum = num;
+    if (i === 0 && m[3]) {
+      const extra = (m[3].match(/\d{1,3}/g) || []).map(n => parseInt(n, 10));
+      const last = extra[extra.length - 1];
+      if (last > parseInt(m[2], 10)) endNum = parseInt(m[1], 10) * 1000 + last;
+    }
+    return { base, num, endNum };
   }
   return null;
 }
@@ -92,7 +104,8 @@ export function partLabel(part, index) {
   if (info && info.num >= 1000) {
     const s = Math.floor(info.num / 1000);
     const e = info.num % 1000;
-    return 'S' + String(s).padStart(2, '0') + 'E' + String(e).padStart(2, '0');
+    const label = 'S' + String(s).padStart(2, '0') + 'E' + String(e).padStart(2, '0');
+    return info.endNum > info.num ? label + '-E' + String(info.endNum % 1000).padStart(2, '0') : label;
   }
   return 'Part ' + (info ? info.num : index + 1);
 }
