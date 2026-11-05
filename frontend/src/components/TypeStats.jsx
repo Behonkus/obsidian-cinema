@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
@@ -14,15 +15,23 @@ function cardMinutes(m) {
   if (!isMultiPart(m)) {
     return { minutes: fallback, known: m.runtime ? fallback : 0, episodes: isTv ? 1 : 0 };
   }
+  const episodic = isTv || parts.some(p => p.episode);
+  // A movie split into CD1/CD2 with no runtime is one movie, not one per part
+  if (!episodic && !m.runtime) return { minutes: EST_MOVIE_MIN, known: 0, episodes: 0 };
   let minutes = 0, known = 0, episodes = 0;
   parts.forEach(p => {
     const ep = p.episode;
     if (ep) episodes += ep.last_number ? ep.last_number - ep.number + 1 : 1;
-    const min = (ep && ep.runtime) || m.runtime || (isTv || ep ? EST_EPISODE_MIN : EST_MOVIE_MIN);
+    else if (isTv) episodes += 1;
+    const min = (ep && ep.runtime) || (episodic ? (m.runtime || EST_EPISODE_MIN) : m.runtime / parts.length);
     minutes += min;
     if ((ep && ep.runtime) || m.runtime) known += min;
   });
   return { minutes, known, episodes };
+}
+
+export function totalLibraryMinutes(movies) {
+  return movies.reduce((t, m) => t + cardMinutes(m).minutes, 0);
 }
 
 export function computeTypeStats(movies, directories) {
@@ -31,7 +40,7 @@ export function computeTypeStats(movies, directories) {
   const out = {};
   DIR_CATEGORIES.forEach(c => { out[c.id] = { titles: 0, files: 0, episodes: 0, minutes: 0, known: 0 }; });
   movies.forEach(m => {
-    const dir = directories.find(d => inDir(m.file_path, d));
+    const dir = directories.filter(d => inDir(m.file_path, d)).sort((a, b) => b.length - a.length)[0];
     const cat = dir ? dirCategory(categories, dir) : 'movies';
     const t = out[cat] || out.movies;
     const r = cardMinutes(m);
@@ -57,7 +66,7 @@ const COLORS = {
 };
 
 export function TypeStats({ movies, directories }) {
-  const stats = computeTypeStats(movies, directories);
+  const stats = useMemo(() => computeTypeStats(movies, directories), [movies, directories]);
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" data-testid="type-stats">
       {DIR_CATEGORIES.map((cat, i) => {
@@ -90,7 +99,7 @@ export function TypeStats({ movies, directories }) {
                 </div>
                 <p className="text-[10px] text-muted-foreground/80" data-testid={`type-stat-${cat.id}-sub`}>
                   {s.files.toLocaleString()} {s.files === 1 ? 'file' : 'files'}
-                  {s.episodes > 0 ? ' · ' + s.episodes.toLocaleString() + ' episodes' : ''}
+                  {s.episodes > 0 ? ' · ' + s.episodes.toLocaleString() + (s.episodes === 1 ? ' episode' : ' episodes') : ''}
                   {s.minutes > 0 ? ' · ' + knownPct + '% real runtimes' : ''}
                 </p>
               </CardContent>

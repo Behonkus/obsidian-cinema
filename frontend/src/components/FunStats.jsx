@@ -179,9 +179,9 @@ export function RarestDecade({ decadeData }) {
   );
 }
 
-export function MarathonMode({ total }) {
+export function MarathonMode({ total, minutes }) {
   if (!total || total <= 0) return null;
-  var hours = Math.round(total * 88 / 60);
+  var hours = Math.round((minutes || total * 88) / 60);
   var days = (hours / 24).toFixed(1);
   var weeks = (hours / 168).toFixed(1);
   var months = (hours / 730).toFixed(1);
@@ -193,7 +193,7 @@ export function MarathonMode({ total }) {
           <Timer className="w-4 h-4 text-emerald-400" />
           <span className="text-sm font-medium">Marathon Mode</span>
         </div>
-        <p className="text-xs text-muted-foreground hidden md:block">If you watched every movie back-to-back (~88 min avg):</p>
+        <p className="text-xs text-muted-foreground hidden md:block">{minutes ? "If you watched everything back-to-back (real runtimes, estimates where unknown):" : "If you watched every movie back-to-back (~88 min avg):"}</p>
         <div className="flex gap-6 text-sm">
           <div className="text-center">
             <p className="text-lg font-bold text-foreground">{Number(hours).toLocaleString()}</p>
@@ -212,7 +212,7 @@ export function MarathonMode({ total }) {
             <p className="text-[10px] text-muted-foreground">months</p>
           </div>
         </div>
-        <p className="text-[10px] text-muted-foreground/60 ml-auto">{total.toLocaleString()} movies at ~88 min avg</p>
+        <p className="text-[10px] text-muted-foreground/60 ml-auto">{minutes ? total.toLocaleString() + " titles · real runtimes" : total.toLocaleString() + " movies at ~88 min avg"}</p>
       </CardContent>
     </Card>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { TypeStats } from "@/components/TypeStats";
+import { TypeStats, totalLibraryMinutes } from "@/components/TypeStats";
 import { motion } from "framer-motion";
 import {
   Film,
@@ -734,6 +734,7 @@ export default function StatsPage() {
   var stats = useMemo(function() {
     return computeStats(movies, directories, trashedMovies);
   }, [movies, directories, trashedMovies]);
+  var totalMinutes = useMemo(function() { return totalLibraryMinutes(movies); }, [movies]);
 
   if (movies.length === 0) {
     return (
@@ -823,7 +824,7 @@ export default function StatsPage() {
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="flex flex-col gap-3">
           <GrowthChart data={stats.growthData} />
-          <div className="flex-1 flex"><div className="w-full"><MarathonMode total={stats.total} /></div></div>
+          <div className="flex-1 flex"><div className="w-full"><MarathonMode total={stats.total} minutes={totalMinutes} /></div></div>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           <FormatChart data={stats.formatData} />

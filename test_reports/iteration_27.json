@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only test of the new TypeStats section on the Stats page (#/stats), run with the simulated Electron harness and a seed of 10 cards whose results I worked out by hand. Every requested check passed. ORDER and COLORS: type-stat-movies (sky-400), type-stat-tv (emerald-400), type-stat-docs (amber-400) and type-stat-anim (fuchsia-400) appear in that order. The 4 cards match the hand-computed values exactly. Movies: titles 4, hours ≈5.9, sub '4 files · 1 episodes · 62% real runtimes'. It contains a movie with runtime 120, a movie with no runtime (88 min estimate), a card outside any folder with runtime 100, and a tv card in D:\\TVShows, which is set to movies (45 min estimate, does not leak into TV). TV: 3 titles, ≈5.9, '8 files · 5 episodes · 87% real runtimes'. It contains a 3-part card with episode runtimes 50, 50 and a double episode (number 3, last_number 4, runtime 90) = 190 min with 4 episodes, a 4-part card with card runtime 30 = 120 min known, and a single tv card with no runtime = 45 min estimate. Docs: 1 title, '25.0' with no ≈, 'hours · 1.0 days', '1 file · 100% real runtimes'. Anim: 2 titles, '≈103' (rounded at 100 h and above), 'hours · 4.3 days', '3 files · 97% real runtimes'. Regression: the top StatCards show 10 Total Movies and 5 Directories once CountUp finishes. Marathon Mode and the charts render, with no page errors. On the Library page, the category dropdown counts are Movies 3 (Movies 2, TVShows 1), TV 3, Docs 1 and Anime 2. Every 'All <cat>' item and the TVShows folder item filter correctly. qf-tv-shows shows the 4 tv cards. The inDir import into LocalLibraryPage works.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Stats TypeStats", "issues": [
+        "Singular grammar: the sub line shows '1 episodes' when there is 1 episode. Files are handled correctly ('1 file').",
+        "A multi-part TV card with no TMDB episode objects (e.g. 4 parts, card runtime 30) adds 0 to the episode count, even though its minutes are counted as 4 x 30. Consider counting 1 episode per part when ep is missing and the card is TV.",
+        "Inconsistency (LOW): a card outside every registered folder counts as Movies in TypeStats (4 titles), but the Library 'Movies' dropdown says 3 because it only counts registered folders. This follows the spec, but users may notice the mismatch.",
+        "Marathon Mode still assumes ~88 min per movie for all items (15 h here), while TypeStats uses real runtimes (~140 h total here). The two figures contradict each other on the same page. Consider reusing cardMinutes."
+      ]}
+    ]
+  },
+  "test_report_links": ["/app/tests/type_stats_harness.py"],
+  "action_items": [
+    "Optional: pluralize 'episode' when the count is 1 in type-stat-{id}-sub.",
+    "Optional: count parts as episodes for TV multi-part cards that have no episode metadata.",
+    "Optional: align Marathon Mode hours with the TypeStats runtime math."
+  ],
+  "critical_code_review_comments": [
+    "computeTypeStats reads localStorage on every render and is not memoized. This is fine at the current scale, but wrap it in useMemo([movies, directories]) for libraries with many thousands of cards.",
+    "When folders are nested (e.g. D:\\TV and D:\\TV\\Kids), directories.find picks the first match in list order, not the most specific folder, so the category depends on the order folders were added. Prefer the longest matching dir.",
+    "cardMinutes uses the fallback `isTv || ep ? 45 : 88`, so a non-TV multi-part movie (CD1/CD2) is estimated at 88 min per part. That gives 176 min for a split movie, which is probably an overestimate. Consider treating the whole card as one 88 min movie."
+  ],
+  "updated_files": ["/app/tests/type_stats_harness.py"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% (all requested checks pass)"},
+  "seed_data_creation": "Browser-only seed (sessionStorage fakeLibFile plus localStorage dirs and categories) in an isolated Playwright context. No app or DB data was touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Use /app/tests/type_stats_harness.py: init_script() and EXPECTED (hand-computed values per category). Load it with sys.path.insert(0,'/app/tests') and page.context.add_init_script(h.init_script()), then go to #/stats. Wait about 4 s for the CountUp top cards to finish (they briefly show 9 and 4 while animating). Library cards have no movie-card-* testid in LocalLibraryPage, so match them by title text."
+}
