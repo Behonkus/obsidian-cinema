@@ -56,7 +56,9 @@ function useSections(parts) {
 export function PartsList({ movie, onPlayPart, onSplit, onSeriesInfo, seriesLoading }) {
   const parts = partsOf(movie);
   const sections = useSections(parts);
-  const [open, setOpen] = useState(() => ({ [sections[0]?.name]: true }));
+  const [open, setOpen] = useState({});
+  const firstName = sections[0]?.name;
+  const isSectionOpen = (name) => (open[name] !== undefined ? open[name] : name === firstName);
   const grouped = sections.length > 1;
   return (
     <div className="space-y-1.5" data-testid="parts-list">
@@ -64,13 +66,13 @@ export function PartsList({ movie, onPlayPart, onSplit, onSeriesInfo, seriesLoad
         {!grouped && parts.map((p, i) => <PartRow key={p.file_path} part={p} index={i} onPlayPart={onPlayPart} />)}
         {grouped && sections.map(sec => {
           const slug = sec.name.toLowerCase().replace(/\s+/g, '-');
-          const isOpen = !!open[sec.name];
+          const isOpen = isSectionOpen(sec.name);
           return (
             <div key={sec.name} data-testid={`parts-section-${slug}`}>
               <button
                 type="button"
                 className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-semibold hover:bg-secondary/60 transition-colors"
-                onClick={() => setOpen(o => ({ ...o, [sec.name]: !o[sec.name] }))}
+                onClick={() => setOpen(o => ({ ...o, [sec.name]: !isOpen }))}
                 data-testid={`parts-section-toggle-${slug}`}
               >
                 {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-primary" /> : <ChevronRight className="w-3.5 h-3.5 text-primary" />}
@@ -106,13 +108,13 @@ function SuggestionGroup({ group, checked, onToggle, onDismiss }) {
       <div className="flex items-center gap-2">
         <Checkbox checked={checked} onCheckedChange={onToggle} data-testid="multipart-group-checkbox" />
         <span className="text-sm font-medium flex-1 truncate">{group.title}</span>
-        <span className="text-[10px] text-muted-foreground">{group.show ? group.members.reduce((t, m) => t + partsOf(m).length, 0) + ' files · whole show' : group.members.length + ' parts'}</span>
+        <span className="text-[10px] text-muted-foreground">{group.show || group.movieExtras ? group.members.reduce((t, m) => t + partsOf(m).length, 0) + (group.show ? ' files · whole show' : ' files · movie + extras') : group.members.length + ' parts'}</span>
         <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={onDismiss} data-testid="multipart-dismiss-btn">Not multi-part</Button>
       </div>
       <div className="mt-1.5 pl-6 space-y-0.5">
         {group.members.map(m => (
           <p key={m.id} className="text-[11px] text-muted-foreground truncate" title={m.file_path}>
-            {group.show && partSection(partsOf(m)[0]) ? <span className="text-primary/80">{partSection(partsOf(m)[0])}: </span> : null}
+            {(group.show || group.movieExtras) && partSection(partsOf(m)[0]) ? <span className="text-primary/80">{partSection(partsOf(m)[0])}: </span> : null}
             {isMultiPart(m) ? m.title + ' (' + m.parts.length + ' parts)' : m.file_name}
           </p>
         ))}

@@ -92,7 +92,7 @@ function baseName(p) {
 
 const SEASON_DIR = /^(?:season|series|staffel|saison|temporada|s)[\s._-]*(\d{1,2})(?:\b.*)?$/i;
 const SPECIALS_DIR = /^specials?$/i;
-const EXTRAS_DIR = /^(?:extras?|bonus(?:[\s._-]*(?:features|material|content))?|featurettes?|special[\s._-]*features|behind[\s._-]*the[\s._-]*scenes|deleted[\s._-]*scenes|interviews?|trailers?|making[\s._-]*of)$/i;
+const EXTRAS_DIR = /(?:^|[\s._-])(?:extras?|bonus(?:[\s._-]*(?:features|material|content))?|featurettes?|special[\s._-]*features|behind[\s._-]*the[\s._-]*scenes|deleted[\s._-]*scenes|interviews?|trailers?|making[\s._-]*of)$/i;
 
 // Folder role of a file: inside a Season N / Specials folder, or an Extras folder of a show
 export function partFolder(filePath) {
@@ -100,10 +100,10 @@ export function partFolder(filePath) {
   const name = baseName(dir).trim();
   const showDir = dirOf(dir);
   if (!showDir || showDir === dir) return {};
+  if (EXTRAS_DIR.test(name)) return { showDir, extra: true };
   const sm = name.match(SEASON_DIR);
   if (sm) return { showDir, season: parseInt(sm[1], 10) };
   if (SPECIALS_DIR.test(name)) return { showDir, season: 0 };
-  if (EXTRAS_DIR.test(name)) return { showDir, extra: true };
   return {};
 }
 
@@ -132,9 +132,11 @@ function partSortKey(part) {
   const f = partFolder(part.file_path);
   if (f.extra) return 1e7;
   const info = partNum(part);
-  if (info && info.num >= 1000) return info.num;
-  if (f.season != null) return f.season * 1000 + (info ? info.num : 999);
-  return info ? info.num : 999;
+  const season = info && info.num >= 1000 ? Math.floor(info.num / 1000) : f.season;
+  const ep = info ? (info.num >= 1000 ? info.num % 1000 : info.num) : 999;
+  if (season == null) return ep;
+  // Specials (season 0) go after the last regular season, before Extras
+  return (season === 0 ? 9000 : season) * 1000 + ep;
 }
 
 function normKey(s) {
@@ -190,14 +192,19 @@ export function findPartGroups(movies, dismissed) {
   const inShow = new Set();
   Object.values(shows).forEach(sh => {
     const loose = movies.filter(m => !isMultiPart(m) && dirOf(m.file_path).toLowerCase() === sh.showDir.toLowerCase());
-    // A single movie in the show folder with an Extras folder also counts (movie + extras)
-    if (!sh.hasSeason && loose.length !== 1) return;
+    // A single movie in its own folder (folder name matches the movie) with an Extras folder: movie + extras
+    if (!sh.hasSeason) {
+      if (loose.length !== 1) return;
+      const folderKey = normKey(parseFilename(baseName(sh.showDir)).title);
+      const movieKey = normKey(parseFilename(loose[0].file_name).title || loose[0].title);
+      if (!folderKey || !movieKey || !(folderKey.includes(movieKey) || movieKey.includes(folderKey))) return;
+    }
     const cards = loose.length === 1 && !sh.hasSeason ? [...loose, ...sh.cards] : sh.cards;
     if (cards.length < 2 || dismissedSet.has(sh.key)) return;
     cards.forEach(c => inShow.add(c.id));
     const parsed = parseFilename(baseName(sh.showDir));
     const sorted = cards.slice().sort((a, b) => partSortKey(partsOf(a)[0]) - partSortKey(partsOf(b)[0]));
-    groups[sh.key] = { key: sh.key, title: parsed.title || baseName(sh.showDir), year: parsed.year || null, show: true, members: sorted };
+    groups[sh.key] = { key: sh.key, title: parsed.title || baseName(sh.showDir), year: parsed.year || null, show: sh.hasSeason, movieExtras: !sh.hasSeason, members: sorted };
   });
   // 2) Numbered parts in the same folder with the same base name
   const loose = {};
