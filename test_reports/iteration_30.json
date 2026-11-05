@@ -1,0 +1,26 @@
+{
+  "summary": "Frontend-only retest of Auto-Match New Files (LocalLibraryPage.jsx). Used /app/tests/auto_match_harness.py with a simulated electronAPI and TMDB mocked via ctx.route. All 5 scenarios passed: the Auto-fill chip is visible when paused with no tmdb_id cards; the queue persists across reload and a Settings round-trip; queued titles from the no-key case are matched after a key is set and the page reloads; S1 regression; manual Fetch Posters regression.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "verified_passing": [
+    "A: auto='off', lib=old_cards() (no tmdb_id cards). The chip is visible and reads 'Auto-fill paused'. Update Library sent zero TMDB searches, the library grew to 4 cards and the queue held [new_heat,new_alien]. Clicking the chip changed it to 'Auto-fill on' and set localStorage to 'on'. Searches went out ONLY for 'Heat' and 'Alien'. Both new cards got tmdb_id, poster_path and metadata_updated_at; old1/old2 were untouched. The queue was [] afterwards.",
+    "B: paused + Update Library, then page.reload(): queue still [new_heat,new_alien] with no searches. Navigated to /settings and back: queue still intact. Chip on: only Heat and Alien were searched and matched, and the queue became [].",
+    "C: no key. The chip is hidden, zero searches, no redirect to Settings, and the queue was persisted. Set obsidian_cinema_tmdb_key and reloaded: Heat and Alien were auto-matched shortly after load and the queue became []. The libraryReady guard works: the queue was not cleared on the first render with an empty library.",
+    "S1 regression (auto on): the first search came 0.34s after the click, and only Heat and Alien were searched. Toasts in order: 'Auto-matching 2 new titles with TMDB…', 'Library updated: 2 added', 'New titles matched: 2 of 2.' New cards have needs_review=false.",
+    "S5 manual Fetch Posters: 'Fetch Posters (2)' searched TEST_OldOne and TEST_OldTwo, then showed 'Done! Found metadata for 2 of 2 movies.' and the label changed to 'Fetch Posters'.",
+    "No page errors in any scenario."
+  ],
+  "test_report_links": ["/app/tests/auto_match_harness.py"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "The auto-match effect clears the queue (and saves it) before calling fetchAllPosters(ids). If the app closes or the fetch aborts mid-run, the remaining queued ids are lost. They are still poster-less, so manual Fetch Posters covers them. Low priority.",
+    "Queued ids for files later removed from the library stay in the queue until the next auto-match run. That is harmless because fetchAllPosters filters by movies in the library.",
+    "LocalLibraryPage.jsx is about 3100 lines; consider extracting the auto-match and background-enrich hooks."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100% (5/5 scenarios)"},
+  "seed_data_creation": "None. Isolated browser contexts using sessionStorage/localStorage only.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Harness: /app/tests/auto_match_harness.py (init_script, TmdbSearchMock, old_cards, NEW_FILES, read_lib, toasts). Create contexts via page.context.browser.new_context() and add_init_script; seeding happens once per context (sessionStorage flag), so page.reload() keeps state. Toasts disappear within about 4s, so poll H.toasts while waiting. Queue key: obsidian_cinema_auto_match_queue."
+}
