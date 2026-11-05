@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { TypeStats } from "@/components/TypeStats";
 import { motion } from "framer-motion";
 import {
   Film,
@@ -770,6 +771,8 @@ export default function StatsPage() {
         <StatCard icon={Star} label="Avg Rating" value={stats.avgRating ? stats.avgRating.toFixed(1) : '\u2014'} sub={ratingSub} delay={0.09} color="text-amber-400" />
         <StatCard icon={FolderHeart} label="Collections" value={stats.collectionCount} sub={stats.totalInCollections + ' movies organized'} delay={0.12} color="text-purple-400" />
       </div>
+
+      <TypeStats movies={movies} directories={directories} />
 
       {(stats.newest || stats.oldest) && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>

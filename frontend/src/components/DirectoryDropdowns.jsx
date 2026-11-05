@@ -18,6 +18,15 @@ export function dirCategory(categories, dir) {
   return (categories && categories[dir]) || 'movies';
 }
 
+// True when a file path is inside a folder (D:\TV must not match D:\TVShows)
+export function inDir(filePath, dir) {
+  if (!filePath || !dir) return false;
+  const d = dir.replace(/[\\/]+$/, '');
+  if (!filePath.startsWith(d)) return false;
+  const next = filePath.charAt(d.length);
+  return next === '' || next === '\\' || next === '/';
+}
+
 function dirLabel(dir) {
   return dir.split(/[\\/]/).pop() || dir;
 }

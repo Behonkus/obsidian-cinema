@@ -83,7 +83,7 @@ import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, Sp
 import PdfExportDialog from "@/components/PdfExportDialog";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
 import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, allLibraryPaths, partsOf, attachEpisodes, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
-import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory } from "@/components/DirectoryDropdowns";
+import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
 import { PartsPlayDialog, PartsList, MultiPartSuggestDialog, MergePickerDialog } from "@/components/MultiPartDialogs";
 
 const FREE_TIER_MOVIE_LIMIT = 500;
@@ -106,15 +106,6 @@ async function verifyProStatus() {
     } catch (e) {}
   }
   return localStorage.getItem('obsidian_cinema_is_pro') === 'true';
-}
-
-// True when a file path is inside a folder (D:\\TV must not match D:\\TVShows)
-function inDir(filePath, dir) {
-  if (!filePath || !dir) return false;
-  const d = dir.replace(/[\\/]+$/, '');
-  if (!filePath.startsWith(d)) return false;
-  const next = filePath.charAt(d.length);
-  return next === '' || next === '\\' || next === '/';
 }
 
 // Re-parse a scanned file name with the smarter parser (keeps fallback title)
