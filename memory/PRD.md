@@ -99,3 +99,11 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Auto-match new files: Update Library / Browse / Add Individual Movies queue new card ids (persisted obsidian_cinema_auto_match_queue); effect runs fetchAllPosters(Set ids) for just those (gated by Auto-fill chip, needs key, waits for library load). Chip always visible with key + non-empty library. Tested iteration_29/30 (100%).
 - Extras at any depth (Show\\Extras\\Sub\\file, Show\\Season 1\\Extras\\file, "Season 1 Extras") = Extras section of the show; extras never form own groups (EXTRAS_DIR anchored per segment; a show named "Extras" detected when file names start with the folder name — known gap: "Extras" show with "01 - Pilot" style names).
 - Auto multi-part check: after Update Library/Browse/Add, groups containing new files pop up automatically ("New files belong with existing titles"). Show-folder files are not auto-matched as movies; lone show-folder files with no group are matched as TV; new show groups auto-run series lookup after merge; existing tv/multi-part card stays primary on merge; episode search strips SxxEyy; attachEpisodes keeps old episode info on failed season fetch. Movie+Extras shows "Feature" section, no series button. Tested iteration_31/32 + self-test.
+
+## v1.7.0 (June 2026)
+- Version bumped to 1.7.0 everywhere (package.json, AdminPage update email, marketing_materials.md).
+- Update pop-up on launch (UpdatePrompt.jsx): checks ~5s after start; lists features of the newer version from GET /api/changelog (CHANGELOG list in backend/server.py), falls back to GitHub release notes. Download / Restart & update in the dialog. "Later" hides it for the session.
+- One-time "What's new in vX" dialog after each update (WhatsNewDialog.jsx, localStorage obsidian_cinema_last_seen_version).
+- RELEASE CHECKLIST: add a new entry at the top of CHANGELOG in backend/server.py and deploy the backend BEFORE publishing each new GitHub release.
+- Limitation: versions <=1.6.9 have no auto-check; those users must be reached via the update email or Settings → Check for Updates.
+- Tested: iteration_33 (all passing after fixes).

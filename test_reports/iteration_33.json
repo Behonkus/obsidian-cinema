@@ -1,0 +1,39 @@
+{
+  "summary": "Tested the v1.7.0 bump, GET /api/changelog, WhatsNewDialog, UpdatePrompt (simulated electronAPI, with an init-script mock that returns the right shapes) and the web landing page. Backend: 3/3 pytest pass. Frontend: 39 of 41 checks pass. One real low-priority bug: notesToList puts HTML headings in the list and joins text from nearby block elements. The other failed check (the checkForUpdates timing) is a test artifact.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "lib/changelog.js notesToList (UpdatePrompt fallback for versions not in the changelog)", "issue": "With releaseNotes '<h2>Release</h2><ul><li>Fixed crash on scan</li><li>Faster posters</li></ul><p>* Tweaked themes</p>', the list came out as ['Release', 'Fixed crash on scan', 'Faster posters* Tweaked themes']. The heading text becomes a highlight, and closing tags (</li>, </p>, </h*>, <br>) do not insert a newline, so text from neighbouring blocks is joined. GitHub/electron-updater notes are usually '<h2>What's Changed</h2><ul><li>…' so users will see 'What's Changed' as the first item. Fix: drop <h1-6>…</h1-6> entirely, and replace </li>, </p>, <br>, </h*> and </div> with '\\n' before stripping tags.", "selector": "[data-testid='update-prompt-highlights'] li", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_passing": [
+    "GET /api/changelog returns {releases:[{version:'1.7.0', date:'2026-06', highlights:[10 strings]}]} with no _id. There are no '1.6.9' references left in frontend/src, package.json or marketing_materials.md. The AdminPage email says 'release 1.7.0' and 'v1.7.0'.",
+    "The EULA shows 'Obsidian Cinema v1.7.0'. The web landing badge shows v1.7.0.",
+    "Upgrade (eula=1.6.9, no seen key): after accepting the EULA, the WhatsNew dialog appears with the title 'What's new in v1.7.0' and 10 highlights. The seen key is unset until the dialog is closed. 'Got it' sets obsidian_cinema_last_seen_version=1.7.0 and the dialog does not come back on reload. Closing with Escape also sets the key (checked on /#/settings).",
+    "Fresh install: no dialog, and the seen key is set to 1.7.0 silently.",
+    "UpdatePrompt via getUpdateStatus (current 1.6.9, update 1.7.0): the text reads 'v1.7.0 is ready — you're on v1.6.9' and the 10 server highlights are listed, not the releaseNotes. Download calls downloadUpdate once and shows the downloading button and progress bar. An emitted 'downloading' 42.4 shows 42%. 'downloaded' shows the install button, which calls installUpdate.",
+    "UpdatePrompt via onUpdateStatus 'available' 1.7.1 (not in the changelog): the fallback list is parsed from releaseNotes (see the bug above). Later closes it and sets the sessionStorage dismissed key to '1.7.1'. It does not reopen on another emit or after navigating to another route in the same session. A newer version 1.7.2 does reopen it.",
+    "getUpdateStatus with isDownloading=true and no notes for an unknown version: shows 'Bug fixes and improvements' and starts in the downloading state.",
+    "checkForUpdates is called exactly once per session (module flag) and not again after navigating.",
+    "Web (non-electron): / redirects to /landing with no EULA and no dialogs. No page errors in any scenario."
+  ],
+  "test_report_links": ["/app/backend/tests/test_changelog_v170.py", "/app/tests/test_iter33_update_prompt.py"],
+  "action_items": [
+    "LOW: Improve notesToList so headings are dropped and block-closing tags/<br> become line breaks (example input and output are in ui_bugs)."
+  ],
+  "critical_code_review_comments": [
+    "The checkForUpdates timing check failed only because the test measured from document start (10.7s), not from mount. The timer itself is 5s after mount. Not a bug.",
+    "WhatsNewDialog: if PREVIOUS equals or is newer than CURRENT (e.g. eula key already '1.7.0' from a dev/beta build but the seen key is unset, or a downgrade), releasesBetween returns [] and the dialog still opens with the generic 'Bug fixes and improvements'. Consider skipping the dialog when compareVersions(PREVIOUS, CURRENT) >= 0.",
+    "WhatsNewDialog and UpdatePrompt can both open at once (just updated to 1.7.0 while 1.7.1 is already available), stacking two modal dialogs. Consider having UpdatePrompt wait until WhatsNew is closed.",
+    "If /api/changelog fails (offline), WhatsNew shows only 'Bug fixes and improvements'. Acceptable, but a small bundled copy of the CHANGELOG as an offline fallback would be nicer.",
+    "The changelog date is '2026-06' while the current date is Jan 2026. Check that this is intended."
+  ],
+  "updated_files": ["/app/backend/tests/test_changelog_v170.py (new)", "/app/tests/test_iter33_update_prompt.py (new)"],
+  "success_rate": {"backend": "100% (3/3)", "frontend": "95% (39/41 checks; 1 real low-priority bug, 1 test-timing artifact)"},
+  "seed_data_creation": "None. Isolated browser contexts only.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "g={'page':page}; exec(open('/app/tests/test_iter33_update_prompt.py').read(), g); await g['run_all']() (or run_whats_new/run_update_prompt/run_web with page). init_script(eula, seen, app_version, status) mocks electronAPI; window.__emit({status,data}) triggers onUpdateStatus; window.__calls records calls. In the checkForUpdates check, measure from mount, not from __t0."
+}

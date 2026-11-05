@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
 import { ReleaseHighlights } from "./ReleaseHighlights";
-import { fetchChangelog, notesToList, releasesBetween } from "@/lib/changelog";
+import { fetchChangelog, notesToList, releasesBetween, SEEN_KEY, WHATS_NEW_DONE_EVENT } from "@/lib/changelog";
+import packageJson from "../../package.json";
 
 const DISMISS_KEY = "obsidian_cinema_update_prompt_dismissed";
 let startupChecked = false;
@@ -25,6 +26,15 @@ export default function UpdatePrompt() {
   const [releases, setReleases] = useState([]);
   const [phase, setPhase] = useState("available");
   const [progress, setProgress] = useState(0);
+  const [whatsNewDone, setWhatsNewDone] = useState(false);
+
+  useEffect(() => {
+    if (!isElectron()) return;
+    const markDone = () => setWhatsNewDone(true);
+    if (localStorage.getItem(SEEN_KEY) === packageJson.version) markDone();
+    window.addEventListener(WHATS_NEW_DONE_EVENT, markDone);
+    return () => window.removeEventListener(WHATS_NEW_DONE_EVENT, markDone);
+  }, []);
 
   useEffect(() => {
     if (!isElectron()) return;
@@ -64,7 +74,7 @@ export default function UpdatePrompt() {
   if (!info) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : later())}>
+    <Dialog open={open && whatsNewDone} onOpenChange={(o) => (o ? setOpen(true) : later())}>
       <DialogContent className="sm:max-w-lg" data-testid="update-prompt-dialog">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2" data-testid="update-prompt-title">

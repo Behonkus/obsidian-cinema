@@ -2,6 +2,9 @@ import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+export const SEEN_KEY = "obsidian_cinema_last_seen_version";
+export const WHATS_NEW_DONE_EVENT = "obsidian-whats-new-done";
+
 export const compareVersions = (a, b) => {
   const pa = String(a).replace(/^v/, "").split(".").map(Number);
   const pb = String(b).replace(/^v/, "").split(".").map(Number);
@@ -31,7 +34,8 @@ export const notesToList = (notes) => {
   if (!notes) return [];
   const text = Array.isArray(notes) ? notes.map((n) => n.note || "").join("\n") : String(notes);
   return text
-    .replace(/<li[^>]*>/gi, "\n").replace(/<[^>]+>/g, "")
+    .replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, "\n")
+    .replace(/<li[^>]*>|<\/(li|p|div)>|<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "")
     .split("\n").map((l) => l.replace(/^[\s*\-•]+/, "").trim())
     .filter((l) => l && !/^#/.test(l)).slice(0, 12);
 };
