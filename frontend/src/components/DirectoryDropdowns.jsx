@@ -37,7 +37,7 @@ function CategoryDropdown({ cat, dirs, counts, activeDirectory, activeCategory, 
           data-testid={`dir-cat-${cat.id}`}
         >
           <Icon className="w-3.5 h-3.5" />
-          <span className="max-w-[160px] truncate">{activeDir ? cat.label + ': ' + dirLabel(activeDir) : cat.label}</span>
+          <span className="max-w-[240px] truncate">{activeDir ? cat.label + ': ' + dirLabel(activeDir) : cat.label}</span>
           <Badge variant="secondary" className="h-4 px-1 text-[10px]">{activeDir ? (counts[activeDir] || 0) : total}</Badge>
           <ChevronDown className="w-3 h-3 opacity-70" />
         </Button>

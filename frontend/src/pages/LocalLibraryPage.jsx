@@ -836,6 +836,7 @@ export default function LocalLibraryPage() {
     const oldPath = dirToRename;
     const newPath = dirNewPath.trim();
     if (oldPath === newPath) { setDirToRename(null); return; }
+    if (directories.includes(newPath)) { toast.error('That folder is already in your library'); return; }
     setDirectories(prev => prev.map(d => d === oldPath ? newPath : d));
     const move = (fp) => (inDir(fp, oldPath) ? newPath + fp.substring(oldPath.length) : fp);
     setMovies(prev => prev.map(m => {

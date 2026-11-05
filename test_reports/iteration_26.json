@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only retest of the iteration_25 failures (TV Shows quick filter and the 4 colored directory-category dropdowns), run on a freshly loaded page with the simulated Electron harness. All 3 earlier issues are fixed and the new multi-part rename check passes. HIGH: I set D:\\Docs to Documentaries using dir-type-3, then renamed it to D:\\Documentaries using confirm-rename-dir-btn. obsidian_cinema_dir_categories now holds {'D:\\\\TV':'tv','D:\\\\TVShows':'tv','D:\\\\Documentaries':'docs'} with no 'D:\\\\Docs' key. The Documentaries menu shows 'All Documentaries 2' and 'Documentaries 2', and Movies stays at 1. This survives a reload. NEW: after the rename, the merged Planet Earth card's file_path and all 3 part paths start with D:\\Documentaries. Playing part 2 from the card's Play button (PartsPlayDialog, play-part-1) called openPath with 'D:\\Documentaries\\Planet Earth\\Season 1\\Planet Earth S01E02.mkv'. MEDIUM: with both folders set to TV, the TV menu shows All 3, TV 2 and TVShows 1. Picking TV shows only tv1 and tv2, picking TVShows shows only tvs1, and All TV Shows shows 3 unique cards. After setting TVShows to Animations, the TV menu shows All 2 (TV only) and the Animations menu shows TVShows 1, with no leakage either way. LOW: the remove dialog for D:\\TV says 'all 2 of its movies' (it does not count D:\\TVShows). After removal the D:\\TV entry is gone from dir_categories ({'D:\\\\TVShows':'anim'}), the D:\\TVShows card remains, and the toast says 'Removed directory and 2 movies'. Regression: qf-tv-shows shows a count of 4 with tv1, tv2, tvs1 and pe (the Season-folder multi-part card). The '#/?qf=tv-shows' deep link works, it combines with All Documentaries to show only pe, clicking qf-tv-shows again clears it, and dir-filter-all clears the folder and category filters.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Library directory filter row", "issues": [
+        "LOW/UX: dir-filter-all is highlighted as active while a sidebar quick filter (e.g. qf=tv-shows) is still narrowing the grid. It does not clear the quick filter. This may be intended, since the quick filter is a separate control, but users may expect 'All' to show everything.",
+        "The active label 'Documentaries: Documentaries' is cut off to 'Documentaries: Documen...' at max-w-[160px]. This is cosmetic only and the title tooltip shows the full path in the menu."
+      ]}
+    ]
+  },
+  "test_report_links": ["/app/tests/dir_categories_harness.py"],
+  "action_items": [
+    "Optional (LOW): decide whether dir-filter-all should also clear the quick filter, or at least not look active while one is applied."
+  ],
+  "critical_code_review_comments": [
+    "renameDirectory: if newPath already exists in directories, the list ends up with a duplicate entry. Consider blocking the rename or merging.",
+    "renameDirectory: when the old folder is the parent of another registered directory (e.g. D:\\TV and D:\\TV\\Kids), the movies under the child are moved to the new prefix, but the child's directory entry and its dir_categories key keep the old path. The child folder's count then drops to 0.",
+    "renameDirectory compares paths exactly, so newPath with a trailing separator (D:\\Documentaries\\) is stored as-is. inDir strips the separator so matching still works, but the label falls back to the full path because split().pop() is empty.",
+    "LocalLibraryPage.jsx is about 3000 lines, far above the 700-line guideline. Noted only; the main agent was told not to refactor it."
+  ],
+  "updated_files": ["/app/tests/dir_categories_harness.py"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% (all requested retest items pass)"},
+  "seed_data_creation": "Browser-only: seeded sessionStorage 'fakeLibFile' and localStorage keys in an isolated Playwright context. No app or DB data was touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Reusable harness: /app/tests/dir_categories_harness.py, init_script(cats). Load it in browser_automation with sys.path.insert(0,'/app/tests'). It sets obsidian_cinema_eula_accepted='1.6.8'. The fake getLicense returns a free tier, otherwise the app routes to /activate. getDrives returns [], otherwise LocalDirectoryBrowser crashes when it gets null. openPath calls are recorded in window.__opened. Seed: 6 cards across D:\\Movies, D:\\TV (2), D:\\TVShows (1) and D:\\Docs (Cosmos plus the merged 'pe' Planet Earth with 3 Season 1 parts). Directory indices: 0 Movies, 1 TV, 2 TVShows, 3 Docs. Clicking 'All <cat>' a second time toggles the category off and shows every card; this is intended."
+}
