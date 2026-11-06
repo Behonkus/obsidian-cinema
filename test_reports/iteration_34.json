@@ -1,0 +1,43 @@
+{
+  "summary": "Frontend-only test of the change that treats year folders as seasons and merges unorganized show folders into one card, in TV Shows, Documentaries and Animations directories. Used the simulated electronAPI harness plus an extra init script that sets obsidian_cinema_dir_categories (D:\\TV=tv, D:\\Docs=docs, D:\\Anim=anim, D:\\Movies=movies, D:\\TV2\\Breaking Bad=tv). All requested scenarios pass, both through the Multi-Part button dialog and the auto dialog after Update Library, and all regressions pass. Found one MEDIUM bug: in a TV/Docs/Anim directory, a show folder whose name looks like a year, 'Specials' or 'Extras' (e.g. 1923, 2012) is treated as if the library directory itself were a single show. Several such shows then merge into one card titled after the library folder ('TV').",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "lib/multiPart.js rootShow ('own' check)", "issue": "The code sets own = folderSeason(rest[0]) != null || EXTRAS_DIR.test(rest[0]), so a first-level folder named after a year (19xx/20xx), 'Specials', 'S1'-style names or 'Extras' makes showDir the library root. Reproduced in the UI: D:\\TV (tv) containing 1923\\Season 1\\1923.S01E01/E02.mkv, Extras\\Season 1\\Extras.S01E01.mkv and Specials\\Season 1\\Specials S01E01.mkv. Multi-Part shows ONE group 'TV' (key show|d:\\tv), '4 files · whole show', and merging it would combine 3 different shows. Real shows hit by this: 1923, 2012, 1899, 1883 is fine (outside the 19xx/20xx range), and shows called 'Extras' or 'Specials'. Suggested fix: treat the root as its own show only when the next folder is also a season/year folder, or when the file title does not start with the folder name (the same check partFolder already does for Extras). A better option is to decide per root, once: the root is a single show only if all of its first-level folders are season/year/specials/extras folders.", "selector": "[data-testid='multipart-suggest-btn'], [data-testid^='multipart-group-show|']", "priority": "MEDIUM"},
+      {"component": "components/Layout.jsx sidebar TV Shows count", "issue": "showRoots is a module global that is only set during the LocalLibraryPage render. If the app opens on another route (/#/settings), isSeries() runs without roots and the count is wrong (TV Shows 2 on /settings, 9 after going to the library, same data). Fix: call setShowRoots from a shared place (e.g. Layout, or the lib reading localStorage dirs and categories on first use).", "selector": "[data-testid='qf-tv-shows']", "priority": "LOW"},
+      {"component": "partLabel for an unnumbered file in a year folder", "issue": "D:\\TV2\\Breaking Bad\\2019\\El Camino.mkv is listed under 'Season 2019' with the label 'Part 3' (its overall index). This is cosmetic. Consider 'Extra', or the file title, when a file in a season or year folder has no episode number.", "selector": "[data-testid='parts-section-season-2019']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_passing": [
+    "TV dir, D:\\TV\\The Daily Show\\2019\\03 - Guest One, 05 - Guest Two, 2020\\01 - New Year: one group 'The Daily Show · 3 files · whole show' with the prefixes 'Season 2019:' and 'Season 2020:'. The merged card has the sections 'Season 2019 (2)' and 'Season 2020 (1)', and the labels are '2019 E03', '2019 E05' and '2020 E01'.",
+    "TV dir, Random Show\\Disc A\\pilot, Disc B\\finale, bonus.mkv: one card titled 'Random Show' with 3 parts. It counts in TV Shows and appears in the TV filter.",
+    "Library dir D:\\TV2\\Breaking Bad (tv) with Season 1, Season 2 and 2019 folders: the group key is show|d:\\tv2\\breaking bad and the title is 'Breaking Bad', with sections Season 1, Season 2 and Season 2019.",
+    "Docs: Planet Earth Ep 1/Ep 2 merge into one card, which counts as TV. Docs\\Collection Film A (2001) and Film B (2005) are not grouped.",
+    "Anim: Toy Story (1995) + Extras\\Making Of becomes 'movie + extras' with Feature and Extras sections, no series button, and is not counted as TV.",
+    "Movies dir: D:\\Movies\\2019\\Movie A (2019) and Movie B (2019) are not grouped.",
+    "Update Library with 6 new files (Daily Show + Random Show): toast 'Library updated: 6 added', and the auto dialog lists both shows. The merge gives 2 cards plus Heat. TV count is 2. No page errors.",
+    "Regression in a tv-category dir: Season 7 S07E12E13 is labelled 'S07E12-E13'. S07E14, Specials S00E01 and Season 7\\Extras\\Deleted\\Scene.mkv sort as Season 7, then Specials, then Extras. Dune Part 1/2 in Movies is grouped as '2 parts'.",
+    "iter32 run_names, run_batman_flip, run_lost and run_regression all give the same results as iteration 32. iter32 run_edges: a single new Lost episode is now auto-matched as TV (tmdb 9). This was the iteration 32 integration issue and it is now fixed.",
+    "dir_categories_harness (with the EULA set to the current version): 6 cards, TV Shows 4, no errors."
+  ],
+  "test_report_links": ["/app/tests/test_iter34_year_seasons.py", "/app/tests/test_iter32_multipart.py", "/app/tests/test_iter32_edges.py"],
+  "action_items": [
+    "MEDIUM: Fix rootShow so that a show folder named like a year, Specials or Extras (1923, 2012, 'Extras', 'Specials') directly under a TV/Docs/Anim library dir is not treated as a season of the library dir. Today several such shows merge into one card called 'TV'.",
+    "LOW: Make sure showRoots is set before Layout's isSeries stats run when the app starts on a non-library route.",
+    "LOW (pre-existing from iteration 32, still present): in a Movies-category dir, D:\\TV\\Extras\\Season 1\\01 - Pilot.mkv is still treated as extras (no Multi-Part button)."
+  ],
+  "critical_code_review_comments": [
+    "setShowRoots is called inside useMemo, which is a side effect during render, and it mutates module state shared with Layout. It works, but it is fragile. A pure function argument or a context would be safer.",
+    "rootShow matches with a case-sensitive startsWith, and find() returns the first root. With nested roots (D:\\TV and D:\\TV\\Anime) the outer root may win. Prefer the longest matching root and compare case-insensitively on Windows.",
+    "Files directly inside a single-show library dir (D:\\TV2\\Breaking Bad\\Breaking Bad S03E01.mkv) are not covered by rootShow, because dir === root. They group only through the S03E01 name, not through the root rule.",
+    "Year seasons (2019) are passed to attachEpisodes, which requests /tv/{id}/season/2019. TMDB numbers seasons 1..N, so these always find 0 episodes. Consider mapping years to TMDB seasons by air_date, or skip the request."
+  ],
+  "updated_files": ["/app/tests/test_iter34_year_seasons.py (new)"],
+  "success_rate": {"backend": "N/A (not requested)", "frontend": "92% (all requested scenarios and regressions pass; 1 medium and 2 low edge issues)"},
+  "seed_data_creation": "None. Isolated browser contexts with sessionStorage/localStorage only.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "g={'page':page}; exec(open('/app/tests/test_iter34_year_seasons.py').read(), g); await g['run_suggest'|'run_scan'|'run_edges'|'run_stats_other_page'|'run_regress_tv_cat'|'run_dir_categories'](). open3() adds an init script that sets the dir categories (CATS). To re-check the medium bug, use lib 1923\\Season 1 + Extras\\Season 1 + Specials\\Season 1 under D:\\TV(tv); today you get a single group 'TV'. The old dir_categories_harness sets eula 1.6.8, so override it with H.VERSION (done in run_dir_categories)."
+}

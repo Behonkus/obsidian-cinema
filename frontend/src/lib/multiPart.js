@@ -14,7 +14,8 @@ export async function attachEpisodes(parts, tvId, apiKey) {
     const n = info ? info.num : i + 1;
     return { part: p, season: 1, episode: n, lastEpisode: n };
   }).filter(Boolean);
-  const seasons = [...new Set(mapped.map(m => m.season))];
+  // Year folders (Season 2019) have no TMDB season of that number
+  const seasons = [...new Set(mapped.map(m => m.season))].filter(s => s < 1900);
   const bySeason = {};
   for (const s of seasons) {
     const data = await tmdbGet(`/tv/${tvId}/season/${s}`, apiKey);
@@ -99,7 +100,8 @@ const EXTRAS_DIR = /^(?:(?:season|series|s)[\s._-]*\d{1,2}[\s._-]+)?(?:extras?|b
 // TV Shows / Documentaries / Animations library folders: each sub-folder is one show
 let showRoots = [];
 export function setShowRoots(roots) {
-  showRoots = (roots || []).map(r => ({ dir: String(r.dir).replace(/[\\/]+$/, ''), cat: r.cat }));
+  showRoots = (roots || []).map(r => ({ dir: String(r.dir).replace(/[\\/]+$/, ''), cat: r.cat }))
+    .sort((a, b) => b.dir.length - a.dir.length);
 }
 
 function folderSeason(name) {
@@ -111,16 +113,21 @@ function folderSeason(name) {
 }
 
 // Show folder of a file inside a show root: root\Show\..., or the root itself when it holds Season/year folders
-function rootShow(dir) {
+function rootShow(dir, filePath) {
+  const lower = dir.toLowerCase();
   const root = showRoots.find(r => {
-    if (!dir.startsWith(r.dir)) return false;
+    if (!lower.startsWith(r.dir.toLowerCase())) return false;
     const c = dir.charAt(r.dir.length);
     return c === '\\' || c === '/';
   });
   if (!root) return null;
   const sep = dir.includes('\\') ? '\\' : '/';
   const rest = dir.slice(root.dir.length).split(/[\\/]/).filter(Boolean);
-  const own = folderSeason(rest[0].trim()) != null || EXTRAS_DIR.test(rest[0].trim());
+  // The library folder is itself one show only when it directly holds Season / year / Extras folders,
+  // not show folders named like one (1923\\Season 1, a show called "Extras")
+  const seasonLike = s => !!s && (folderSeason(s.trim()) != null || EXTRAS_DIR.test(s.trim()));
+  const fileKey = normKey(parseFilename(baseName(filePath)).title);
+  const own = seasonLike(rest[0]) && !seasonLike(rest[1]) && !(fileKey && fileKey.startsWith(normKey(rest[0])));
   const showDir = own ? root.dir : root.dir + sep + rest[0];
   let season = null;
   rest.slice(own ? 0 : 1).forEach(s => {
@@ -133,7 +140,7 @@ function rootShow(dir) {
 // Folder role of a file: inside a Season N / Specials folder, or an Extras folder of a show
 export function partFolder(filePath) {
   const dir = dirOf(filePath);
-  const rs = rootShow(dir);
+  const rs = rootShow(dir, filePath);
   // Extras anywhere in the path (Show\\Extras\\Sub\\file, Show\\Season 1\\Extras\\file) belong to the show
   const segs = dir.split(/[\\/]/);
   for (let i = 2; i < segs.length; i++) {
@@ -241,6 +248,7 @@ export function partLabel(part, index) {
     const label = 'S' + String(s).padStart(2, '0') + 'E' + String(e).padStart(2, '0');
     return info.endNum > info.num ? label + '-E' + String(info.endNum % 1000).padStart(2, '0') : label;
   }
+  if (!info && f.season != null) return parseFilename(part.file_name).title || 'Part ' + (index + 1);
   return 'Part ' + (info ? info.num : index + 1);
 }
 

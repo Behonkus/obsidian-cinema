@@ -107,3 +107,4 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - RELEASE CHECKLIST: add a new entry at the top of CHANGELOG in backend/server.py and deploy the backend BEFORE publishing each new GitHub release.
 - Limitation: versions <=1.6.9 have no auto-check; those users must be reached via the update email or Settings → Check for Updates.
 - Tested: iteration_33 (all passing after fixes).
+- (v1.7.0, same build) In TV Shows / Documentaries / Animations directories: year folders (2019, (2019)) act as seasons ("Season 2019"); everything under a first-level show folder merges into one show card even with no season structure. Library dir that directly holds Season/year folders is treated as the show itself. Docs/Anim folders of separate films with different years stay separate; Movies dirs untouched. Logic: multiPart.js setShowRoots/rootShow/partFolder; roots set in LocalLibraryPage + Layout. Tested iteration_34 + re-run after fixes (all pass).

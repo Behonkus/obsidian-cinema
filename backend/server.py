@@ -2903,6 +2903,8 @@ CHANGELOG = [
         "highlights": [
             "Whole TV shows in one card: every season plus Specials and Extras, with episode names",
             "Double episodes like S07E12E13 are detected",
+            "Shows sorted into year folders are grouped with each year as a season",
+            "Show folders with no season folders become one card instead of many",
             "TV Shows quick filter and folder types: Movies, TV Shows, Documentaries, Animations",
             "Stats by type with real total hours for each category",
             "New files are matched with TMDB automatically after Update Library",
