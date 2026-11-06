@@ -202,6 +202,13 @@ function normKey(s) {
   return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+// Apply an update to a card without letting a stale parts list drop parts merged in meanwhile
+export function applyCardUpdate(card, data) {
+  if (!data || !Array.isArray(data.parts) || !Array.isArray(card.parts)) return { ...card, ...data };
+  const byPath = new Map(data.parts.map(p => [p.file_path, p]));
+  return { ...card, ...data, parts: card.parts.map(p => byPath.get(p.file_path) || p), file_path: card.file_path, file_name: card.file_name };
+}
+
 export function partsOf(movie) {
   if (Array.isArray(movie.parts) && movie.parts.length > 0) return movie.parts;
   return [{ file_path: movie.file_path, file_name: movie.file_name }];

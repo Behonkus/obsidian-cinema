@@ -84,7 +84,7 @@ import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
-import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, setShowRoots, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
+import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, setShowRoots, applyCardUpdate, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
 import { PartsPlayDialog, PartsList, MultiPartSuggestDialog, MergePickerDialog } from "@/components/MultiPartDialogs";
 
@@ -358,11 +358,14 @@ export default function LocalLibraryPage() {
   const [dontShowAgainChecked, setDontShowAgainChecked] = useState(false);
   const [activeDirectory, setActiveDirectory] = useState(null);
   const [activeCategory, setActiveCategory] = useState(null);
+  const catCheckDirRef = useRef(null);
   const [dirCategories, setDirCategories] = useState(() => {
     try { return JSON.parse(localStorage.getItem(DIR_CATEGORIES_KEY) || '{}'); } catch (e) { return {}; }
   });
   const setDirType = (dir, type) => {
     const next = { ...dirCategories, [dir]: type };
+    // Switching a folder to TV / Docs / Animations re-checks it for shows to merge
+    if (type !== 'movies') catCheckDirRef.current = dir;
     setDirCategories(next);
     localStorage.setItem(DIR_CATEGORIES_KEY, JSON.stringify(next));
   };
@@ -605,7 +608,7 @@ export default function LocalLibraryPage() {
     const pending = pendingUpdatesRef.current;
     pendingUpdatesRef.current = {};
     if (Object.keys(pending).length === 0) return;
-    setMovies(prev => prev.map(m => pending[m.id] ? { ...m, ...pending[m.id] } : m));
+    setMovies(prev => prev.map(m => pending[m.id] ? applyCardUpdate(m, pending[m.id]) : m));
   };
   const queueUpdate = (id, data) => {
     pendingUpdatesRef.current[id] = { ...(pendingUpdatesRef.current[id] || {}), ...data };
@@ -623,8 +626,8 @@ export default function LocalLibraryPage() {
     }
     const data = d ? { ...d, match_confidence: 1, match_method: 'manual', needs_review: false } : { poster_path: result.poster, tmdb_id: result.id, overview: result.overview, rating: result.rating, needs_review: false };
     if (!data.poster_path) data.poster_path = result.poster;
-    setMovies(prev => prev.map(m => m.id === id ? { ...m, ...data } : m));
-    setSelectedMovie(prev => prev && prev.id === id ? { ...prev, ...data } : prev);
+    setMovies(prev => prev.map(m => m.id === id ? applyCardUpdate(m, data) : m));
+    setSelectedMovie(prev => prev && prev.id === id ? applyCardUpdate(prev, data) : prev);
     setPosterMode(null);
     setPosterSearch('');
     setPosterResults([]);
@@ -647,8 +650,8 @@ export default function LocalLibraryPage() {
       if (!d) { toast.info('No matching TV series found — try "Pick the right one" in the poster search'); return; }
       const r = await attachEpisodes(movie.parts, d.tmdb_id, tmdbApiKey);
       const data = { ...d, parts: r.parts };
-      setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, ...data } : m));
-      setSelectedMovie(prev => prev && prev.id === movie.id ? { ...prev, ...data } : prev);
+      setMovies(prev => prev.map(m => m.id === movie.id ? applyCardUpdate(m, data) : m));
+      setSelectedMovie(prev => prev && prev.id === movie.id ? applyCardUpdate(prev, data) : prev);
       const msg = 'Matched series "' + (d.tmdb_title || movie.title) + '" — ' + r.found + ' of ' + mainParts(movie).length + ' episodes found';
       if (r.found > 0) toast.success(msg); else toast.warning(msg + ' (episode details unavailable right now)');
     } finally {
@@ -1467,6 +1470,12 @@ export default function LocalLibraryPage() {
   const playMovieCb = useCallback((m) => playMovie(m), []);
   const multipartGroups = useMemo(() => findPartGroups(movies, multipartDismissed), [movies, multipartDismissed, showRootsKey]);
   useEffect(() => {
+    const catDir = catCheckDirRef.current;
+    if (catDir) {
+      catCheckDirRef.current = null;
+      const inCat = multipartGroups.filter(g => g.members.some(m => inDir(partsOf(m)[0].file_path, catDir)));
+      if (inCat.length > 0) setAutoMultiKeys(inCat.map(g => g.key));
+    }
     const ids = autoMultiIdsRef.current;
     if (ids.size === 0) return;
     const hit = multipartGroups.filter(g => g.members.some(m => ids.has(m.id)));
@@ -1500,7 +1509,7 @@ export default function LocalLibraryPage() {
       if (card.media_type !== 'tv' || !card.tmdb_id || !tmdbApiKey) return;
       if (card.parts.every(p => p.episode || partSectionName(p) === 'Extras')) return;
       const r = await attachEpisodes(card.parts, card.tmdb_id, tmdbApiKey);
-      setMovies(prev => prev.map(m => m.id === card.id ? { ...m, parts: r.parts } : m));
+      setMovies(prev => prev.map(m => m.id === card.id ? applyCardUpdate(m, { parts: r.parts }) : m));
     });
     // Brand-new show cards with no match yet: look them up as a TV series
     groups.forEach(g => {
@@ -2420,7 +2429,7 @@ export default function LocalLibraryPage() {
                               });
                             }
                           } catch (_) {}
-                          setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, ...meta } : m));
+                          setMovies(prev => prev.map(m => m.id === selectedMovie.id ? applyCardUpdate(m, meta) : m));
                           setSelectedMovie(prev => ({ ...prev, ...meta }));
                           toast.success('Metadata updated from TMDB');
                         } else {
