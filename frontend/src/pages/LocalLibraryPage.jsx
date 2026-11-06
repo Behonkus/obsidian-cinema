@@ -365,7 +365,7 @@ export default function LocalLibraryPage() {
   const setDirType = (dir, type) => {
     const next = { ...dirCategories, [dir]: type };
     // Switching a folder to TV / Docs / Animations re-checks it for shows to merge
-    if (type !== 'movies') catCheckDirRef.current = dir;
+    if (type !== 'movies' && type !== dirCategory(dirCategories, dir) && directories.includes(dir)) catCheckDirRef.current = dir;
     setDirCategories(next);
     localStorage.setItem(DIR_CATEGORIES_KEY, JSON.stringify(next));
   };
@@ -669,6 +669,7 @@ export default function LocalLibraryPage() {
   // Auto multi-part check: new files that belong with a show / multi-part title trigger a merge prompt
   const autoMultiIdsRef = useRef(new Set());
   const [autoMultiKeys, setAutoMultiKeys] = useState(null);
+  const [autoMultiHeading, setAutoMultiHeading] = useState(null);
 
   // Queue is saved so titles added while paused / without a key are matched later
   const autoMatchQueueRef = useRef(null);
@@ -1473,15 +1474,15 @@ export default function LocalLibraryPage() {
     const catDir = catCheckDirRef.current;
     if (catDir) {
       catCheckDirRef.current = null;
-      const inCat = multipartGroups.filter(g => g.members.some(m => inDir(partsOf(m)[0].file_path, catDir)));
-      if (inCat.length > 0) setAutoMultiKeys(inCat.map(g => g.key));
+      const inCat = multipartGroups.filter(g => g.members.some(m => inDir(String(partsOf(m)[0].file_path).toLowerCase(), catDir.toLowerCase())));
+      if (inCat.length > 0) { setAutoMultiHeading('Shows found in this folder'); setAutoMultiKeys(inCat.map(g => g.key)); }
     }
     const ids = autoMultiIdsRef.current;
     if (ids.size === 0) return;
     const hit = multipartGroups.filter(g => g.members.some(m => ids.has(m.id)));
     const grouped = new Set(hit.flatMap(g => g.members.map(m => m.id)));
     autoMultiIdsRef.current = new Set();
-    if (hit.length > 0) setAutoMultiKeys(hit.map(g => g.key));
+    if (hit.length > 0) { setAutoMultiHeading(null); setAutoMultiKeys(hit.map(g => g.key)); }
     // Lone show-folder files that join no group are matched on their own (as TV)
     const lone = movies.filter(m => ids.has(m.id) && !grouped.has(m.id) && partFolderOf(m.file_path).showDir && !partFolderOf(m.file_path).extra);
     if (lone.length > 0) queueAutoMatch(lone, true);
@@ -1829,7 +1830,7 @@ export default function LocalLibraryPage() {
               groups={autoMultiGroups}
               onMerge={mergeGroups}
               onDismiss={dismissMultipartGroup}
-              heading="New files belong with existing titles"
+              heading={autoMultiHeading || "New files belong with existing titles"}
             />
           )}
           {movies.length > 0 && (

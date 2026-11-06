@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only test using the simulated electronAPI harness and a mocked TMDB. All requested items pass. (1) Extras-drop fix (applyCardUpdate): 5 layouts were tested with auto-match ON and OFF. Each started with an already merged TV card (tmdb_id set); Update Library then found Extras and/or new season files. Layouts: E:\\Media\\Cartoons (anim) with 'Duck Tales (1987-1990)' and nested Extras\\Interviews; \\\\NAS\\Shows (tv) with Extras + a Season 3 file; a deep root F:\\Users\\Bob\\Videos\\Kids\\Anim with '(1940)', '(1941)' and '1942' year folders + Extras\\Commentary; root = the show folder (G:\\Home Movies); and a drive root (X:\\). In all 10 runs the result was a single card holding every part (5/4/4/3/4), with no stray cards and no page errors. (2) Folder type switch: changing dir-type-0 from Movies to Animations, TV Shows or Documentaries immediately opens multipart-suggest-dialog over the directory manager. It lists Looney Tunes (Season 1941, Season 1942), Home Movies (Season 1 + Extras) and an unorganized Random Toon as one card each. Switching to Movies does not open it, and Merge works from it. (3) Varied structures in one library (X:\\ anim, Y:\\Media\\Toons docs, Z:\\Solo Show tv as root = show, /mnt/media/toons anim with POSIX paths, M:\\Movies movies): 4 correct show groups with correct sections; Movies\\2019\\A (2019) and B (2019) are not grouped. (4) Regressions: iter35 run_fresh_auto_on, run_fresh_auto_off, run_existing_individual and run_extras_later (parts=5) pass. All iter34 run_* functions match the expected results, and the earlier MEDIUM bug (1923/Extras shows) and LOW bug (Layout stats on /settings: TV 9 on both pages) stay fixed. iter32_multipart (names, batman_flip, lost, regression) and iter32_edges give the same results as the baseline.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "MultiPartDialogs auto dialog heading when opened by a folder type switch", "issue": "The heading 'New files belong with existing titles' is wrong when the dialog opens because the folder type changed (no new files were added). Consider a title such as 'Shows found in this folder'.", "selector": "[data-testid='multipart-suggest-dialog']", "priority": "LOW"},
+      {"component": "Auto dialog row prefix for an existing merged card", "issue": "An existing Tom and Jerry card whose parts are in the (1940) and (1941) folders shows as 'Season 1940: Tom and Jerry (2 parts)', using only its first part's season. This is cosmetic.", "selector": "[data-testid^='multipart-group-show|']", "priority": "LOW"},
+      {"component": "Movies-category Extras show (pre-existing from iter32/34)", "issue": "In a Movies-category dir, D:\\TV\\Extras\\Season 1\\01 - Pilot.mkv files are still treated as extras, so no Multi-Part button appears. This is unchanged.", "selector": "[data-testid='multipart-suggest-btn']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/tests/test_iter36_varied_layouts.py", "/app/tests/test_iter35_user_paths.py", "/app/tests/test_iter34_year_seasons.py", "/app/tests/test_iter32_multipart.py", "/app/tests/test_iter32_edges.py"],
+  "action_items": [
+    "LOW (optional): change the auto multipart dialog heading or description when it is triggered by a folder type change.",
+    "LOW (optional): inDir() in DirectoryDropdowns compares case-sensitively, while rootShow compares case-insensitively. If a stored dir's case differs from the scanned file paths on Windows, the type-switch dialog filter would miss those groups."
+  ],
+  "critical_code_review_comments": [
+    "applyCardUpdate keeps card.parts as the source of truth and only replaces entries whose paths match, so a stale update cannot add or remove parts. This is correct for the race. Note that parts present only in data.parts are silently dropped; any future flow that deliberately sets a new parts list through these paths must bypass it.",
+    "setDirType relies on catCheckDirRef plus the multipartGroups effect. This works because showRootsKey is a useMemo dependency. If a type change ever does not change showRootsKey (e.g. a dir that is not in directories), the ref stays set and the next unrelated groups change would open the dialog unexpectedly. Consider clearing the ref in setDirType when the key is unchanged.",
+    "setShowRoots still runs inside useMemo, a render-time side effect on module state (noted in iteration 34)."
+  ],
+  "updated_files": ["/app/tests/test_iter36_varied_layouts.py (new)"],
+  "success_rate": {"backend": "N/A (not requested)", "frontend": "100% of requested scenarios (3 LOW cosmetic/pre-existing notes)"},
+  "seed_data_creation": "None. Isolated browser contexts with sessionStorage/localStorage mocks only.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Usage: g={'page':page}; exec(open('/app/tests/test_iter36_varied_layouts.py').read(), g); then call await g['run_extras_later_variants']('on'|'off'), run_type_switch(), run_type_switch_movies_dir() or run_structures(). It reuses open3(lib, scan, auto, cats, dirs) from iter34. The directory manager opens via [data-testid='manage-dirs-btn'] and the type select is [data-testid='dir-type-{i}']."
+}
