@@ -84,7 +84,8 @@ import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
-import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, setShowRoots, applyCardUpdate, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
+import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, setShowRoots, showRootsFrom, applyCardUpdate, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
+import { ImportTypeDialog } from "@/components/ImportTypePicker";
 import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
 import { PartsPlayDialog, PartsList, MultiPartSuggestDialog, MergePickerDialog } from "@/components/MultiPartDialogs";
 
@@ -369,9 +370,17 @@ export default function LocalLibraryPage() {
     setDirCategories(next);
     localStorage.setItem(DIR_CATEGORIES_KEY, JSON.stringify(next));
   };
+  // Set a type for folders at import time (folder scans and the folders of picked files)
+  const applyImportType = (dirs, type) => {
+    const next = { ...dirCategories };
+    dirs.forEach(d => { next[d] = type; });
+    setDirCategories(next);
+    localStorage.setItem(DIR_CATEGORIES_KEY, JSON.stringify(next));
+    setShowRoots(showRootsFrom(next));
+  };
   // TV Shows / Documentaries / Animations folders: each sub-folder groups into one show
-  const showRootsKey = directories.filter(d => dirCategory(dirCategories, d) !== 'movies').map(d => dirCategory(dirCategories, d) + '|' + d).join('\n');
-  useMemo(() => setShowRoots(showRootsKey ? showRootsKey.split('\n').map(l => ({ cat: l.slice(0, l.indexOf('|')), dir: l.slice(l.indexOf('|') + 1) })) : []), [showRootsKey]);
+  const showRootsKey = JSON.stringify(dirCategories);
+  useMemo(() => setShowRoots(showRootsFrom(JSON.parse(showRootsKey))), [showRootsKey]);
   const [dirToRemove, setDirToRemove] = useState(null);
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []; } catch { return []; }
@@ -1066,11 +1075,12 @@ export default function LocalLibraryPage() {
     fetchAbortRef.current = true;
   };
 
-  const handleMoviesFound = (newMovies, dirPath) => {
+  const handleMoviesFound = (newMovies, dirPath, importType) => {
     // Add directory if not already added
     if (!directories.includes(dirPath)) {
       setDirectories([...directories, dirPath]);
     }
+    if (importType) applyImportType([dirPath], importType);
 
     // Merge movies, avoiding duplicates by file path
     const existingPaths = allLibraryPaths(movies);
@@ -1121,7 +1131,10 @@ export default function LocalLibraryPage() {
     addIndividualFiles();
   };
 
-  const addIndividualFiles = async () => {
+  const [showFilesType, setShowFilesType] = useState(false);
+  const addIndividualFiles = () => setShowFilesType(true);
+
+  const pickIndividualFiles = async (importType) => {
     if (!isElectron() || !window.electronAPI?.openFileDialog) return;
     try {
       const result = await window.electronAPI.openFileDialog({
@@ -1151,6 +1164,7 @@ export default function LocalLibraryPage() {
         });
 
       if (newMovies.length > 0) {
+        applyImportType([...new Set(newMovies.map(m => m.file_path.replace(/[\\/][^\\/]*$/, '')))], importType);
         // Free tier limit
         let moviesToAdd = newMovies;
         if (isFreeTierUser()) {
@@ -1428,7 +1442,7 @@ export default function LocalLibraryPage() {
     return col ? new Set(col.movie_ids) : null;
   }, [activeCollection, collections]);
   const activeCategoryDirs = useMemo(
-    () => (activeCategory ? directories.filter(d => dirCategory(dirCategories, d) === activeCategory) : null),
+    () => (activeCategory ? [...new Set([...directories, ...Object.keys(dirCategories)])].filter(d => dirCategory(dirCategories, d) === activeCategory) : null),
     [activeCategory, directories, dirCategories]
   );
   const filteredMovies = useMemo(() => sortMovies(
@@ -1663,6 +1677,7 @@ export default function LocalLibraryPage() {
         {/* Row 2: Action buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
+          <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={pickIndividualFiles} />
           <Button variant="outline" size="sm" onClick={handleAddFiles} data-testid="add-files-btn" title="Add individual movie files">
             <FilePlus2 className="w-4 h-4 mr-1.5" />
             <span className="text-xs">Add Individual Movies</span>

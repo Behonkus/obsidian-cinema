@@ -28,7 +28,7 @@ import {
   TagsIcon,
   Tv
 } from "lucide-react";
-import { isSeries, setShowRoots } from "@/lib/multiPart";
+import { isSeries, setShowRoots, showRootsFrom } from "@/lib/multiPart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -141,7 +141,7 @@ function SidebarWidgets() {
       const dirList = dirs ? JSON.parse(dirs) : [];
       const dirCount = dirList.length;
       const cats = JSON.parse(localStorage.getItem('obsidian_cinema_dir_categories') || '{}');
-      setShowRoots(dirList.filter(d => cats[d] && cats[d] !== 'movies').map(d => ({ dir: d, cat: cats[d] })));
+      setShowRoots(showRootsFrom(cats));
       const favs = localStorage.getItem('obsidian_cinema_favorites');
       const favList = favs ? JSON.parse(favs) : [];
       const now = Date.now();

@@ -104,6 +104,11 @@ export function setShowRoots(roots) {
     .sort((a, b) => b.dir.length - a.dir.length);
 }
 
+// Folder-type map ({ dir: 'movies'|'tv'|'docs'|'anim' }) -> show roots (Movies entries stop a parent's grouping)
+export function showRootsFrom(categories) {
+  return Object.keys(categories || {}).filter(d => categories[d]).map(d => ({ dir: d, cat: categories[d] }));
+}
+
 function folderSeason(name) {
   const sm = name.match(SEASON_DIR);
   if (sm) return parseInt(sm[1], 10);
@@ -118,11 +123,13 @@ function rootShow(dir, filePath) {
   const root = showRoots.find(r => {
     if (!lower.startsWith(r.dir.toLowerCase())) return false;
     const c = dir.charAt(r.dir.length);
-    return c === '\\' || c === '/';
+    return c === '' || c === '\\' || c === '/';
   });
-  if (!root) return null;
+  if (!root || root.cat === 'movies') return null;
   const sep = dir.includes('\\') ? '\\' : '/';
   const rest = dir.slice(root.dir.length).split(/[\\/]/).filter(Boolean);
+  // Files sitting directly in the folder: the folder itself is the show (e.g. Modern Marvels\*.mkv)
+  if (rest.length === 0) return { showDir: root.dir, season: null, cat: root.cat, loose: true };
   // The library folder is itself one show only when it directly holds Season / year / Extras folders,
   // not show folders named like one (1923\\Season 1, a show called "Extras")
   const seasonLike = s => !!s && (folderSeason(s.trim()) != null || EXTRAS_DIR.test(s.trim()));
@@ -155,7 +162,7 @@ export function partFolder(filePath) {
     if (rs) return { showDir: rs.showDir, extra: true, root: rs.cat };
     return { showDir: showSegs.join(dir.includes('\\') ? '\\' : '/'), extra: true };
   }
-  if (rs) return rs.season != null ? { showDir: rs.showDir, season: rs.season, root: rs.cat } : { showDir: rs.showDir, root: rs.cat };
+  if (rs) return rs.season != null ? { showDir: rs.showDir, season: rs.season, root: rs.cat } : { showDir: rs.showDir, root: rs.cat, loose: rs.loose };
   const name = baseName(dir).trim();
   const showDir = dirOf(dir);
   if (!showDir || showDir === dir) return {};
@@ -269,7 +276,8 @@ export function findPartGroups(movies, dismissed) {
     const f = partFolder(partsOf(m)[0].file_path);
     if (!f.showDir) return;
     const key = 'show|' + f.showDir.toLowerCase();
-    if (!shows[key]) shows[key] = { key, showDir: f.showDir, cards: [], hasSeason: false, root: null };
+    if (!shows[key]) shows[key] = { key, showDir: f.showDir, cards: [], hasSeason: false, root: null, loose: false };
+    if (f.loose) shows[key].loose = true;
     shows[key].cards.push(m);
     if (f.season != null) shows[key].hasSeason = true;
     if (f.root) shows[key].root = f.root;
@@ -279,10 +287,15 @@ export function findPartGroups(movies, dismissed) {
     const main = sh.cards.filter(c => !partFolder(partsOf(c)[0].file_path).extra);
     // Inside a TV Shows / Documentaries / Animations folder, everything under the show folder is one show
     const isShow = sh.hasSeason || (!!sh.root && (sh.root === 'tv' || main.length > 1));
-    // Documentary / animation folders holding separate films from different years stay separate
+    // Documentary / animation folders of separate films, each from its own year, stay separate
     if (isShow && !sh.hasSeason && sh.root && sh.root !== 'tv') {
-      const years = new Set(main.map(c => parseFilename(c.file_name).year || c.year).filter(Boolean));
-      if (years.size > 1) return;
+      const years = main.map(c => parseFilename(c.file_name).year || c.year).filter(Boolean);
+      if (years.length === main.length && new Set(years).size === main.length) return;
+    }
+    // Loose files of several different shows (Show.A.S01E01, Show.B.S01E01) in one folder stay apart
+    if (sh.loose) {
+      const names = new Set(main.filter(c => /s\d{1,2}\s*e\d{1,3}/i.test(c.file_name)).map(c => normKey(parseFilename(c.file_name).title)).filter(Boolean));
+      if (names.size > 1) return;
     }
     const loose = sh.root ? main : movies.filter(m => !isMultiPart(m) && dirOf(m.file_path).toLowerCase() === sh.showDir.toLowerCase());
     // A single movie in its own folder (folder name matches the movie) with an Extras folder: movie + extras

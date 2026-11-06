@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { ImportTypePicker } from "@/components/ImportTypePicker";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   FolderOpen, 
@@ -96,6 +97,7 @@ function ScanningOverlay({ path, elapsed }) {
 }
 
 export default function LocalDirectoryBrowser({ onMoviesFound }) {
+  var [importType, setImportType] = useState(null);
   var [drives, setDrives] = useState([]);
   var [currentPath, setCurrentPath] = useState('');
   var [items, setItems] = useState([]);
@@ -189,10 +191,11 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
       }
 
       if (onMoviesFound && movies.length > 0) {
-        onMoviesFound(movies, currentPath);
+        onMoviesFound(movies, currentPath, importType);
       }
 
       setIsOpen(false);
+      setImportType(null);
     } catch (err) {
       console.error('Scan failed:', err);
       toast.error('Failed to scan folder');
@@ -349,6 +352,10 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
                 <p className="text-[10px] text-muted-foreground/70 mt-0.5">All subdirectories will be included in this scan.</p>
               </div>
             )}
+
+            {currentPath && !scanning && (
+              <ImportTypePicker value={importType} onChange={setImportType} testPrefix="scan-type" />
+            )}
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2 shrink-0">
@@ -357,7 +364,8 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
             </Button>
             <Button 
               onClick={scanCurrentFolder}
-              disabled={!currentPath || scanning}
+              disabled={!currentPath || !importType || scanning}
+              data-testid="scan-folder-btn"
               className="gap-2 w-full sm:w-auto"
             >
               {scanning ? (

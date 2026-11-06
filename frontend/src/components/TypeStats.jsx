@@ -40,7 +40,7 @@ export function computeTypeStats(movies, directories) {
   const out = {};
   DIR_CATEGORIES.forEach(c => { out[c.id] = { titles: 0, files: 0, episodes: 0, minutes: 0, known: 0 }; });
   movies.forEach(m => {
-    const dir = directories.filter(d => inDir(m.file_path, d)).sort((a, b) => b.length - a.length)[0];
+    const dir = [...directories, ...Object.keys(categories)].filter(d => inDir(m.file_path, d)).sort((a, b) => b.length - a.length)[0];
     const cat = dir ? dirCategory(categories, dir) : 'movies';
     const t = out[cat] || out.movies;
     const r = cardMinutes(m);
