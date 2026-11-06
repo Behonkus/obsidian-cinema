@@ -84,7 +84,7 @@ import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
-import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
+import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, setShowRoots, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
 import { PartsPlayDialog, PartsList, MultiPartSuggestDialog, MergePickerDialog } from "@/components/MultiPartDialogs";
 
@@ -366,6 +366,9 @@ export default function LocalLibraryPage() {
     setDirCategories(next);
     localStorage.setItem(DIR_CATEGORIES_KEY, JSON.stringify(next));
   };
+  // TV Shows / Documentaries / Animations folders: each sub-folder groups into one show
+  const showRootsKey = directories.filter(d => dirCategory(dirCategories, d) !== 'movies').map(d => dirCategory(dirCategories, d) + '|' + d).join('\n');
+  useMemo(() => setShowRoots(showRootsKey ? showRootsKey.split('\n').map(l => ({ cat: l.slice(0, l.indexOf('|')), dir: l.slice(l.indexOf('|') + 1) })) : []), [showRootsKey]);
   const [dirToRemove, setDirToRemove] = useState(null);
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []; } catch { return []; }
@@ -1457,12 +1460,12 @@ export default function LocalLibraryPage() {
              (movie.cast && movie.cast.some(c => c.name?.toLowerCase().includes(query)));
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [movies, quickFilter, selectedGenre, activeDirectory, activeCategoryDirs, activeCollectionIds, deferredSearch, sortBy, favoriteSet]);
+  ), [movies, quickFilter, selectedGenre, activeDirectory, activeCategoryDirs, activeCollectionIds, deferredSearch, sortBy, favoriteSet, showRootsKey]);
 
   const openMovieDetailCb = useCallback((m) => { setSelectedMovie(m); trackActivity(m.id, 'view'); }, []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const playMovieCb = useCallback((m) => playMovie(m), []);
-  const multipartGroups = useMemo(() => findPartGroups(movies, multipartDismissed), [movies, multipartDismissed]);
+  const multipartGroups = useMemo(() => findPartGroups(movies, multipartDismissed), [movies, multipartDismissed, showRootsKey]);
   useEffect(() => {
     const ids = autoMultiIdsRef.current;
     if (ids.size === 0) return;
