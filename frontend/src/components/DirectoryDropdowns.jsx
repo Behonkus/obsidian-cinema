@@ -31,9 +31,9 @@ function dirLabel(dir) {
   return dir.split(/[\\/]/).pop() || dir;
 }
 
-function CategoryDropdown({ cat, dirs, counts, activeDirectory, activeCategory, onPickDir, onPickCategory }) {
+function CategoryDropdown({ cat, dirs, counts, catTotal, activeDirectory, activeCategory, onPickDir, onPickCategory }) {
   const Icon = cat.icon;
-  const total = dirs.reduce((t, d) => t + (counts[d] || 0), 0);
+  const total = catTotal ?? dirs.reduce((t, d) => t + (counts[d] || 0), 0);
   const activeDir = dirs.find(d => d === activeDirectory);
   const isActive = activeCategory === cat.id || !!activeDir;
   return (
@@ -79,7 +79,7 @@ function CategoryDropdown({ cat, dirs, counts, activeDirectory, activeCategory, 
 }
 
 // "All" button + one colored dropdown per folder type + manage gear
-export function DirectoryDropdowns({ directories, categories, counts, totalCount, activeDirectory, activeCategory, onPickDir, onPickCategory, onClearAll, onManage }) {
+export function DirectoryDropdowns({ directories, categories, counts, catCounts, totalCount, activeDirectory, activeCategory, onPickDir, onPickCategory, onClearAll, onManage }) {
   return (
     <div className="flex flex-wrap items-center gap-2" data-testid="directory-filter">
       <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -99,6 +99,7 @@ export function DirectoryDropdowns({ directories, categories, counts, totalCount
           cat={cat}
           dirs={directories.filter(d => dirCategory(categories, d) === cat.id)}
           counts={counts}
+          catTotal={catCounts ? (catCounts[cat.id] || 0) : undefined}
           activeDirectory={activeDirectory}
           activeCategory={activeCategory}
           onPickDir={onPickDir}

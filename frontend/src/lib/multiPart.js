@@ -113,10 +113,10 @@ function looksLikeSeries(cards, folder) {
   if (folderKey && names.filter(n => normKey(n).startsWith(folderKey)).length >= half) return true;
   const starts = {};
   names.forEach(n => {
-    const w = (parseFilename(n).title || '').toLowerCase().split(/\s+/).slice(0, 2).join(' ');
+    const w = (parseFilename(n).title || '').toLowerCase().replace(/^(the|a|an)\s+/, '').split(/\s+/).slice(0, 2).join(' ');
     if (w) starts[w] = (starts[w] || 0) + 1;
   });
-  return Object.values(starts).some(n => n >= half && n >= 2);
+  return Object.values(starts).some(n => n > cards.length / 2 && n >= 2);
 }
 
 // Folder-type map ({ dir: 'movies'|'tv'|'docs'|'anim' }) -> show roots (Movies entries stop a parent's grouping)

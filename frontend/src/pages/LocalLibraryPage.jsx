@@ -1573,9 +1573,14 @@ export default function LocalLibraryPage() {
       if (m.tmdb_id && !m.metadata_updated_at) needsDetails++;
     });
     typedDirs.forEach(d => { dirCounts[d] = 0; });
-    movies.forEach(m => { typedDirs.forEach(d => { if (inDir(m.file_path, d)) dirCounts[d]++; }); });
-    return { dirCounts, missingPoster, needsReview, needsDetails };
-  }, [movies, typedDirs]);
+    const catCounts = {};
+    movies.forEach(m => {
+      const cats = new Set();
+      typedDirs.forEach(d => { if (inDir(m.file_path, d)) { dirCounts[d]++; cats.add(dirCategory(dirCategories, d)); } });
+      cats.forEach(c => { catCounts[c] = (catCounts[c] || 0) + 1; });
+    });
+    return { dirCounts, catCounts, missingPoster, needsReview, needsDetails };
+  }, [movies, typedDirs, dirCategories]);
 
   const displayedMovies = filteredMovies.slice(0, visibleCount);
   const hasMore = visibleCount < filteredMovies.length;
@@ -1934,6 +1939,7 @@ export default function LocalLibraryPage() {
           directories={typedDirs}
           categories={dirCategories}
           counts={libraryCounts.dirCounts}
+          catCounts={libraryCounts.catCounts}
           totalCount={movies.length}
           activeDirectory={activeDirectory}
           activeCategory={activeCategory}

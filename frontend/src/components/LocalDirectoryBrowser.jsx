@@ -359,7 +359,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2 shrink-0">
-            <Button variant="outline" onClick={function() { setIsOpen(false); }} disabled={scanning} className="w-full sm:w-auto">
+            <Button variant="outline" onClick={function() { setIsOpen(false); setImportType(null); }} disabled={scanning} className="w-full sm:w-auto">
               Cancel
             </Button>
             <Button 
