@@ -8,6 +8,7 @@ import {
   FolderOpen,
   RefreshCw,
   Trash2,
+  FileVideo,
   ExternalLink,
   Copy,
   HardDrive,
@@ -366,7 +367,7 @@ export default function LocalLibraryPage() {
   const setDirType = (dir, type) => {
     const next = { ...dirCategories, [dir]: type };
     // Switching a folder to TV / Docs / Animations re-checks it for shows to merge
-    if (type !== 'movies' && type !== dirCategory(dirCategories, dir) && directories.includes(dir)) catCheckDirRef.current = dir;
+    if (type !== 'movies' && type !== dirCategory(dirCategories, dir) && (directories.includes(dir) || dir in dirCategories)) catCheckDirRef.current = dir;
     setDirCategories(next);
     localStorage.setItem(DIR_CATEGORIES_KEY, JSON.stringify(next));
   };
@@ -382,6 +383,20 @@ export default function LocalLibraryPage() {
   const showRootsKey = JSON.stringify(dirCategories);
   useMemo(() => setShowRoots(showRootsFrom(JSON.parse(showRootsKey))), [showRootsKey]);
   const [dirToRemove, setDirToRemove] = useState(null);
+  const [fileDirToRemove, setFileDirToRemove] = useState(null);
+  // Titles that came in through Add Files from this exact folder
+  const inFileDir = (m, dir) => String(m.file_path).replace(/[\\/][^\\/]*$/, '').toLowerCase() === dir.toLowerCase();
+  const removeFileDir = (dir) => {
+    const count = movies.filter(m => inFileDir(m, dir)).length;
+    setMovies(prev => prev.filter(m => !inFileDir(m, dir)));
+    if (activeDirectory === dir) setActiveDirectory(null);
+    const nextCats = { ...dirCategories };
+    delete nextCats[dir];
+    setDirCategories(nextCats);
+    localStorage.setItem(DIR_CATEGORIES_KEY, JSON.stringify(nextCats));
+    setFileDirToRemove(null);
+    toast.success('Removed ' + count + ' titles from your library');
+  };
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []; } catch { return []; }
   });
@@ -3039,9 +3054,74 @@ export default function LocalLibraryPage() {
                 </div>
               );
             })}
+            {(function() {
+              var fileDirs = Object.keys(dirCategories).filter(function(d) { return !directories.includes(d) && movies.some(function(m) { return inFileDir(m, d); }); });
+              if (fileDirs.length === 0) return null;
+              return (
+                <div className="pt-3 space-y-2" data-testid="file-dirs-section">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Folders from Add Files</p>
+                  {fileDirs.map(function(dir, i) {
+                    var count = movies.filter(function(m) { return inFileDir(m, dir); }).length;
+                    return (
+                      <div key={dir} className="flex items-center gap-1.5 p-2 rounded-lg bg-secondary/20 border border-dashed border-border/60" data-testid={'file-dir-' + i}>
+                        <FileVideo className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{dir.split(/[\\/]/).pop() || dir}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{dir}</p>
+                        </div>
+                        <select
+                          value={dirCategory(dirCategories, dir)}
+                          onChange={(e) => setDirType(dir, e.target.value)}
+                          className="h-7 text-xs rounded-md bg-background border border-border px-1.5 shrink-0"
+                          title="Type of the files added from this folder"
+                          data-testid={'file-dir-type-' + i}
+                        >
+                          {DIR_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                        </select>
+                        <span className="text-xs text-muted-foreground shrink-0" data-testid={'file-dir-count-' + i}>{count} titles</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => { setShowDirManager(false); setFileDirToRemove(dir); }}
+                          title="Remove these titles"
+                          data-testid={'file-dir-remove-' + i}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Add Files folder confirmation */}
+      <AlertDialog open={!!fileDirToRemove} onOpenChange={(open) => { if (!open) setFileDirToRemove(null); }}>
+        <AlertDialogContent data-testid="file-dir-remove-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove these titles?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the {fileDirToRemove ? movies.filter(m => inFileDir(m, fileDirToRemove)).length : 0} titles you added from <strong className="text-foreground">{fileDirToRemove && (fileDirToRemove.split(/[\\/]/).pop() || fileDirToRemove)}</strong> from your library.
+              <span className="block mt-2 text-muted-foreground">No files will be deleted from your system.</span>
+              <span className="block mt-1 text-xs text-muted-foreground font-mono break-all">{fileDirToRemove}</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="file-dir-remove-cancel">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => removeFileDir(fileDirToRemove)}
+              data-testid="file-dir-remove-confirm"
+            >
+              Remove
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
