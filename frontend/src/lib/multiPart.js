@@ -104,6 +104,21 @@ export function setShowRoots(roots) {
     .sort((a, b) => b.dir.length - a.dir.length);
 }
 
+// Loose files read as one series: mostly numbered, named after the folder, or sharing a name start
+function looksLikeSeries(cards, folder) {
+  const half = Math.ceil(cards.length / 2);
+  const names = cards.map(c => String(c.file_name || ''));
+  if (cards.filter(c => partNum(partsOf(c)[0]) != null).length >= half) return true;
+  const folderKey = normKey(parseFilename(baseName(folder)).title);
+  if (folderKey && names.filter(n => normKey(n).startsWith(folderKey)).length >= half) return true;
+  const starts = {};
+  names.forEach(n => {
+    const w = (parseFilename(n).title || '').toLowerCase().split(/\s+/).slice(0, 2).join(' ');
+    if (w) starts[w] = (starts[w] || 0) + 1;
+  });
+  return Object.values(starts).some(n => n >= half && n >= 2);
+}
+
 // Folder-type map ({ dir: 'movies'|'tv'|'docs'|'anim' }) -> show roots (Movies entries stop a parent's grouping)
 export function showRootsFrom(categories) {
   return Object.keys(categories || {}).filter(d => categories[d]).map(d => ({ dir: d, cat: categories[d] }));
@@ -294,8 +309,10 @@ export function findPartGroups(movies, dismissed) {
     }
     // Loose files of several different shows (Show.A.S01E01, Show.B.S01E01) in one folder stay apart
     if (sh.loose) {
-      const names = new Set(main.filter(c => /s\d{1,2}\s*e\d{1,3}/i.test(c.file_name)).map(c => normKey(parseFilename(c.file_name).title)).filter(Boolean));
+      const names = new Set(main.map(c => partInfo(c.file_name)).filter(i => i && i.num >= 1000).map(i => normKey(i.base)).filter(Boolean));
       if (names.size > 1) return;
+      // Documentary / animation folders: loose files only form a show when they look like episodes
+      if (sh.root !== 'tv' && !looksLikeSeries(main, sh.showDir)) return;
     }
     const loose = sh.root ? main : movies.filter(m => !isMultiPart(m) && dirOf(m.file_path).toLowerCase() === sh.showDir.toLowerCase());
     // A single movie in its own folder (folder name matches the movie) with an Extras folder: movie + extras

@@ -1562,6 +1562,8 @@ export default function LocalLibraryPage() {
     else if (window.electronAPI?.openExternal) window.electronAPI.openExternal(part.file_path);
     toast.success('Opening: ' + part.file_name);
   };
+  // Scanned folders plus folders typed through Add Files
+  const typedDirs = useMemo(() => [...new Set([...directories, ...Object.keys(dirCategories)])], [directories, dirCategories]);
   const libraryCounts = useMemo(() => {
     const dirCounts = {};
     let missingPoster = 0, needsReview = 0, needsDetails = 0;
@@ -1570,10 +1572,10 @@ export default function LocalLibraryPage() {
       if (m.needs_review) needsReview++;
       if (m.tmdb_id && !m.metadata_updated_at) needsDetails++;
     });
-    directories.forEach(d => { dirCounts[d] = 0; });
-    movies.forEach(m => { directories.forEach(d => { if (inDir(m.file_path, d)) dirCounts[d]++; }); });
+    typedDirs.forEach(d => { dirCounts[d] = 0; });
+    movies.forEach(m => { typedDirs.forEach(d => { if (inDir(m.file_path, d)) dirCounts[d]++; }); });
     return { dirCounts, missingPoster, needsReview, needsDetails };
-  }, [movies, directories]);
+  }, [movies, typedDirs]);
 
   const displayedMovies = filteredMovies.slice(0, visibleCount);
   const hasMore = visibleCount < filteredMovies.length;
@@ -1927,9 +1929,9 @@ export default function LocalLibraryPage() {
 
 
       {/* Directory Filter: one colored dropdown per folder type */}
-      {directories.length > 0 && (
+      {typedDirs.length > 0 && (
         <DirectoryDropdowns
-          directories={directories}
+          directories={typedDirs}
           categories={dirCategories}
           counts={libraryCounts.dirCounts}
           totalCount={movies.length}

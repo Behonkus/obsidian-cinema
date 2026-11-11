@@ -257,7 +257,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
 
   return (
     <>
-      <Button onClick={handleBrowseClick} className="gap-2">
+      <Button onClick={handleBrowseClick} className="gap-2" data-testid="browse-local-drives-btn">
         <FolderOpen className="w-4 h-4" />
         Browse Local Drives
       </Button>
@@ -296,7 +296,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={isOpen} onOpenChange={function(open) { if (!scanning) setIsOpen(open); }}>
+      <Dialog open={isOpen} onOpenChange={function(open) { if (!scanning) { setIsOpen(open); if (!open) setImportType(null); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -304,7 +304,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
               Browse Local Drives
             </DialogTitle>
             <DialogDescription>
-              Select a folder to scan for movies
+              Select a folder and what it contains, then scan
             </DialogDescription>
           </DialogHeader>
 
@@ -376,7 +376,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
               ) : (
                 <>
                   <Search className="w-4 h-4" />
-                  Scan for Movies
+                  {importType && importType !== 'movies' ? 'Scan for Shows' : 'Scan for Movies'}
                 </>
               )}
             </Button>
