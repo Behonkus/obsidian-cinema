@@ -395,7 +395,7 @@ export default function LocalLibraryPage() {
     setDirCategories(nextCats);
     localStorage.setItem(DIR_CATEGORIES_KEY, JSON.stringify(nextCats));
     setFileDirToRemove(null);
-    toast.success('Removed ' + count + ' titles from your library');
+    toast.success('Removed ' + count + (count === 1 ? ' title' : ' titles') + ' from your library');
   };
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []; } catch { return []; }
@@ -1179,7 +1179,8 @@ export default function LocalLibraryPage() {
         });
 
       if (newMovies.length > 0) {
-        applyImportType([...new Set(newMovies.map(m => m.file_path.replace(/[\\/][^\\/]*$/, '')))], importType);
+        // Folders inside a scanned directory keep that directory's type
+        applyImportType([...new Set(newMovies.map(m => m.file_path.replace(/[\\/][^\\/]*$/, '')))].filter(d => !directories.some(r => d === r || inDir(d, r))), importType);
         // Free tier limit
         let moviesToAdd = newMovies;
         if (isFreeTierUser()) {
@@ -3030,7 +3031,7 @@ export default function LocalLibraryPage() {
                   >
                     {DIR_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                   </select>
-                  <span className="text-xs text-muted-foreground shrink-0">{count} titles</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{count} {count === 1 ? 'title' : 'titles'}</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -3055,7 +3056,7 @@ export default function LocalLibraryPage() {
               );
             })}
             {(function() {
-              var fileDirs = Object.keys(dirCategories).filter(function(d) { return !directories.includes(d) && movies.some(function(m) { return inFileDir(m, d); }); });
+              var fileDirs = Object.keys(dirCategories).filter(function(d) { return !directories.some(function(r) { return d === r || inDir(d, r); }) && movies.some(function(m) { return inFileDir(m, d); }); });
               if (fileDirs.length === 0) return null;
               return (
                 <div className="pt-3 space-y-2" data-testid="file-dirs-section">
@@ -3078,7 +3079,7 @@ export default function LocalLibraryPage() {
                         >
                           {DIR_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                         </select>
-                        <span className="text-xs text-muted-foreground shrink-0" data-testid={'file-dir-count-' + i}>{count} titles</span>
+                        <span className="text-xs text-muted-foreground shrink-0" data-testid={'file-dir-count-' + i}>{count} {count === 1 ? 'title' : 'titles'}</span>
                         <Button
                           variant="ghost"
                           size="sm"
