@@ -2898,6 +2898,20 @@ async def admin_get_stats(request: Request, session_token: Optional[str] = Cooki
 
 CHANGELOG = [
     {
+        "version": "1.7.1",
+        "date": "2026-06",
+        "highlights": [
+            "Choose Movies, TV Shows, Documentaries or Animations before importing folders or files",
+            "Folders full of episodes (e.g. Modern Marvels) become one card named after the folder",
+            "Extras merged into a show no longer reappear as separate cards",
+            "Fix the type of folders added with Add Files in Manage Directories",
+            "AKA titles on movie cards and in the details, and searchable",
+            "Cast Insights show film actors only, plus new Director Insights",
+            "Click any actor or director to see their films and well-known films you don't own",
+            "Duplicate genres like Action & Adventure merged into Action",
+        ],
+    },
+    {
         "version": "1.7.0",
         "date": "2026-06",
         "highlights": [

@@ -25,7 +25,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - License key tied to machine ID (anti-sharing)
 - Landing page version badge reads dynamically from package.json
 
-## Current Version: 1.7.0
+## Current Version: 1.7.1
 
 ## Known Issues
 - ~~P2: StatusBar PRO badge — Intermittent display due to Electron IPC timing.~~ **FIXED** (custom event + multi-signal approach)
@@ -114,3 +114,4 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - (v1.7.0, same build) AKA titles: fetchMovieDetails adds alternative_titles -> movie.aka (English US/GB/CA/AU/IE/NZ aliases first, original title kept, max 6); shown as 'aka …' on cards (medium/large) and 'Also known as' in the detail window; searchable. Background auto-fill re-fetches older films without aka. Cast Insights now film-only (no TV/series, documentaries, concert films with mostly Himself credits; no Himself/Self credits or non-Acting department people). New Director Insights (lib/peopleStats.js, components/DirectorInsights.jsx): most films, top-rated (min 5), genre range, actor-director pairs. Tested iteration_39 (41/41) + re-run.
 - (v1.7.0, same build) Filmographies: clicking an actor (Cast Insights), director or actor-director pair (Director Insights) opens FilmographyDialog on the Stats page listing their films (film-only rules, newest first, 'as character', rating); clicking a film opens it in the Library via ?open=<id>. Pair count = top-5 billed rule. Tested iteration_40 + re-run (all pass).
 - (v1.7.0, same build) Genre de-dup: TMDB TV combo genres mapped to the first movie genre (Action & Adventure->Action, Sci-Fi & Fantasy->Science Fiction, War & Politics->War, Kids->Family) on fetch and on library/stats load (tmdbMatcher normalizeGenres). Filmography pop-up: 'Show all in Library' filters the grid via ?person=&role=[&director=] with a clearable chip; 'Well-known films not in your library' lists up to 8 TMDB films (search/person + movie_credits, most voted first, opens TMDB). Tested iteration_41 (all pass).
+- 1.7.1 (June 2026): version bump; CHANGELOG 1.7.1 entry in backend/server.py; marketing + Admin email updated.
