@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend-only testing of v1.7.1 changes using the simulated electronAPI harness with mocked TMDB, Wikidata SPARQL and wbsearchentities (new file /app/tests/test_iter44_fix_missing.py). The TV Shows quick filter is gone from both the expanded and collapsed sidebar. Recently Added shows the 100 newest titles, newest first, even with sort set to title-asc. Fix missing info with a TMDB key: TMDB refresh, TMDB match and Wikidata lookups by P4947/P345/P4983 and by search (year within 1) all work. Rating preference IMDb > Metacritic > RT works, and so do the genre mapping and local year/genre clues. Present fields are never overwritten, gap_checked_at is stamped on every checked title, the button progress works, and the toast appears. Without a key: no TMDB calls, Wikidata batches were 50/50/17, local clues filled. Year mismatch: dialog, notice, strike-through, checkboxes, Not now, reopening from the chip and renaming (a mocked failure kept the old name and showed an error toast) all work. Multi-part titles are excluded and no delete IPC was called. Background pass: started about 25s after load, showed the fix-missing-bg indicator, was quiet, put mismatches in the chip without opening the dialog, and did not repeat itself (checked after 32s and after a reload). Regression checks (iter43 detail filmography, iter42 genres/Stats, iter41 filmography) all passed with no page errors. Only minor issues found.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "MovieCard (components/MovieCard.jsx:159)", "issue": "`{movie.rating && (...)}` shows a literal '0' on cards whose rating is 0. These are exactly the titles in the No Rating filter (seen on Heat, TEST_Matrix etc. in the screenshot). Use `movie.rating > 0 &&`. The same pattern is in MovieDetailModal.jsx:376 and LocalLibraryPage.jsx:270 (rating.toFixed).", "selector": "h3.font-medium.truncate sibling", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [
+      {"flow": "Year mismatch rename failure", "issue": "renameMismatches removes every attempted item from yearMismatches, including failed ones. After a failed rename the chip disappears and the user cannot retry. Those titles are also stamped gap_checked_at, so they are not re-offered for 30 days.", "affected_selectors": ["year-mismatch-chip"]},
+      {"flow": "Background mismatches persistence", "issue": "yearMismatches is in-memory state only. Mismatches found by the background pass are lost on restart or reload, and the titles are not re-checked for 30 days because of gap_checked_at, so the user never sees the rename offer. Persist the mismatch list (e.g. localStorage), or don't stamp mismatched titles.", "affected_selectors": ["year-mismatch-chip"]}
+    ],
+    "design_issues": [
+      {"screen": "Fix missing info toast", "issues": ["'Filled missing info for 13 of 13 titles' counted titles that got any field, while 3 titles were still in No Rating afterwards. Consider 'Filled N fields' or a per-field breakdown."]}
+    ]
+  },
+  "test_report_links": ["/app/tests/test_iter44_fix_missing.py", "/app/tests/test_iter43_detail_filmography.py"],
+  "action_items": [
+    "Hide the rating badge when rating is 0 (MovieCard.jsx:159, MovieDetailModal.jsx:376, LocalLibraryPage.jsx:270)",
+    "Keep failed renames in yearMismatches so the chip stays and the user can retry",
+    "Persist yearMismatches found by the background pass, or don't stamp gap_checked_at on mismatched titles",
+    "Real-Wikidata quality: wbsearchentities('Heat', limit 7) returned no film at all, so title search misses common titles. Search 'title year' or a larger limit, or use list=search with haswbstatement:P31=Q11424"
+  ],
+  "critical_code_review_comments": [
+    "fixMissing.js unmatched path: set(m, {...d}) applies the full fetchFullMetadata result. Existing cast/directors/director on the card were overwritten with []/null (seen on TEST_Matchable). This conflicts with 'fields already present are never overwritten'. Merge only fields that are empty.",
+    "wikidataByTitle accepts the first film/series hit when neither the card nor the filename has a year. That can easily attach a wrong title's rating/genres. Consider requiring a year, or an exact label match.",
+    "scoreFromWikidata picks an arbitrary IMDb score when Wikidata holds several dated IMDb values (real Heat data has several RT entries: '7.8/10', '83%', '84%'). Prefer the latest (pq:P585) or the highest rank.",
+    "The WD_GENRES mapping turns real Heat genres into 6 genres (Action, Adventure, Crime, Drama, Mystery, Thriller). It is noisy but acceptable. Consider capping at 3-4.",
+    "The SPARQL cross product (pub x genre x score) returned 420 rows for one IMDb id. With batches of 50 that is about 20k rows; it works, but GROUP_CONCAT or separate queries would be lighter.",
+    "LocalLibraryPage.jsx is 3396 lines (not refactored per instruction)."
+  ],
+  "updated_files": ["/app/tests/test_iter44_fix_missing.py"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "98% (1 observation-level failure: failed rename dropped from chip)"},
+  "seed_data_creation": "None. All data lives in an isolated browser context (sessionStorage fake library). No physical files were touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: g={'page':page}; exec(open('/app/tests/test_iter44_fix_missing.py').read(), g); then await g['run_sidebar_recent'](), g['run_fix_manual'](), g['run_fix_nokey'](), g['run_background']() (~2 min). The harness wraps window.electronAPI to mock renameFile (fail list via fail=) and records IPC calls in window.__ipc. It seeds D:\\Anim (anim) and D:\\Docs (docs) folder types, and mocks Wikidata through WD/SEARCH dicts. The 'OBS: failed rename still offered in chip' check is expected to fail until the main agent changes that behaviour.",
+  "rca of the issue": "Rating '0' on cards: React renders the number 0 from `0 && <jsx>`. Failed renames vanish because renameMismatches filters yearMismatches by every item attempted, not only the successful ones."
+}

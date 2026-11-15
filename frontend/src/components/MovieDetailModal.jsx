@@ -373,7 +373,7 @@ export default function MovieDetailModal({ movie, isOpen, onClose, onUpdate }) {
                       {movie.runtime} min
                     </span>
                   )}
-                  {movie.rating && (
+                  {movie.rating > 0 && (
                     <span className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                       {movie.rating.toFixed(1)}

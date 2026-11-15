@@ -1,4 +1,4 @@
-import { tmdbGet, parseFilename, fetchDetails, fetchFullMetadata, normalizeGenres, runPool } from "@/lib/tmdbMatcher";
+import { parseFilename, fetchDetails, fetchFullMetadata, normalizeGenres, runPool, titleSimilarity } from "@/lib/tmdbMatcher";
 import { isMultiPart } from "@/lib/multiPart";
 
 const WDQS = 'https://query.wikidata.org/sparql';
@@ -45,9 +45,10 @@ export function scoreFromWikidata(scores) {
     return null;
   };
   const rank = (by) => (/imdb/i.test(by || '') ? 0 : /metacritic/i.test(by || '') ? 1 : /rotten/i.test(by || '') ? 2 : 3);
-  const vals = (scores || []).map(s => ({ v: parse(s.score), r: rank(s.by) })).filter(s => s.v != null && s.v > 0 && s.v <= 10);
+  const vals = (scores || []).map(s => ({ v: parse(s.score), r: rank(s.by), d: s.date || '' })).filter(s => s.v != null && s.v > 0 && s.v <= 10);
   if (vals.length === 0) return null;
-  vals.sort((a, b) => a.r - b.r);
+  // Best source first, then the most recent score from that source
+  vals.sort((a, b) => a.r - b.r || (b.d > a.d ? 1 : b.d < a.d ? -1 : 0));
   return Math.round(vals[0].v * 10) / 10;
 }
 
@@ -64,13 +65,14 @@ function collect(rows, keyName) {
     const k = r[keyName] && r[keyName].value;
     if (!k) return;
     const e = by[k] || (by[k] = { years: [], genres: [], scores: [] });
+    if (r.label && !e.label) e.label = r.label.value;
     if (r.pub) { const y = parseInt(r.pub.value.slice(0, 4), 10); if (y) e.years.push(y); }
     if (r.genreLabel && !e.genres.includes(r.genreLabel.value)) e.genres.push(r.genreLabel.value);
-    if (r.score) e.scores.push({ score: r.score.value, by: r.byLabel && r.byLabel.value });
+    if (r.score) e.scores.push({ score: r.score.value, by: r.byLabel && r.byLabel.value, date: r.when && r.when.value });
   });
   Object.values(by).forEach(e => {
     e.year = e.years.length ? Math.min(...e.years) : null;
-    e.genres = mapWikidataGenres(e.genres);
+    e.genres = mapWikidataGenres(e.genres).slice(0, 4);
     e.rating = scoreFromWikidata(e.scores);
   });
   return by;
@@ -78,7 +80,7 @@ function collect(rows, keyName) {
 
 const FIELDS = `OPTIONAL { ?item wdt:P577 ?pub }
   OPTIONAL { ?item wdt:P136 ?genre }
-  OPTIONAL { ?item p:P444 ?st . ?st ps:P444 ?score . OPTIONAL { ?st pq:P447 ?by } }
+  OPTIONAL { ?item p:P444 ?st . ?st ps:P444 ?score . OPTIONAL { ?st pq:P447 ?by } OPTIONAL { ?st pq:P585 ?when } }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }`;
 
 // Look up many titles at once by IMDb / TMDB id
@@ -90,7 +92,7 @@ async function wikidataByIds(movies) {
   const run = async (ids, prop, tag) => {
     for (let i = 0; i < ids.length; i += 50) {
       const values = ids.slice(i, i + 50).map(id => JSON.stringify(id)).join(' ');
-      const rows = await sparql(`SELECT ?id ?pub ?genreLabel ?score ?byLabel WHERE { VALUES ?id { ${values} } ?item wdt:${prop} ?id . ${FIELDS} }`).catch(() => []);
+      const rows = await sparql(`SELECT ?id ?pub ?genreLabel ?score ?byLabel ?when WHERE { VALUES ?id { ${values} } ?item wdt:${prop} ?id . ${FIELDS} }`).catch(() => []);
       const got = collect(rows, 'id');
       Object.keys(got).forEach(k => { out[tag + k] = got[k]; });
     }
@@ -101,21 +103,26 @@ async function wikidataByIds(movies) {
   return out;
 }
 
-// Unmatched titles: search Wikidata by name, accept a film / series whose year agrees
+// Unmatched titles: search Wikidata films / TV series by name; only accepted when the year agrees
 async function wikidataByTitle(movie) {
   const parsed = parseFilename(movie.file_name || movie.title);
   const title = parsed.title || movie.title;
-  if (!title) return null;
   const year = movie.year || parsed.year;
-  const res = await fetch(WD_API + '?action=wbsearchentities&format=json&origin=*&language=en&type=item&limit=7&search=' + encodeURIComponent(title)).then(r => r.json()).catch(() => null);
-  const hits = ((res && res.search) || []).filter(h => /film|movie|series|documentary|animated/i.test(h.description || ''));
-  if (hits.length === 0) return null;
-  const values = hits.map(h => 'wd:' + h.id).join(' ');
-  const rows = await sparql(`SELECT ?id ?pub ?genreLabel ?score ?byLabel WHERE { VALUES ?item { ${values} } BIND(STR(?item) AS ?id) ${FIELDS} }`).catch(() => []);
+  if (!title || !year) return null;
+  const search = async (cls, withYear) => {
+    const q = WD_API + '?action=query&list=search&format=json&origin=*&srlimit=7&srsearch=' + encodeURIComponent(title + (withYear ? ' ' + year : '') + ' haswbstatement:P31=' + cls);
+    const res = await fetch(q).then(r => r.json()).catch(() => null);
+    return ((res && res.query && res.query.search) || []).map(h => h.title).filter(t => /^Q\d+$/.test(t));
+  };
+  let ids = [...new Set([...(await search('Q11424', true)), ...(await search('Q5398426', true))])];
+  if (ids.length === 0) ids = [...new Set([...(await search('Q11424', false)), ...(await search('Q5398426', false))])];
+  if (ids.length === 0) return null;
+  const values = ids.map(id => 'wd:' + id).join(' ');
+  const rows = await sparql(`SELECT ?id ?label ?pub ?genreLabel ?score ?byLabel ?when WHERE { VALUES ?item { ${values} } BIND(STR(?item) AS ?id) OPTIONAL { ?item rdfs:label ?label FILTER(LANG(?label) = "en") } ${FIELDS} }`).catch(() => []);
   const got = collect(rows, 'id');
-  const pick = hits.map(h => got['http://www.wikidata.org/entity/' + h.id]).filter(Boolean)
-    .find(e => (year ? e.year && Math.abs(e.year - year) <= 1 : true));
-  return pick || null;
+  // Same title (allowing small differences) and a release year within one year
+  return ids.map(id => got['http://www.wikidata.org/entity/' + id]).filter(Boolean)
+    .find(e => e.year && Math.abs(e.year - year) <= 1 && (!e.label || titleSimilarity(e.label, title) >= 0.8)) || null;
 }
 
 // Year in a file or folder name
@@ -151,7 +158,14 @@ export async function fixMissingInfo(movies, { apiKey, categoryOf, onProgress, s
         } else {
           const d = await fetchFullMetadata(m, apiKey);
           if (d && !d.needs_review) {
-            set(m, { ...d, metadata_updated_at: Date.now() });
+            // A fresh match: take its fields, but never replace anything the card already has
+            const f = { metadata_updated_at: Date.now() };
+            Object.keys(d).forEach(k => {
+              const cur = m[k];
+              const empty = cur == null || cur === '' || cur === 0 || (Array.isArray(cur) && cur.length === 0);
+              if (empty && d[k] != null) f[k] = d[k];
+            });
+            set(m, f);
             if (d.media_type !== 'tv' && d.release_date) tmdbYears[m.id] = parseInt(d.release_date.slice(0, 4), 10);
           }
         }

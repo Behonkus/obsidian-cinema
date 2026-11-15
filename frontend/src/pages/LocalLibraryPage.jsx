@@ -89,7 +89,9 @@ import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, norm
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
 import { FilmographyDialog } from "@/components/FilmographyDialog";
 import { YearMismatchDialog } from "@/components/YearMismatchDialog";
-import { fixMissingInfo, needsAutoFix } from "@/lib/fixMissing";
+import { fixMissingInfo, needsAutoFix, hasGap } from "@/lib/fixMissing";
+
+const YEAR_MISMATCH_KEY = 'obsidian_cinema_year_mismatches';
 import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, setShowRoots, showRootsFrom, applyCardUpdate, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { ImportTypeDialog } from "@/components/ImportTypePicker";
 import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
@@ -267,7 +269,7 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
           {gridSize !== 'small' && (
             <div className="flex items-center justify-between">
               {movie.year && <p className="text-xs text-muted-foreground">{movie.year}</p>}
-              {movie.rating && <p className="text-xs text-amber-400">★ {movie.rating.toFixed(1)}</p>}
+              {movie.rating > 0 && <p className="text-xs text-amber-400">★ {movie.rating.toFixed(1)}</p>}
             </div>
           )}
         </CardContent>
@@ -1693,7 +1695,15 @@ export default function LocalLibraryPage() {
 
   // Fix missing info: TMDB, then Wikidata, then file/folder clues; year mismatches are offered as renames
   const [fixRun, setFixRun] = useState(null);
-  const [yearMismatches, setYearMismatches] = useState([]);
+  const [yearMismatches, setYearMismatchesState] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(YEAR_MISMATCH_KEY) || '[]'); } catch { return []; }
+  });
+  // Kept on disk so mismatches found in the background survive a restart
+  const setYearMismatches = (fn) => setYearMismatchesState(prev => {
+    const next = typeof fn === 'function' ? fn(prev) : fn;
+    localStorage.setItem(YEAR_MISMATCH_KEY, JSON.stringify(next));
+    return next;
+  });
   const [showMismatches, setShowMismatches] = useState(false);
   const fixTriedRef = useRef(new Set());
   const categoryOf = (m) => {
@@ -1710,12 +1720,14 @@ export default function LocalLibraryPage() {
         onProgress: (done, total) => setFixRun({ done, total, manual }),
       });
       setMovies(prev => prev.map(m => updates[m.id] ? applyCardUpdate(m, updates[m.id]) : m));
-      const fixed = list.filter(m => { const u = updates[m.id] || {}; return u.rating || u.year || (u.genres && u.genres.length); }).length;
+      const count = (k) => list.filter(m => { const u = updates[m.id] || {}; return k === 'genres' ? u.genres && u.genres.length && !(m.genres && m.genres.length) : u[k] && !m[k]; }).length;
+      const parts = [['rating', 'ratings'], ['year', 'years'], ['genres', 'genres']].map(([k, label]) => count(k) + ' ' + label);
+      const left = list.map(m => ({ ...m, ...(updates[m.id] || {}) })).filter(hasGap).length;
       if (mismatches.length) {
         setYearMismatches(prev => [...prev.filter(p => !mismatches.some(x => x.id === p.id)), ...mismatches]);
         if (manual) setShowMismatches(true);
       }
-      if (manual) toast.success('Filled missing info for ' + fixed + ' of ' + list.length + ' titles' + (mismatches.length ? ' · ' + mismatches.length + ' file names have a different year' : ''));
+      if (manual) toast.success('Filled ' + parts.join(', ') + (left ? ' · ' + left + ' still incomplete' : '') + (mismatches.length ? ' · ' + mismatches.length + ' file names differ in year' : ''));
     } finally {
       setFixRun(null);
     }
@@ -1734,14 +1746,17 @@ export default function LocalLibraryPage() {
   const renameMismatches = async (items) => {
     let ok = 0;
     const failed = [];
+    const done = new Set();
     for (const it of items) {
       const r = window.electronAPI?.renameFile ? await window.electronAPI.renameFile(it.file_path, it.newName) : { success: false, error: 'Desktop app only' };
       if (r && r.success) {
         ok++;
+        done.add(it.id);
         setMovies(prev => prev.map(m => m.id === it.id ? { ...m, file_path: r.newPath, file_name: it.newName, year: it.foundYear } : m));
       } else failed.push(it.file_name + ': ' + ((r && r.error) || 'failed'));
     }
-    setYearMismatches(prev => prev.filter(p => !items.some(i => i.id === p.id)));
+    // Failed renames stay in the list so they can be retried
+    setYearMismatches(prev => prev.filter(p => !done.has(p.id)));
     setShowMismatches(false);
     if (ok) toast.success('Renamed ' + ok + (ok === 1 ? ' file' : ' files'));
     if (failed.length) toast.error('Could not rename: ' + failed.slice(0, 3).join('; '));

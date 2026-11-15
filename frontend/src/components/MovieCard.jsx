@@ -156,7 +156,7 @@ export default function MovieCard({ movie, onClick, onUpdate, index = 0 }) {
         </div>
         
         {/* Rating badge */}
-        {movie.rating && (
+        {movie.rating > 0 && (
           <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-black/70 backdrop-blur-sm">
             <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
             <span className="text-xs font-medium text-white">{movie.rating.toFixed(1)}</span>
