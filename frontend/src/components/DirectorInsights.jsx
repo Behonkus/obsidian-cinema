@@ -1,4 +1,4 @@
-import { Clapperboard, Star, Sparkles, Handshake, Users } from "lucide-react";
+import { Clapperboard, Star, Sparkles, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -41,15 +41,13 @@ export const DirectorInsights = ({ stats, onPick }) => {
         <h2 className="text-lg font-semibold">Director Insights</h2>
         <span className="text-xs text-muted-foreground">({stats.uniqueDirectors} directors across {stats.films} films)</span>
       </div>
-      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-3 items-start">
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
         <PeopleList title="Most Films Directed" icon={Clapperboard} color="text-violet-400" rows={stats.mostFilms} testId="director-most" onPick={pickDirector}
           render={r => <><Name>{r.name}</Name><Badge variant="secondary" className="text-violet-400 bg-violet-400/10 text-xs">{r.count}</Badge></>} />
         <PeopleList title="Top-Rated Directors" icon={Star} color="text-amber-400" rows={stats.topRated} testId="director-rated" onPick={pickDirector}
           render={r => <><Name>{r.name}</Name><span className="text-xs text-muted-foreground">{r.movieCount} films</span><Badge variant="secondary" className="text-amber-400 bg-amber-400/10 text-xs">{'★ ' + r.avgRating.toFixed(1)}</Badge></>} />
         <PeopleList title="Genre Range" icon={Sparkles} color="text-emerald-400" rows={stats.genreRange} testId="director-range" onPick={pickDirector}
           render={r => <><Name>{r.name}</Name><Badge variant="secondary" className="text-emerald-400 bg-emerald-400/10 text-xs">{r.genreCount} genres</Badge></>} />
-        <PeopleList title="Favourite Actor-Director Pairs" icon={Handshake} color="text-sky-400" rows={stats.pairs} testId="director-pairs" onPick={r => onPick({ actor: r.actor, director: r.director, role: "pair", photo: r.photo })}
-          render={r => <><div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{r.actor}</p><p className="text-[11px] text-muted-foreground truncate">with {r.director}</p></div><Badge variant="secondary" className="text-sky-400 bg-sky-400/10 text-xs">{r.count}</Badge></>} />
       </div>
     </>
   );
