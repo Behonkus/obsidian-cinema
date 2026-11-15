@@ -32,6 +32,7 @@ import {
   Edit2,
   Sparkles,
   Wand2,
+  FileEdit,
   Users,
   RotateCcw,
   X,
@@ -87,6 +88,8 @@ import PdfExportDialog from "@/components/PdfExportDialog";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
 import { FilmographyDialog } from "@/components/FilmographyDialog";
+import { YearMismatchDialog } from "@/components/YearMismatchDialog";
+import { fixMissingInfo, needsAutoFix } from "@/lib/fixMissing";
 import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, setShowRoots, showRootsFrom, applyCardUpdate, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { ImportTypeDialog } from "@/components/ImportTypePicker";
 import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
@@ -1397,6 +1400,8 @@ export default function LocalLibraryPage() {
   };
 
   // Sort function
+  // Recently Added always lists the newest files first
+  const sortNewestAdded = (list) => [...list].sort((a, b) => (b.added_at || 0) - (a.added_at || 0));
   const sortMovies = (movieList) => {
     const sorted = [...movieList];
     switch (sortBy) {
@@ -1481,7 +1486,7 @@ export default function LocalLibraryPage() {
     ['person', 'role', 'director'].forEach(k => next.delete(k));
     setSearchParams(next, { replace: true });
   };
-  const filteredMovies = useMemo(() => sortMovies(
+  const filteredMovies = useMemo(() => (quickFilter === 'recent' ? sortNewestAdded : sortMovies)(
     movies.filter(movie => {
       if (personIds && !personIds.has(movie.id)) return false;
       // Quick filter
@@ -1491,7 +1496,6 @@ export default function LocalLibraryPage() {
       if (quickFilter === 'no-genre' && movie.genres && movie.genres.length > 0) return false;
       if (quickFilter === 'favorites' && !favoriteSet.has(movie.id)) return false;
       if (quickFilter === 'needs-review' && !movie.needs_review) return false;
-      if (quickFilter === 'tv-shows' && !isSeries(movie)) return false;
       if (quickFilter === 'recent' && !recentIds.has(movie.id)) return false;
       // Genre filter
       if (selectedGenre) {
@@ -1686,6 +1690,62 @@ export default function LocalLibraryPage() {
   }, [autoEnrich, tmdbApiKey, fetchingPosters, fetchingCast, bgEnrich, bgPending]);
   useEffect(() => () => { bgStopRef.current = true; }, []);
   const libraryReady = movies.length > 0;
+
+  // Fix missing info: TMDB, then Wikidata, then file/folder clues; year mismatches are offered as renames
+  const [fixRun, setFixRun] = useState(null);
+  const [yearMismatches, setYearMismatches] = useState([]);
+  const [showMismatches, setShowMismatches] = useState(false);
+  const fixTriedRef = useRef(new Set());
+  const categoryOf = (m) => {
+    const d = typedDirs.filter(x => inDir(m.file_path, x)).sort((a, b) => b.length - a.length)[0];
+    return d ? dirCategory(dirCategories, d) : 'movies';
+  };
+  const runFixMissing = async (list, manual) => {
+    if (fixRun || list.length === 0) return;
+    list.forEach(m => fixTriedRef.current.add(m.id));
+    setFixRun({ done: 0, total: list.length, manual });
+    try {
+      const { updates, mismatches } = await fixMissingInfo(list, {
+        apiKey: tmdbApiKey, categoryOf,
+        onProgress: (done, total) => setFixRun({ done, total, manual }),
+      });
+      setMovies(prev => prev.map(m => updates[m.id] ? applyCardUpdate(m, updates[m.id]) : m));
+      const fixed = list.filter(m => { const u = updates[m.id] || {}; return u.rating || u.year || (u.genres && u.genres.length); }).length;
+      if (mismatches.length) {
+        setYearMismatches(prev => [...prev.filter(p => !mismatches.some(x => x.id === p.id)), ...mismatches]);
+        if (manual) setShowMismatches(true);
+      }
+      if (manual) toast.success('Filled missing info for ' + fixed + ' of ' + list.length + ' titles' + (mismatches.length ? ' · ' + mismatches.length + ' file names have a different year' : ''));
+    } finally {
+      setFixRun(null);
+    }
+  };
+  const fixList = quickFilter === 'no-rating' || quickFilter === 'no-year' || quickFilter === 'no-genre' ? filteredMovies : null;
+  // Background: quietly fill gaps in small batches while auto-fill is on
+  useEffect(() => {
+    if (!libraryReady || !autoEnrich || fixRun || fetchingPosters || fetchingCast) return;
+    const t = setTimeout(() => {
+      const batch = movies.filter(m => needsAutoFix(m) && !fixTriedRef.current.has(m.id)).slice(0, 100);
+      if (batch.length) runFixMissing(batch, false);
+    }, 25000);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [libraryReady, autoEnrich, fixRun, fetchingPosters, fetchingCast, movies.length]);
+  const renameMismatches = async (items) => {
+    let ok = 0;
+    const failed = [];
+    for (const it of items) {
+      const r = window.electronAPI?.renameFile ? await window.electronAPI.renameFile(it.file_path, it.newName) : { success: false, error: 'Desktop app only' };
+      if (r && r.success) {
+        ok++;
+        setMovies(prev => prev.map(m => m.id === it.id ? { ...m, file_path: r.newPath, file_name: it.newName, year: it.foundYear } : m));
+      } else failed.push(it.file_name + ': ' + ((r && r.error) || 'failed'));
+    }
+    setYearMismatches(prev => prev.filter(p => !items.some(i => i.id === p.id)));
+    setShowMismatches(false);
+    if (ok) toast.success('Renamed ' + ok + (ok === 1 ? ' file' : ' files'));
+    if (failed.length) toast.error('Could not rename: ' + failed.slice(0, 3).join('; '));
+  };
   useEffect(() => {
     if (!libraryReady || !autoEnrich || !tmdbApiKey || fetchingPosters || fetchingCast || autoMatchQueueRef.current.size === 0) return;
     const ids = new Set(autoMatchQueueRef.current);
@@ -1896,6 +1956,20 @@ export default function LocalLibraryPage() {
           {/* PDF Export */}
           <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
           <MergePickerDialog movie={mergeTarget} movies={movies} onClose={() => setMergeTarget(null)} onMerge={mergeManual} />
+          {fixList && (
+            <Button variant="outline" size="sm" className="h-8 text-xs" disabled={!!fixRun || fixList.length === 0} onClick={() => runFixMissing(fixList, true)} data-testid="fix-missing-btn">
+              {fixRun ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Fixing {fixRun.done}/{fixRun.total}</> : <><Wand2 className="w-3 h-3 mr-1" /> Fix missing info ({fixList.length})</>}
+            </Button>
+          )}
+          {!fixList && fixRun && !fixRun.manual && (
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1" data-testid="fix-missing-bg"><Loader2 className="w-3 h-3 animate-spin" /> Filling gaps {fixRun.done}/{fixRun.total}</span>
+          )}
+          {yearMismatches.length > 0 && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-amber-400" onClick={() => setShowMismatches(true)} data-testid="year-mismatch-chip">
+              <FileEdit className="w-3 h-3 mr-1" /> {yearMismatches.length} file {yearMismatches.length === 1 ? 'name differs' : 'names differ'} in year
+            </Button>
+          )}
+          {showMismatches && <YearMismatchDialog items={yearMismatches} onClose={() => setShowMismatches(false)} onRename={renameMismatches} />}
           {personParam && (
             <div className="flex items-center gap-2 text-sm" data-testid="person-filter-chip">
               <span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary">

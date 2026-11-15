@@ -146,6 +146,20 @@ ipcMain.handle('fs:pathExists', (event, checkPath) => {
   return fs.existsSync(checkPath);
 });
 
+// Rename a file in place (same folder). Never overwrites an existing file.
+ipcMain.handle('fs:renameFile', (event, oldPath, newName) => {
+  try {
+    if (!oldPath || !newName || /[\\/]/.test(newName)) return { success: false, error: 'Invalid name' };
+    if (!fs.existsSync(oldPath)) return { success: false, error: 'File not found' };
+    const newPath = path.join(path.dirname(oldPath), newName);
+    if (fs.existsSync(newPath)) return { success: false, error: 'A file with that name already exists' };
+    fs.renameSync(oldPath, newPath);
+    return { success: true, newPath };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
 // Backup to file system (avoids localStorage quota limits)
 const BACKUP_PATH = path.join(app.getPath('userData'), 'library_backup.json');
 
