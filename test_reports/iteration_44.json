@@ -1,0 +1,42 @@
+{
+  "summary": "Frontend-only test of v1.7.1 drag & drop add and the rating source tag, run against the preview URL with a fake electronAPI. New suite /app/tests/test_iter45_drop_rating.py: run_drop_main 21/21, run_drop_edges 10/10, run_rating_tag 22/22. Regression run_fix_manual 44/44 (new rating_source assertions added; Wikidata mock and toast assertion updated, see below). Regression iter37 run_add_files: Add Files still opens the file dialog with the 'Choose files' button, the Breaking Bad merge groups, stored cats/filter/stats are fine, no page errors. No functional bugs found.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Detail window rating", "issues": ["rating-source-tag-full uses the same 9px text as the card tag next to a ~16px star rating. 'IMDb via Wikidata' is hard to read in the detail window; 10-11px would read better there (the card size is fine)."]}
+    ]
+  },
+  "verified": [
+    "dragover with types ['Files'] calls preventDefault, sets dropEffect 'copy' and shows library-drop-overlay ('Drop video files or a folder to add them'). dragleave hides it. A non-file drag (text/plain) is ignored.",
+    "Drop of [file, folder, duplicate file, file inside the folder]: the folder is scanned with scanForVideos(path, false) and files are never scanned. The nested Sub\\Nested.mkv is not added and duplicates are removed. The dialog says 'Choose the type for the 2 dropped items.' and 'Add to library' stays disabled until a type is picked.",
+    "Picking Movies: 2 cards added, openFileDialog not called, toast 'Added 2 movies to library', dir_categories saved for D:\\Drop and D:\\Drop\\Folder.",
+    "Re-dropping an existing path: dialog says '1 dropped item.', toast 'already in your library', count unchanged.",
+    "Dropping an empty folder plus a .txt shows the toast 'No video files found in what you dropped' and no dialog. Uppercase .MP4 and .ts are accepted.",
+    "Cancel and Escape after a drop add nothing. Afterwards More > Add individual files shows the default description and 'Choose files', with the type picker reset.",
+    "Dropping a file into an already-scanned dir (M:\\Movies) keeps that dir's type; no new category entry.",
+    "Free tier with 499 cards + 3 dropped: only 1 added, warning 'only adding 1 of 3 movies.'",
+    "Card tags: IMDb / MC / RT / WD / Critics with the tooltip '<Source> rating via Wikidata' (legacy wikidata: 'Rating from Wikidata'). No tag for null or absent source, or when rating is 0 or null.",
+    "Detail window shows 'IMDb via Wikidata' and 'Rotten Tomatoes via Wikidata'. Editing the rating with the confirm button or Enter saves the rating, sets rating_source to null and removes the tag from both the detail and the card. No tag on TMDB or rating-0 details.",
+    "fixMissingInfo stores rating_source: matrix=IMDb, imdb=Metacritic, rt=Rotten Tomatoes, tv=IMDb, wiki (title search)=IMDb. Titles whose rating came from TMDB (heat/sf/second/parts/match) get null."
+  ],
+  "test_report_links": ["/app/tests/test_iter45_drop_rating.py", "/app/tests/test_iter44_fix_missing.py", "/app/tests/test_iter37_import_type.py"],
+  "action_items": [
+    "Optional: in the manual-match fallback (LocalLibraryPage.jsx ~line 663, the `d ? ... : { poster_path, tmdb_id, overview, rating: result.rating, ... }` branch when the details fetch fails), add rating_source: null. Otherwise an old Wikidata tag stays next to a TMDB rating.",
+    "Optional: make the will-navigate check stricter. /index\\.html/i matches any file:// URL containing 'index.html' (e.g. a dropped file named 'index.html.mp4'). Compare against the app's own loadFile URL instead.",
+    "Optional: the drop-dialog count includes paths already in the library ('2 dropped items' when 1 is a duplicate), and the duplicate toast for drops says 'Selected files are already in your library'. Consider filtering known paths before showing the dialog and using drop-specific wording."
+  ],
+  "critical_code_review_comments": [
+    "Drop handlers rely on File.path, which is fine on electron 28.0.0 (package.json). If Electron is upgraded to 32 or later, File.path is removed and webUtils.getPathForFile must be exposed through preload.",
+    "fetchDetailsForMovie (~line 637) sets keep.rating = d.rating only when the card had no rating. A leftover source is unlikely there, but setting keep.rating_source = null alongside it would be consistent.",
+    "Folders are scanned one after another in onLibraryDrop. This is fine for a few folders; consider a spinner or toast for slow network shares, because nothing is shown until scanning finishes.",
+    "LocalLibraryPage.jsx is 3473 lines (no refactor requested)."
+  ],
+  "updated_files": ["/app/tests/test_iter45_drop_rating.py (new)", "/app/tests/test_iter44_fix_missing.py (WdMock.handle_api now reads srsearch and returns query.search; the Q11 row has a label; the title-search mock drops non-film hits like the real haswbstatement filter; the toast assertion now matches 'Filled X ratings, Y years, Z genres'; rating_source assertions added)"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "seed_data_creation": "None. All data is in isolated browser contexts (sessionStorage/localStorage fake library).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: g={'page':page}; exec(open('/app/tests/test_iter45_drop_rating.py').read(), g); await g['run_drop_main'](); await g['run_drop_edges'](); await g['run_rating_tag'](). Drops are simulated with a plain Event carrying a dataTransfer {types, files:[{path}]} dispatched on [data-testid=library-drop-zone]. SCAN_SPY records scanForVideos args and honours recursive=false. The iter44 WdMock now supports the list=search API (srsearch)."
+}

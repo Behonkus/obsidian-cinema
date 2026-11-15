@@ -104,7 +104,7 @@ WD = {
     "P345": {"tt0000004": [row("tt0000004", "2004-01-01T00:00:00Z", "horror film", "83%", "Rotten Tomatoes"), row("tt0000004", None, None, "73/100", "Metacritic")]},
     "P4983": {"500": [row("500", "2008-01-20T00:00:00Z", "drama television series", "8.0/10", "IMDb")]},
     "item": {
-        "Q11": [row("http://www.wikidata.org/entity/Q11", "2010-05-01T00:00:00Z", "comedy-drama", "6.4/10", "IMDb")],
+        "Q11": [dict(row("http://www.wikidata.org/entity/Q11", "2010-05-01T00:00:00Z", "comedy-drama", "6.4/10", "IMDb"), label={"value": "TEST Unmatched Wiki"})],
         "Q12": [row("http://www.wikidata.org/entity/Q12", "2010-01-01T00:00:00Z", "rock music", "9/10", "IMDb")],
         "Q21": [row("http://www.wikidata.org/entity/Q21", "2001-01-01T00:00:00Z", "horror film", "7.0/10", "IMDb")],
     },
@@ -136,9 +136,12 @@ class WdMock:
 
     async def handle_api(self, route):
         hdr = {"Access-Control-Allow-Origin": "*"}
-        s = parse_qs(urlparse(route.request.url).query).get("search", [""])[0]
+        qs = parse_qs(urlparse(route.request.url).query)
+        s = qs.get("search", qs.get("srsearch", [""]))[0]
         self.searches.append(s)
-        await route.fulfill(status=200, content_type="application/json", body=json.dumps({"search": SEARCH.get(s, [])}), headers=hdr)
+        key = next((k for k in SEARCH if s.startswith(k)), None)
+        hits = [h for h in SEARCH.get(key, []) if "film" in h["description"]] if "Q11424" in s else (SEARCH.get(key, []) if "srsearch" not in qs else [])  # haswbstatement:P31=film filters non-films
+        await route.fulfill(status=200, content_type="application/json", body=json.dumps({"search": hits, "query": {"search": [{"title": h["id"]} for h in hits]}}), headers=hdr)
 
 
 RENAME_JS = """
@@ -265,7 +268,7 @@ async def run_fix_manual():
         for k in ("heat", "matrix", "sf", "imdb", "rt", "tv", "second", "parts", "match", "wiki", "far", "cartoon", "doc", "full"):
             m = L[k]
             print(k, {x: m.get(x) for x in ("title", "rating", "rating_source", "year", "genres", "tmdb_id", "file_name", "gap_checked_at")})
-        chk("toast 'Filled missing info for X of 13 titles'", any(re.search(r"Filled missing info for \d+ of 13 titles", t) for t in ts), ts)
+        chk("toast 'Filled X ratings, Y years, Z genres'", any(re.search(r"Filled \d+ ratings?, \d+ years?, \d+ genres?", t) for t in ts), ts)
         chk("heat: TMDB rating/year/genres", L["heat"]["rating"] == 8.2 and L["heat"]["year"] == 1995 and L["heat"]["genres"] == ["Crime", "Drama"], L["heat"])
         chk("matrix: rating from Wikidata IMDb 8.7, year/genres kept", L["matrix"]["rating"] == 8.7 and L["matrix"]["year"] == 1999 and L["matrix"]["genres"] == ["Action"])
         chk("sf: TMDB rating 6.5, WD genres SciFi+Action+Thriller", L["sf"]["rating"] == 6.5 and sorted(L["sf"]["genres"]) == ["Action", "Science Fiction", "Thriller"], L["sf"].get("genres"))
@@ -281,6 +284,13 @@ async def run_fix_manual():
         chk("doc: year 2011 from file, Documentary", L["doc"]["year"] == 2011 and L["doc"]["genres"] == ["Documentary"], L["doc"])
         chk("full untouched, not checked", L["full"]["rating"] == 7.1 and not L["full"].get("gap_checked_at"))
         chk("all checked titles stamped gap_checked_at", all(L[k].get("gap_checked_at") for k in L if k != "full"), [k for k in L if k != "full" and not L[k].get("gap_checked_at")])
+        # iter45: rating_source label (null for TMDB, source label for Wikidata)
+        rs = {k: L[k].get("rating_source") for k in L}
+        print("rating_source:", rs)
+        chk("rating_source TMDB -> null (heat/sf/second)", all(rs.get(k) is None for k in ("heat", "sf", "second")), rs)
+        chk("rating_source matrix=IMDb, imdb=Metacritic, rt=Rotten Tomatoes, tv=IMDb, wiki=IMDb",
+            rs.get("matrix") == "IMDb" and rs.get("imdb") == "Metacritic" and rs.get("rt") == "Rotten Tomatoes" and rs.get("tv") == "IMDb" and rs.get("wiki") == "IMDb", rs)
+        chk("rating_source match (TMDB fresh match) null, full untouched", not rs.get("match") and not rs.get("full"), rs)
         chk("WD batched SPARQL by id", any(s[0] == "P4947" for s in wd.sparql) and any(s[0] == "P345" for s in wd.sparql) and any(s[0] == "P4983" for s in wd.sparql), wd.sparql)
         # Year mismatch dialog
         chk("dialog auto-opened", await p.locator('[data-testid="year-mismatch-dialog"]').count() == 1)

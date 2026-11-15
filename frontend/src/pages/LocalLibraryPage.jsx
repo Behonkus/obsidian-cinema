@@ -632,7 +632,7 @@ export default function LocalLibraryPage() {
     ['media_type', 'season_count', 'episode_count', 'cast', 'directors', 'aka', 'runtime', 'tagline', 'director', 'writers', 'certification', 'imdb_id', 'original_title', 'original_language', 'tmdb_title', 'collection_name', 'studios', 'countries', 'backdrop_path', 'vote_count', 'release_date', 'metadata_updated_at'].forEach(k => { if (d[k] != null) keep[k] = d[k]; });
     if (!movie.poster_path && d.poster_path) keep.poster_path = d.poster_path;
     if (!movie.overview && d.overview) keep.overview = d.overview;
-    if (!movie.rating && d.rating) keep.rating = d.rating;
+    if (!movie.rating && d.rating) { keep.rating = d.rating; keep.rating_source = null; }
     if (!movie.year && d.year) keep.year = d.year;
     if ((!movie.genres || movie.genres.length === 0) && d.genres.length) keep.genres = d.genres;
     return keep;
@@ -660,7 +660,7 @@ export default function LocalLibraryPage() {
         ? (await attachEpisodes(selectedMovie.parts, d.tmdb_id, tmdbApiKey)).parts
         : selectedMovie.parts.map(p => ({ file_path: p.file_path, file_name: p.file_name }));
     }
-    const data = d ? { ...d, match_confidence: 1, match_method: 'manual', needs_review: false } : { poster_path: result.poster, tmdb_id: result.id, overview: result.overview, rating: result.rating, needs_review: false };
+    const data = d ? { ...d, match_confidence: 1, match_method: 'manual', needs_review: false } : { poster_path: result.poster, tmdb_id: result.id, overview: result.overview, rating: result.rating, rating_source: null, needs_review: false };
     if (!data.poster_path) data.poster_path = result.poster;
     setMovies(prev => prev.map(m => m.id === id ? applyCardUpdate(m, data) : m));
     setSelectedMovie(prev => prev && prev.id === id ? applyCardUpdate(prev, data) : prev);
@@ -1188,7 +1188,10 @@ export default function LocalLibraryPage() {
       }
     }
     if (paths.length === 0) { toast.info('No video files found in what you dropped'); return; }
-    dropPathsRef.current = [...new Set(paths)];
+    const known = allLibraryPaths(movies);
+    const fresh = [...new Set(paths)].filter(p => !known.has(p));
+    if (fresh.length === 0) { toast.info('Those files are already in your library'); return; }
+    dropPathsRef.current = fresh;
     setDropCount(dropPathsRef.current.length);
     setShowFilesType(true);
   };
