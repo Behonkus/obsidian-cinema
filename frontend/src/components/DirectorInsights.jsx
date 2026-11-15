@@ -40,7 +40,7 @@ export const DirectorInsights = ({ stats }) => {
         <h2 className="text-lg font-semibold">Director Insights</h2>
         <span className="text-xs text-muted-foreground">({stats.uniqueDirectors} directors across {stats.films} films)</span>
       </div>
-      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-3 items-start">
         <PeopleList title="Most Films Directed" icon={Clapperboard} color="text-violet-400" rows={stats.mostFilms} testId="director-most"
           render={r => <><Name>{r.name}</Name><Badge variant="secondary" className="text-violet-400 bg-violet-400/10 text-xs">{r.count}</Badge></>} />
         <PeopleList title="Top-Rated Directors" icon={Star} color="text-amber-400" rows={stats.topRated} testId="director-rated"

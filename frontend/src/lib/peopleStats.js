@@ -1,14 +1,20 @@
 import { isSeries } from "@/lib/multiPart";
 
-const NON_FILM_GENRES = ['Music', 'Documentary'];
 const SELF_ROLE = /\b(himself|herself|themselves|self)\b/i;
 
 const genreNames = (m) => (m.genres || []).map(g => (typeof g === 'object' && g ? g.name : g)).filter(g => typeof g === 'string');
 
-// Feature films only: no TV series, concerts/music films or documentaries
+// Feature films only: no TV series, documentaries, or concert films (Music with mostly "Himself" credits)
 export function isFilmCard(m) {
   if (m.media_type === 'tv' || isSeries(m)) return false;
-  return !genreNames(m).some(g => NON_FILM_GENRES.includes(g));
+  const g = genreNames(m);
+  if (g.includes('Documentary')) return false;
+  if (g.includes('Music')) {
+    const cast = m.cast || [];
+    const selfCount = cast.filter(c => c.character && SELF_ROLE.test(c.character)).length;
+    if (cast.length > 0 && selfCount >= cast.length / 2) return false;
+  }
+  return true;
 }
 
 // Real acting roles only: no "Himself" cameos, musicians or crew billed in the cast

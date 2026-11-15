@@ -1622,7 +1622,7 @@ export default function LocalLibraryPage() {
   const [autoEnrich, setAutoEnrich] = useState(() => localStorage.getItem(AUTO_ENRICH_KEY) !== 'off');
   const [bgEnrich, setBgEnrich] = useState(null);
   // Missing details, or a film fetched before AKA titles / director photos existed
-  const needsBg = (m) => m.tmdb_id && !bgTriedRef.current.has(m.id) && (!m.metadata_updated_at || (m.media_type !== 'tv' && m.aka === undefined));
+  const needsBg = (m) => m.tmdb_id && !bgTriedRef.current.has(m.id) && (!m.metadata_updated_at || (m.media_type !== 'tv' && !isSeries(m) && m.aka === undefined));
   const bgPending = useMemo(
     () => movies.filter(needsBg).length,
     // eslint-disable-next-line react-hooks/exhaustive-deps

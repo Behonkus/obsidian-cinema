@@ -234,13 +234,14 @@ function akaTitles(d) {
   const alts = ((d.alternative_titles && d.alternative_titles.titles) || [])
     .filter(t => ENGLISH_COUNTRIES.includes(t.iso_3166_1)).map(t => t.title);
   const out = [];
-  [d.original_title, ...alts].forEach(t => {
+  [...alts, d.original_title].forEach(t => {
     const k = String(t || '').trim().toLowerCase();
     if (!k || seen.has(k)) return;
     seen.add(k);
     out.push(String(t).trim());
   });
-  return out.slice(0, 6);
+  // Keep the original title even when there are many English aliases
+  return out.length > 6 ? [...out.slice(0, 5), out[out.length - 1]] : out;
 }
 
 // Single request for all rich metadata
