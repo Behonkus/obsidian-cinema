@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only test of v1.7.0: genre normalization, 'Show all in Library' person filter, and the missing-filmography section, run in the simulated electronAPI harness with a mocked TMDB (/search/person, /person/{id}/movie_credits). All new checks passed (about 55 assertions). Regression run_filmography and run_bad_open also passed with no page errors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Library toolbar", "issues": ["person-filter-chip sits inside the toolbar flex row next to PDF, not above the multipart banner as a separate row. Its mb-3 makes it sit a few px higher than the neighbouring buttons. The header count still says '12 movies' while the grid shows only the person's 8."]},
+      {"screen": "Filmography dialog", "issues": ["The 'Show all in Library' button squeezes the description so 'Appears in 8 films in your library' wraps onto 2 lines.", "The 'Well-known films not in your library' section is inside the same 60vh scroll list, below every owned film. For prolific people it is only seen after scrolling. Consider a separate block or a count hint."]}
+    ]
+  },
+  "test_report_links": ["/app/tests/test_iter42_genres_person.py", "/app/tests/test_iter41_filmography.py"],
+  "action_items": [
+    "Optional: move person-filter-chip out of the toolbar row (or drop mb-3) so it lines up with the buttons.",
+    "Optional: cache missingFilms results per person+role for the session. Reopening the dialog refetches /search/person and /movie_credits each time (seen twice per open in dev because of StrictMode; once in a production build)."
+  ],
+  "critical_code_review_comments": [
+    "normalizeGenres/normalizeLibraryGenres are correct: they handle strings and {name} objects, keep order, dedupe, and leave unchanged cards as the same object. They are applied on Library load, on Stats load, and in fetchMovieDetails/fetchTvDetails.",
+    "Genres added by hand in the genre-editor (e.g. 'Action & Adventure') are not normalized until the next load. Minor.",
+    "missingFilms only treats a film as owned if the library card has a tmdb_id. Owned cards without a tmdb_id can still show up as 'missing'. Minor.",
+    "LocalLibraryPage.jsx is about 3300 lines (left alone, as you asked)."
+  ],
+  "updated_files": ["/app/tests/test_iter42_genres_person.py"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "seed_data_creation": "None in DB. The libraries are injected per browser context with the harness init_script (TEST_ prefixed cards).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Run via browser_automation: g={'page':page}; exec(open('/app/tests/test_iter42_genres_person.py').read(), g); then await run_genres(), run_genres_stats_direct(), run_person_filter(), run_missing(), run_missing_nokey(). PersonMock covers these cases: an exact name match that prefers known_for_department; owned, documentary, future, no-date, Himself and duplicate credits; and director crew jobs. openExternal is captured into window.__opened. Regression: test_iter41_filmography.py run_filmography and run_bad_open."
+}

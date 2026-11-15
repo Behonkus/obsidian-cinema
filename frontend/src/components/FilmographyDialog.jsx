@@ -86,12 +86,12 @@ export const FilmographyDialog = ({ person, movies, onClose }) => {
               <DialogTitle className="truncate" data-testid="filmography-name">{title}</DialogTitle>
               <DialogDescription data-testid="filmography-count">{label} {films.length} {films.length === 1 ? 'film' : 'films'} in your library</DialogDescription>
             </div>
-            {films.length > 0 && (
-              <Button size="sm" variant="outline" className="h-8 text-xs shrink-0 mr-6" onClick={showInLibrary} data-testid="filmography-show-library">
-                <Library className="w-3.5 h-3.5 mr-1" /> Show all in Library
-              </Button>
-            )}
           </div>
+          {films.length > 0 && (
+            <Button size="sm" variant="outline" className="h-8 text-xs self-start mt-2" onClick={showInLibrary} data-testid="filmography-show-library">
+              <Library className="w-3.5 h-3.5 mr-1" /> Show all in Library
+            </Button>
+          )}
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto space-y-1 pr-1" data-testid="filmography-list">
           {films.map(({ movie, character }, i) => (

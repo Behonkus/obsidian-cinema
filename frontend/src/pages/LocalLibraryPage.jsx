@@ -1894,7 +1894,7 @@ export default function LocalLibraryPage() {
           <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
           <MergePickerDialog movie={mergeTarget} movies={movies} onClose={() => setMergeTarget(null)} onMerge={mergeManual} />
           {personParam && (
-            <div className="flex items-center gap-2 mb-3 text-sm" data-testid="person-filter-chip">
+            <div className="flex items-center gap-2 text-sm" data-testid="person-filter-chip">
               <span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary">
                 {personRole === 'pair' ? personParam + ' & ' + personDirector : personParam} · {personIds ? personIds.size : 0} {personIds && personIds.size === 1 ? 'film' : 'films'}
               </span>
