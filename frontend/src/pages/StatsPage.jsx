@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { TypeStats, totalLibraryMinutes } from "@/components/TypeStats";
+import { normalizeLibraryGenres } from "@/lib/tmdbMatcher";
 import { DirectorInsights } from "@/components/DirectorInsights";
 import { FilmographyDialog } from "@/components/FilmographyDialog";
 import { isFilmCard, isActingCredit, computeDirectorStats } from "@/lib/peopleStats";
@@ -733,7 +734,7 @@ export default function StatsPage() {
     var saved = localStorage.getItem(STORAGE_KEY);
     var dirs = localStorage.getItem(DIRS_KEY);
     var trash = localStorage.getItem(TRASH_KEY);
-    if (saved) setMovies(JSON.parse(saved));
+    if (saved) setMovies(normalizeLibraryGenres(JSON.parse(saved)));
     if (dirs) setDirectories(JSON.parse(dirs));
     if (trash) setTrashedMovies(JSON.parse(trash));
   }, []);

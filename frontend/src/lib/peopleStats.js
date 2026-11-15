@@ -1,4 +1,7 @@
 import { isSeries } from "@/lib/multiPart";
+import { tmdbGet } from "@/lib/tmdbMatcher";
+
+const TMDB_POSTER = 'https://image.tmdb.org/t/p/w185';
 
 const SELF_ROLE = /\b(himself|herself|themselves|self)\b/i;
 
@@ -42,6 +45,29 @@ export function filmography(movies, name, role) {
 export function pairFilmography(movies, actor, director) {
   return filmography(movies, actor, 'actor').filter(f => filmDirectors(f.movie).some(d => d.name === director)
     && (f.movie.cast || []).filter(isActingCredit).slice(0, 5).some(c => c.name === actor));
+}
+
+// A person's most popular TMDB films that are not in the library (same film-only rules), for the filmography pop-up
+export async function missingFilms(movies, name, role, apiKey, limit = 8) {
+  const dept = role === 'director' ? 'Directing' : 'Acting';
+  const found = await tmdbGet('/search/person', apiKey, { query: name, include_adult: 'false' });
+  const people = ((found && found.results) || []).filter(p => p.name && p.name.toLowerCase() === name.toLowerCase());
+  const person = people.find(p => p.known_for_department === dept) || people[0];
+  if (!person) return [];
+  const credits = await tmdbGet(`/person/${person.id}/movie_credits`, apiKey);
+  if (!credits) return [];
+  const list = role === 'director'
+    ? (credits.crew || []).filter(c => c.job === 'Director')
+    : (credits.cast || []).filter(c => !(c.character && SELF_ROLE.test(c.character)));
+  const owned = new Set(movies.filter(m => m.tmdb_id && m.media_type !== 'tv').map(m => String(m.tmdb_id)));
+  const today = new Date().toISOString().slice(0, 10);
+  const seen = new Set();
+  return list
+    .filter(c => !owned.has(String(c.id)) && !(c.genre_ids || []).includes(99) && c.release_date && c.release_date <= today)
+    .filter(c => (seen.has(c.id) ? false : seen.add(c.id)))
+    .sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
+    .slice(0, limit)
+    .map(c => ({ id: c.id, title: c.title, year: parseInt(c.release_date.slice(0, 4), 10), rating: c.vote_average || null, poster: c.poster_path ? TMDB_POSTER + c.poster_path : null, character: c.character || null }));
 }
 
 // Director insights: most films, top rated (min 5 rated films), genre range, favourite actor-director pairs

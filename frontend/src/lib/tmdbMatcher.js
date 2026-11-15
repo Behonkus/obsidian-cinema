@@ -226,6 +226,35 @@ export async function findBestMatch(movie, apiKey, opts = {}) {
   return best && best.confidence >= MATCH_THRESHOLD ? best : (best ? { ...best, rejected: true } : null);
 }
 
+// TMDB TV genres that duplicate movie genres -> the movie genre
+const GENRE_ALIASES = {
+  'action & adventure': 'Action',
+  'sci-fi & fantasy': 'Science Fiction',
+  'sci-fi': 'Science Fiction',
+  'war & politics': 'War',
+  'kids': 'Family',
+};
+export function normalizeGenres(genres) {
+  if (!Array.isArray(genres)) return genres;
+  const out = [];
+  genres.forEach(g => {
+    const name = typeof g === 'object' && g ? g.name : g;
+    if (typeof name !== 'string' || !name.trim()) return;
+    const n = GENRE_ALIASES[name.trim().toLowerCase()] || name.trim();
+    if (!out.includes(n)) out.push(n);
+  });
+  return out;
+}
+
+// Normalize the stored library once on load (only touches cards whose genres change)
+export function normalizeLibraryGenres(movies) {
+  return (movies || []).map(m => {
+    if (!Array.isArray(m.genres) || m.genres.length === 0) return m;
+    const g = normalizeGenres(m.genres);
+    return g.length === m.genres.length && g.every((x, i) => x === m.genres[i]) ? m : { ...m, genres: g };
+  });
+}
+
 const ENGLISH_COUNTRIES = ['US', 'GB', 'CA', 'AU', 'IE', 'NZ'];
 
 // "Also known as": the original-language title plus English alternative titles
@@ -268,7 +297,7 @@ export async function fetchMovieDetails(tmdbId, apiKey) {
     vote_count: d.vote_count || 0,
     release_date: d.release_date || null,
     year: d.release_date ? parseInt(d.release_date.slice(0, 4), 10) : null,
-    genres: (d.genres || []).map(g => g.name),
+    genres: normalizeGenres((d.genres || []).map(g => g.name)),
     runtime: d.runtime || null,
     tagline: d.tagline || null,
     director: directors.join(', ') || null,
@@ -312,7 +341,7 @@ export async function fetchTvDetails(tvId, apiKey) {
     vote_count: d.vote_count || 0,
     release_date: d.first_air_date || null,
     year: d.first_air_date ? parseInt(d.first_air_date.slice(0, 4), 10) : null,
-    genres: (d.genres || []).map(g => g.name),
+    genres: normalizeGenres((d.genres || []).map(g => g.name)),
     runtime: (d.episode_run_time && d.episode_run_time[0]) || (d.last_episode_to_air && d.last_episode_to_air.runtime) || null,
     tagline: d.tagline || null,
     director: creators.join(', ') || null,

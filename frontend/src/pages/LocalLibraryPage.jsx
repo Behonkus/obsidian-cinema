@@ -84,7 +84,8 @@ import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
 import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
-import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl } from "@/lib/tmdbMatcher";
+import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
+import { filmography, pairFilmography } from "@/lib/peopleStats";
 import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, setShowRoots, showRootsFrom, applyCardUpdate, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { ImportTypeDialog } from "@/components/ImportTypePicker";
 import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
@@ -452,7 +453,7 @@ export default function LocalLibraryPage() {
     const savedTrash = localStorage.getItem(TRASH_KEY);
     
     if (savedMovies) {
-      setMovies(JSON.parse(savedMovies));
+      setMovies(normalizeLibraryGenres(JSON.parse(savedMovies)));
     }
     if (savedDirs) {
       setDirectories(JSON.parse(savedDirs));
@@ -1464,8 +1465,23 @@ export default function LocalLibraryPage() {
     () => (activeCategory ? [...new Set([...directories, ...Object.keys(dirCategories)])].filter(d => dirCategory(dirCategories, d) === activeCategory) : null),
     [activeCategory, directories, dirCategories]
   );
+  // ?person=<name>&role=actor|director|pair[&director=<name>] (from a Stats filmography) limits the grid to their films
+  const personParam = searchParams.get('person');
+  const personRole = searchParams.get('role');
+  const personDirector = searchParams.get('director');
+  const personIds = useMemo(() => {
+    if (!personParam) return null;
+    const films = personRole === 'pair' ? pairFilmography(movies, personParam, personDirector) : filmography(movies, personParam, personRole === 'director' ? 'director' : 'actor');
+    return new Set(films.map(f => f.movie.id));
+  }, [personParam, personRole, personDirector, movies]);
+  const clearPersonFilter = () => {
+    const next = new URLSearchParams(searchParams);
+    ['person', 'role', 'director'].forEach(k => next.delete(k));
+    setSearchParams(next, { replace: true });
+  };
   const filteredMovies = useMemo(() => sortMovies(
     movies.filter(movie => {
+      if (personIds && !personIds.has(movie.id)) return false;
       // Quick filter
       if (quickFilter === 'no-poster' && movie.poster_path) return false;
       if (quickFilter === 'no-rating' && movie.rating) return false;
@@ -1498,7 +1514,7 @@ export default function LocalLibraryPage() {
              (movie.cast && movie.cast.some(c => c.name?.toLowerCase().includes(query)));
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [movies, quickFilter, selectedGenre, activeDirectory, activeCategoryDirs, activeCollectionIds, deferredSearch, sortBy, favoriteSet, showRootsKey]);
+  ), [movies, quickFilter, selectedGenre, activeDirectory, activeCategoryDirs, activeCollectionIds, deferredSearch, sortBy, favoriteSet, showRootsKey, personIds]);
 
   const openMovieDetailCb = useCallback((m) => { setSelectedMovie(m); trackActivity(m.id, 'view'); }, []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1877,6 +1893,16 @@ export default function LocalLibraryPage() {
           {/* PDF Export */}
           <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
           <MergePickerDialog movie={mergeTarget} movies={movies} onClose={() => setMergeTarget(null)} onMerge={mergeManual} />
+          {personParam && (
+            <div className="flex items-center gap-2 mb-3 text-sm" data-testid="person-filter-chip">
+              <span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary">
+                {personRole === 'pair' ? personParam + ' & ' + personDirector : personParam} · {personIds ? personIds.size : 0} {personIds && personIds.size === 1 ? 'film' : 'films'}
+              </span>
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearPersonFilter} data-testid="person-filter-clear">
+                <X className="w-3 h-3 mr-1" /> Show all
+              </Button>
+            </div>
+          )}
           {showMultiPart && multipartGroups.length > 0 && (
             <MultiPartSuggestDialog open={showMultiPart} onOpenChange={setShowMultiPart} groups={multipartGroups} onMerge={mergeGroups} onDismiss={dismissMultipartGroup} />
           )}
