@@ -199,7 +199,7 @@ async def run_add_files(skip_tip=True, typ="tv", lib=None, dirs=("M:\\Movies",),
     lib = lib or [HEAT]
     ctx, p, mock, errs = await open4(lib, base_scan(lib), auto="on", dialog=pick or PICK, skip_tip=skip_tip, dirs=dirs, cats=cats)
     try:
-        await p.locator('[data-testid="add-files-btn"]').click()
+        await p.locator('[data-testid="more-actions-btn"]').click(); await p.wait_for_timeout(300); await p.locator('[data-testid="add-files-btn"]').click()
         await p.wait_for_timeout(500)
         if not skip_tip:
             print("naming tip shown:", await p.locator('[data-testid="confirm-naming-tip-files-btn"]').count())
@@ -211,7 +211,7 @@ async def run_add_files(skip_tip=True, typ="tv", lib=None, dirs=("M:\\Movies",),
         await p.locator('[data-testid="files-type-cancel"]').click()
         await p.wait_for_timeout(400)
         print("after cancel: dialog", await d.count(), "file dialog calls:", await p.evaluate("() => window.__dlgCalls"))
-        await p.locator('[data-testid="add-files-btn"]').click()
+        await p.locator('[data-testid="more-actions-btn"]').click(); await p.wait_for_timeout(300); await p.locator('[data-testid="add-files-btn"]').click()
         await p.wait_for_timeout(500)
         if not skip_tip:
             if await p.locator('[data-testid="confirm-naming-tip-files-btn"]').count():

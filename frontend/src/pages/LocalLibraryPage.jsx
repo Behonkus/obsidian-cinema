@@ -1814,10 +1814,23 @@ export default function LocalLibraryPage() {
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
           <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={pickIndividualFiles} />
           <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} onLeave={() => setSelectedMovie(null)} />
-          <Button variant="outline" size="sm" onClick={handleAddFiles} data-testid="add-files-btn" title="Add individual movie files">
-            <FilePlus2 className="w-4 h-4 mr-1.5" />
-            <span className="text-xs">Add Individual Movies</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" data-testid="more-actions-btn" title="More ways to add titles">
+                <span className="text-xs">More</span>
+                <ChevronDown className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuItem onSelect={handleAddFiles} data-testid="add-files-btn" className="flex items-start gap-2 cursor-pointer">
+                <FilePlus2 className="w-4 h-4 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm">Add individual files</p>
+                  <p className="text-[11px] text-muted-foreground">For files outside your library folders, e.g. one film in Downloads</p>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {directories.length > 0 && (
             <Button variant="outline" size="sm" onClick={rescanAllDirectories} disabled={isRescanning} data-testid="update-library-btn" title="Rescan all directories for changes">
               <RefreshCw className={`w-4 h-4 mr-1.5 ${isRescanning ? 'animate-spin' : ''}`} />

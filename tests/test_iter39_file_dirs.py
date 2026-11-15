@@ -32,7 +32,7 @@ async def open5(lib, scan, dialog, dirs=("M:\\Movies",), cats=None, auto="off"):
 
 
 async def add_files(p, typ, wait=3000):
-    await p.locator('[data-testid="add-files-btn"]').click()
+    await p.locator('[data-testid="more-actions-btn"]').click(); await p.wait_for_timeout(300); await p.locator('[data-testid="add-files-btn"]').click()
     await p.wait_for_timeout(500)
     await p.locator(f'[data-testid="files-type-{typ}"]').click()
     await p.locator('[data-testid="files-type-continue"]').click()
