@@ -1,0 +1,37 @@
+{
+  "summary": "Frontend-only test of v1.7.1: clicking a cast member or director in the Library detail window opens the Stats FilmographyDialog. Run in the simulated electronAPI harness. New suite /app/tests/test_iter43_detail_filmography.py: 44 of 45 checks pass. The one failure is a minor edge case (a card that has directors[] but no director string). Regression run_filmography, run_person_filter and run_missing all pass, with no page errors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Detail window 'Directed by'", "issue": "The movie-director span is shown only when selectedMovie.director (the string) is set. A card with only directors[] and no director string has no clickable director. Real TMDB fetches set both fields, so normal users are unlikely to hit this.", "selector": "[data-testid=movie-director]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified": [
+    "cast-member-{i} is a <button type=button>. The pop-up shows the same name, count and list as Stats: Actor X 'Appears in 8 films', newest first, excluding Himself/Concert/TV/Doc credits. The header photo, the show-library button and the missing section are all present.",
+    "Closing the pop-up with Escape or the X returns to the detail window, which stays open. Pressing Escape again with no pop-up open closes the detail window.",
+    "A Himself-only actor (Cameo Guy) gets a pop-up showing 0 films and no Show all button.",
+    "movie-director-link-0 for Dir A shows 'Directed 8 films' with no 'as' text. The 'Dir B, Dir C' director string gives 2 links, each 'Directed 1 film'.",
+    "Clicking filmography-item opens the target film's detail window: the pop-up closes, there is a single detail window, and open= is removed from the URL. Clicking the same film reopens it.",
+    "Show all in Library (from a director or a cast member) closes both windows. The chip shows 'Dir B · 1 film' / 'Actor X · 8 films' and the grid is filtered to match. person-filter-clear restores the full grid.",
+    "Missing films via the detail pop-up (PersonMock): the actor shows Miss10..Miss3 and the director shows Directed2, Directed1.",
+    "clear-cast-btn still works and the detail window stays open."
+  ],
+  "test_report_links": ["/app/tests/test_iter43_detail_filmography.py", "/app/tests/test_iter42_genres_person.py", "/app/tests/test_iter41_filmography.py"],
+  "action_items": [
+    "Optional: change the gate at LocalLibraryPage.jsx ~2628 from selectedMovie.director to filmDirectors(selectedMovie).length > 0 (and include directors in the movie-extra-details condition), so cards with only directors[] still show clickable directors."
+  ],
+  "critical_code_review_comments": [
+    "Clicking a film in the pop-up navigates to '/?open=id', which drops any active person/qf filter from the URL. Example seen: the Actor X filter was active, I opened a film from the Actor Y pop-up, and the chip disappeared. This is acceptable because the opened film is always visible, but it is worth noting.",
+    "Director button key={d.name}. If a film's director list contains the same name twice, React would warn about duplicate keys. Minor.",
+    "The Escape capture handler correctly skips closing the detail window while a Radix dialog is open.",
+    "LocalLibraryPage.jsx is about 3300 lines (left alone, as you asked)."
+  ],
+  "updated_files": ["/app/tests/test_iter43_detail_filmography.py"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "98% (44/45; 1 low-priority edge case)"},
+  "seed_data_creation": "None. The libraries are injected per browser context with the harness init_script (TEST_ prefixed cards).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: g={'page':page}; exec(open('/app/tests/test_iter43_detail_filmography.py').read(), g); await g['run_detail_people'](); await g['run_detail_missing'](). The regression functions are reachable as g['g42']['run_person_filter'], g['g42']['run_missing'] and g['g42']['g41']['run_filmography']. lib43() adds director strings to film_lib cards, plus TEST_OnlyArr (directors[] only)."
+}

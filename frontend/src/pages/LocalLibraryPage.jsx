@@ -2615,7 +2615,7 @@ export default function LocalLibraryPage() {
                 </div>
               )}
 
-              {(selectedMovie.director || selectedMovie.runtime || selectedMovie.certification || selectedMovie.tagline || selectedMovie.imdb_id || (selectedMovie.aka && selectedMovie.aka.length > 0)) && (
+              {(filmDirectors(selectedMovie).length > 0 || selectedMovie.runtime || selectedMovie.certification || selectedMovie.tagline || selectedMovie.imdb_id || (selectedMovie.aka && selectedMovie.aka.length > 0)) && (
                 <div className="space-y-1.5" data-testid="movie-extra-details">
                   {selectedMovie.tagline && <p className="text-xs italic text-muted-foreground" data-testid="movie-tagline">"{selectedMovie.tagline}"</p>}
                   {selectedMovie.aka && selectedMovie.aka.length > 0 && (
@@ -2625,8 +2625,8 @@ export default function LocalLibraryPage() {
                     {selectedMovie.certification && <span className="px-1.5 py-0.5 border border-border rounded text-[10px] font-semibold" data-testid="movie-certification">{selectedMovie.certification}</span>}
                     {selectedMovie.runtime ? <span className="flex items-center gap-1" data-testid="movie-runtime"><Clock className="w-3 h-3" />{Math.floor(selectedMovie.runtime / 60) > 0 ? Math.floor(selectedMovie.runtime / 60) + 'h ' : ''}{selectedMovie.runtime % 60}m</span> : null}
                     {selectedMovie.media_type === 'tv' && <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold" data-testid="movie-series-badge">TV SERIES{selectedMovie.episode_count ? ' · ' + selectedMovie.episode_count + ' episodes' : ''}</span>}
-                    {selectedMovie.director && <span data-testid="movie-director">{selectedMovie.media_type === 'tv' ? 'Created by' : 'Directed by'} {filmDirectors(selectedMovie).map((d, i) => (
-                      <span key={d.name}>{i > 0 && ', '}<button type="button" onClick={() => setPerson({ name: d.name, role: 'director', photo: d.profile_path })} className="text-foreground hover:text-primary hover:underline" data-testid={'movie-director-link-' + i}>{d.name}</button></span>
+                    {filmDirectors(selectedMovie).length > 0 && <span data-testid="movie-director">{selectedMovie.media_type === 'tv' ? 'Created by' : 'Directed by'} {filmDirectors(selectedMovie).map((d, i) => (
+                      <span key={d.name + i}>{i > 0 && ', '}<button type="button" onClick={() => setPerson({ name: d.name, role: 'director', photo: d.profile_path })} className="text-foreground hover:text-primary hover:underline" data-testid={'movie-director-link-' + i}>{d.name}</button></span>
                     ))}</span>}
                     {selectedMovie.imdb_id && (
                       <button className="text-amber-400 hover:underline" onClick={() => { var u = 'https://www.imdb.com/title/' + selectedMovie.imdb_id + '/'; if (window.electronAPI?.openExternal) window.electronAPI.openExternal(u); else window.open(u, '_blank'); }} data-testid="movie-imdb-link">IMDb</button>
