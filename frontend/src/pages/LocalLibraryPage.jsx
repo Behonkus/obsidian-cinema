@@ -1616,6 +1616,18 @@ export default function LocalLibraryPage() {
     if (qf !== quickFilter) setQuickFilter(qf);
   }, [searchParams]);
 
+  // ?open=<id> (e.g. from a Stats filmography) opens that title's detail window
+  useEffect(() => {
+    const openId = searchParams.get('open');
+    if (!openId || movies.length === 0) return;
+    const m = movies.find(x => String(x.id) === openId);
+    if (m) openMovieDetailCb(m);
+    const next = new URLSearchParams(searchParams);
+    next.delete('open');
+    setSearchParams(next, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, movies.length > 0]);
+
   // Background auto-fill: quietly fetch full details (runtime, cast...) for matched titles, in small slow batches
   const bgTriedRef = useRef(new Set());
   const bgStopRef = useRef(false);

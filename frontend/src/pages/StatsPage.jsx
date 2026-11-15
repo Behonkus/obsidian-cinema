@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { TypeStats, totalLibraryMinutes } from "@/components/TypeStats";
 import { DirectorInsights } from "@/components/DirectorInsights";
+import { FilmographyDialog } from "@/components/FilmographyDialog";
 import { isFilmCard, isActingCredit, computeDirectorStats } from "@/lib/peopleStats";
 import { motion } from "framer-motion";
 import {
@@ -377,7 +378,7 @@ function RandomPicker({ movies }) {
   );
 }
 
-function MostAppearingActors({ actors }) {
+function MostAppearingActors({ actors, onPick }) {
   if (!actors || actors.length === 0) return null;
   return (
     <Card>
@@ -389,7 +390,7 @@ function MostAppearingActors({ actors }) {
         <div className="space-y-1.5">
         {actors.map(function(actor, i) {
           return (
-            <div key={actor.name} className="flex items-center gap-2" data-testid={'top-actor-' + i}>
+            <div key={actor.name} role="button" tabIndex={0} onClick={function() { onPick({ name: actor.name, role: 'actor', photo: actor.photo }); }} className="flex items-center gap-2 cursor-pointer rounded-md -mx-1 px-1 py-0.5 hover:bg-secondary/60 transition-colors" data-testid={'top-actor-' + i}>
               <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
                 <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
@@ -407,7 +408,7 @@ function MostAppearingActors({ actors }) {
   );
 }
 
-function TopRatedActors({ actors }) {
+function TopRatedActors({ actors, onPick }) {
   if (!actors || actors.length === 0) return null;
   return (
     <Card>
@@ -419,7 +420,7 @@ function TopRatedActors({ actors }) {
         <div className="space-y-1.5">
         {actors.map(function(actor, i) {
           return (
-            <div key={actor.name} className="flex items-center gap-2" data-testid={'rated-actor-' + i}>
+            <div key={actor.name} role="button" tabIndex={0} onClick={function() { onPick({ name: actor.name, role: 'actor', photo: actor.photo }); }} className="flex items-center gap-2 cursor-pointer rounded-md -mx-1 px-1 py-0.5 hover:bg-secondary/60 transition-colors" data-testid={'rated-actor-' + i}>
               <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
                 <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
@@ -438,7 +439,7 @@ function TopRatedActors({ actors }) {
   );
 }
 
-function GenreChameleons({ actors }) {
+function GenreChameleons({ actors, onPick }) {
   if (!actors || actors.length === 0) return null;
   return (
     <Card>
@@ -450,7 +451,7 @@ function GenreChameleons({ actors }) {
         <div className="space-y-1.5">
         {actors.map(function(actor, i) {
           return (
-            <div key={actor.name} className="flex items-center gap-2" data-testid={'chameleon-actor-' + i}>
+            <div key={actor.name} role="button" tabIndex={0} onClick={function() { onPick({ name: actor.name, role: 'actor', photo: actor.photo }); }} className="flex items-center gap-2 cursor-pointer rounded-md -mx-1 px-1 py-0.5 hover:bg-secondary/60 transition-colors" data-testid={'chameleon-actor-' + i}>
               <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
                 <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
@@ -739,6 +740,7 @@ export default function StatsPage() {
     return computeStats(movies, directories, trashedMovies);
   }, [movies, directories, trashedMovies]);
   const directorStats = useMemo(() => computeDirectorStats(movies), [movies]);
+  const [person, setPerson] = useState(null);
   var totalMinutes = useMemo(function() { return totalLibraryMinutes(movies); }, [movies]);
 
   if (movies.length === 0) {
@@ -900,20 +902,21 @@ export default function StatsPage() {
           </motion.div>
           <div className="grid md:grid-cols-3 gap-3">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }} className="min-w-0">
-              <MostAppearingActors actors={stats.topActors} />
+              <MostAppearingActors actors={stats.topActors} onPick={setPerson} />
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }} className="min-w-0">
-              <TopRatedActors actors={stats.topRatedActors} />
+              <TopRatedActors actors={stats.topRatedActors} onPick={setPerson} />
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85 }} className="min-w-0">
-              <GenreChameleons actors={stats.topChameleons} />
+              <GenreChameleons actors={stats.topChameleons} onPick={setPerson} />
             </motion.div>
           </div>
         </>
       )}
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="space-y-3">
-        <DirectorInsights stats={directorStats} />
+        <DirectorInsights stats={directorStats} onPick={setPerson} />
+        <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} />
       </motion.div>
     </div>
   );
