@@ -89,6 +89,7 @@ import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, norm
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
 import { FilmographyDialog } from "@/components/FilmographyDialog";
 import { YearMismatchDialog } from "@/components/YearMismatchDialog";
+import { RatingSourceTag } from "@/components/RatingSourceTag";
 import { fixMissingInfo, needsAutoFix, hasGap } from "@/lib/fixMissing";
 
 const YEAR_MISMATCH_KEY = 'obsidian_cinema_year_mismatches';
@@ -269,7 +270,7 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
           {gridSize !== 'small' && (
             <div className="flex items-center justify-between">
               {movie.year && <p className="text-xs text-muted-foreground">{movie.year}</p>}
-              {movie.rating > 0 && <p className="text-xs text-amber-400">★ {movie.rating.toFixed(1)}</p>}
+              {movie.rating > 0 && <p className="text-xs text-amber-400">★ {movie.rating.toFixed(1)}<RatingSourceTag source={movie.rating_source} /></p>}
             </div>
           )}
         </CardContent>
@@ -1158,12 +1159,50 @@ export default function LocalLibraryPage() {
   };
 
   const [showFilesType, setShowFilesType] = useState(false);
-  const addIndividualFiles = () => setShowFilesType(true);
+  const addIndividualFiles = () => { dropPathsRef.current = null; setDropCount(0); setShowFilesType(true); };
 
-  const pickIndividualFiles = async (importType) => {
+  // Drag & drop: video files (or the videos directly inside a dropped folder) are added after picking a type
+  const dropPathsRef = useRef(null);
+  const [dropCount, setDropCount] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
+  const VIDEO_EXT = /\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|3gp|ts)$/i;
+  const isFileDrag = (e) => Array.from((e.dataTransfer && e.dataTransfer.types) || []).includes('Files');
+  const onLibraryDragOver = (e) => {
+    if (!isElectron() || !isFileDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    if (!dragOver) setDragOver(true);
+  };
+  const onLibraryDragLeave = (e) => { if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget)) setDragOver(false); };
+  const onLibraryDrop = async (e) => {
+    if (!isElectron() || !isFileDrag(e)) return;
+    e.preventDefault();
+    setDragOver(false);
+    const dropped = Array.from(e.dataTransfer.files || []).map(f => f.path).filter(Boolean);
+    const paths = [];
+    for (const p of dropped) {
+      if (VIDEO_EXT.test(p)) paths.push(p);
+      else if (window.electronAPI?.scanForVideos) {
+        const inside = await window.electronAPI.scanForVideos(p, false).catch(() => []);
+        (inside || []).forEach(v => paths.push(v.file_path));
+      }
+    }
+    if (paths.length === 0) { toast.info('No video files found in what you dropped'); return; }
+    dropPathsRef.current = [...new Set(paths)];
+    setDropCount(dropPathsRef.current.length);
+    setShowFilesType(true);
+  };
+  const onFilesTypePicked = (type) => {
+    const dropped = dropPathsRef.current;
+    dropPathsRef.current = null;
+    setDropCount(0);
+    pickIndividualFiles(type, dropped || undefined);
+  };
+
+  const pickIndividualFiles = async (importType, droppedPaths) => {
     if (!isElectron() || !window.electronAPI?.openFileDialog) return;
     try {
-      const result = await window.electronAPI.openFileDialog({
+      const result = droppedPaths ? { canceled: false, filePaths: droppedPaths } : await window.electronAPI.openFileDialog({
         properties: ['openFile', 'multiSelections'],
         filters: [{ name: 'Video Files', extensions: ['mp4','mkv','avi','mov','wmv','flv','webm','m4v','mpg','mpeg','3gp','ts'] }],
         title: 'Select movie files to add'
@@ -1788,7 +1827,16 @@ export default function LocalLibraryPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 relative min-h-full" onDragOver={onLibraryDragOver} onDragLeave={onLibraryDragLeave} onDrop={onLibraryDrop} data-testid="library-drop-zone">
+      {dragOver && (
+        <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center bg-background/70 backdrop-blur-sm" data-testid="library-drop-overlay">
+          <div className="px-8 py-6 rounded-2xl border-2 border-dashed border-primary bg-card/90 text-center">
+            <FilePlus2 className="w-8 h-8 mx-auto text-primary mb-2" />
+            <p className="text-sm font-medium">Drop video files or a folder to add them</p>
+            <p className="text-xs text-muted-foreground mt-1">You'll pick Movies, TV Shows, Documentaries or Animations next</p>
+          </div>
+        </div>
+      )}
       {/* Milestone celebration */}
       {milestone && <ConfettiBurst onComplete={dismissMilestone} />}
       {milestone && <FireworksOverlay onComplete={dismissMilestone} />}
@@ -1812,7 +1860,7 @@ export default function LocalLibraryPage() {
         {/* Row 2: Action buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
-          <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={pickIndividualFiles} />
+          <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={onFilesTypePicked} dropCount={dropCount} />
           <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} onLeave={() => setSelectedMovie(null)} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -2508,8 +2556,8 @@ export default function LocalLibraryPage() {
                               toast.error('Please enter a rating between 0 and 10');
                               return;
                             }
-                            setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, rating: parsed } : m));
-                            setSelectedMovie(prev => ({ ...prev, rating: parsed }));
+                            setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, rating: parsed, rating_source: null } : m));
+                            setSelectedMovie(prev => ({ ...prev, rating: parsed, rating_source: null }));
                             setEditingRating(false);
                             toast.success(parsed !== null ? `Rating set to ${parsed.toFixed(1)}` : 'Rating removed');
                           }
@@ -2530,8 +2578,8 @@ export default function LocalLibraryPage() {
                             toast.error('Please enter a rating between 0 and 10');
                             return;
                           }
-                          setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, rating: parsed } : m));
-                          setSelectedMovie(prev => ({ ...prev, rating: parsed }));
+                          setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, rating: parsed, rating_source: null } : m));
+                          setSelectedMovie(prev => ({ ...prev, rating: parsed, rating_source: null }));
                           setEditingRating(false);
                           toast.success(parsed !== null ? `Rating set to ${parsed.toFixed(1)}` : 'Rating removed');
                         }}
@@ -2551,6 +2599,7 @@ export default function LocalLibraryPage() {
                     >
                       <p className="text-amber-400">
                         ★ {selectedMovie.rating ? selectedMovie.rating.toFixed(1) : 'No rating'}
+                        {selectedMovie.rating > 0 && <RatingSourceTag source={selectedMovie.rating_source} full />}
                       </p>
                       <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>

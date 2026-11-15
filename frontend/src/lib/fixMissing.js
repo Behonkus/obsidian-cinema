@@ -45,11 +45,12 @@ export function scoreFromWikidata(scores) {
     return null;
   };
   const rank = (by) => (/imdb/i.test(by || '') ? 0 : /metacritic/i.test(by || '') ? 1 : /rotten/i.test(by || '') ? 2 : 3);
-  const vals = (scores || []).map(s => ({ v: parse(s.score), r: rank(s.by), d: s.date || '' })).filter(s => s.v != null && s.v > 0 && s.v <= 10);
+  const label = (by) => (/imdb/i.test(by || '') ? 'IMDb' : /metacritic/i.test(by || '') ? 'Metacritic' : /rotten/i.test(by || '') ? 'Rotten Tomatoes' : 'Critics');
+  const vals = (scores || []).map(s => ({ v: parse(s.score), r: rank(s.by), d: s.date || '', src: label(s.by) })).filter(s => s.v != null && s.v > 0 && s.v <= 10);
   if (vals.length === 0) return null;
   // Best source first, then the most recent score from that source
   vals.sort((a, b) => a.r - b.r || (b.d > a.d ? 1 : b.d < a.d ? -1 : 0));
-  return Math.round(vals[0].v * 10) / 10;
+  return { value: Math.round(vals[0].v * 10) / 10, source: vals[0].src };
 }
 
 async function sparql(query) {
@@ -150,7 +151,7 @@ export async function fixMissingInfo(movies, { apiKey, categoryOf, onProgress, s
           if (d) {
             if (m.media_type !== 'tv' && d.year) tmdbYears[m.id] = d.year;
             const f = {};
-            if (gap.rating && d.rating) f.rating = d.rating;
+            if (gap.rating && d.rating) { f.rating = d.rating; f.rating_source = null; }
             if (gap.year && d.year) f.year = d.year;
             if (gap.genres && d.genres && d.genres.length) f.genres = d.genres;
             if (Object.keys(f).length) set(m, f);
@@ -187,7 +188,7 @@ export async function fixMissingInfo(movies, { apiKey, categoryOf, onProgress, s
       if (!e) continue;
       const gap = missingFields(m);
       const f = {};
-      if (gap.rating && e.rating) { f.rating = e.rating; f.rating_source = 'wikidata'; }
+      if (gap.rating && e.rating) { f.rating = e.rating.value; f.rating_source = e.rating.source; }
       if (gap.year && e.year) f.year = e.year;
       if (gap.genres && e.genres.length) f.genres = e.genres;
       if (Object.keys(f).length) set(m, f);

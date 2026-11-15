@@ -704,8 +704,8 @@ function createWindow() {
 
   // Handle navigation events
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    // Block external navigation from renderer
-    if (!url.startsWith('file://')) {
+    // Block external navigation and dropped files opening in the window (only the app page itself may load)
+    if (!url.startsWith('file://') || !/index\.html/i.test(url)) {
       event.preventDefault();
     }
   });
