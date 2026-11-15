@@ -256,6 +256,9 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
         </div>
         <CardContent className={gridSize === 'small' ? 'p-2' : 'p-3'}>
           <h3 className={`font-medium truncate ${gridSize === 'small' ? 'text-xs' : 'text-sm'}`}>{movie.title}</h3>
+          {gridSize !== 'small' && movie.aka && movie.aka.length > 0 && (
+            <p className="text-[10px] text-muted-foreground/80 truncate italic" title={'Also known as: ' + movie.aka.join(' · ')} data-testid="movie-card-aka">aka {movie.aka[0]}</p>
+          )}
           {gridSize !== 'small' && (
             <div className="flex items-center justify-between">
               {movie.year && <p className="text-xs text-muted-foreground">{movie.year}</p>}
@@ -617,7 +620,7 @@ export default function LocalLibraryPage() {
     if (!d) return null;
     const keep = {};
     if (d.media_type === 'tv' && isMultiPart(movie)) keep.parts = (await attachEpisodes(movie.parts, d.tmdb_id, tmdbApiKey)).parts;
-    ['media_type', 'season_count', 'episode_count', 'cast', 'runtime', 'tagline', 'director', 'writers', 'certification', 'imdb_id', 'original_title', 'original_language', 'tmdb_title', 'collection_name', 'studios', 'countries', 'backdrop_path', 'vote_count', 'release_date', 'metadata_updated_at'].forEach(k => { if (d[k] != null) keep[k] = d[k]; });
+    ['media_type', 'season_count', 'episode_count', 'cast', 'directors', 'aka', 'runtime', 'tagline', 'director', 'writers', 'certification', 'imdb_id', 'original_title', 'original_language', 'tmdb_title', 'collection_name', 'studios', 'countries', 'backdrop_path', 'vote_count', 'release_date', 'metadata_updated_at'].forEach(k => { if (d[k] != null) keep[k] = d[k]; });
     if (!movie.poster_path && d.poster_path) keep.poster_path = d.poster_path;
     if (!movie.overview && d.overview) keep.overview = d.overview;
     if (!movie.rating && d.rating) keep.rating = d.rating;
@@ -1491,6 +1494,7 @@ export default function LocalLibraryPage() {
              movie.file_name?.toLowerCase().includes(query) ||
              (movie.year && String(movie.year) === query) ||
              (movie.director && movie.director.toLowerCase().includes(query)) ||
+             (movie.aka && movie.aka.some(a => a.toLowerCase().includes(query))) ||
              (movie.cast && movie.cast.some(c => c.name?.toLowerCase().includes(query)));
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1617,12 +1621,15 @@ export default function LocalLibraryPage() {
   const bgStopRef = useRef(false);
   const [autoEnrich, setAutoEnrich] = useState(() => localStorage.getItem(AUTO_ENRICH_KEY) !== 'off');
   const [bgEnrich, setBgEnrich] = useState(null);
+  // Missing details, or a film fetched before AKA titles / director photos existed
+  const needsBg = (m) => m.tmdb_id && !bgTriedRef.current.has(m.id) && (!m.metadata_updated_at || (m.media_type !== 'tv' && m.aka === undefined));
   const bgPending = useMemo(
-    () => movies.filter(m => m.tmdb_id && !m.metadata_updated_at && !bgTriedRef.current.has(m.id)).length,
+    () => movies.filter(needsBg).length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [movies, bgEnrich]
   );
   const runBackgroundEnrich = async () => {
-    const batch = movies.filter(m => m.tmdb_id && !m.metadata_updated_at && !bgTriedRef.current.has(m.id)).slice(0, 200);
+    const batch = movies.filter(needsBg).slice(0, 200);
     if (batch.length === 0) return;
     bgStopRef.current = false;
     setBgEnrich({ done: 0, total: batch.length });
@@ -2567,9 +2574,12 @@ export default function LocalLibraryPage() {
                 </div>
               )}
 
-              {(selectedMovie.director || selectedMovie.runtime || selectedMovie.certification || selectedMovie.tagline || selectedMovie.imdb_id) && (
+              {(selectedMovie.director || selectedMovie.runtime || selectedMovie.certification || selectedMovie.tagline || selectedMovie.imdb_id || (selectedMovie.aka && selectedMovie.aka.length > 0)) && (
                 <div className="space-y-1.5" data-testid="movie-extra-details">
                   {selectedMovie.tagline && <p className="text-xs italic text-muted-foreground" data-testid="movie-tagline">"{selectedMovie.tagline}"</p>}
+                  {selectedMovie.aka && selectedMovie.aka.length > 0 && (
+                    <p className="text-xs text-muted-foreground" data-testid="movie-aka">Also known as: <span className="text-foreground">{selectedMovie.aka.join(' · ')}</span></p>
+                  )}
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     {selectedMovie.certification && <span className="px-1.5 py-0.5 border border-border rounded text-[10px] font-semibold" data-testid="movie-certification">{selectedMovie.certification}</span>}
                     {selectedMovie.runtime ? <span className="flex items-center gap-1" data-testid="movie-runtime"><Clock className="w-3 h-3" />{Math.floor(selectedMovie.runtime / 60) > 0 ? Math.floor(selectedMovie.runtime / 60) + 'h ' : ''}{selectedMovie.runtime % 60}m</span> : null}

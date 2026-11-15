@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { TypeStats, totalLibraryMinutes } from "@/components/TypeStats";
+import { DirectorInsights } from "@/components/DirectorInsights";
+import { isFilmCard, isActingCredit, computeDirectorStats } from "@/lib/peopleStats";
 import { motion } from "framer-motion";
 import {
   Film,
@@ -622,9 +624,11 @@ function computeStats(movies, directories, trashedMovies) {
   var actorGenres = {};      // name -> Set of genres
   var actorPhotos = {};      // name -> profile_path
   for (i = 0; i < movies.length; i++) {
+    if (!isFilmCard(movies[i])) continue;
     var cast = movies[i].cast;
     if (cast && Array.isArray(cast)) {
       for (var c = 0; c < cast.length; c++) {
+        if (!isActingCredit(cast[c])) continue;
         var actorName = cast[c].name;
         if (!actorName) continue;
         actorAppearances[actorName] = (actorAppearances[actorName] || 0) + 1;
@@ -674,7 +678,7 @@ function computeStats(movies, directories, trashedMovies) {
   var topChameleons = chameleonActors.slice(0, 10);
   var moviesWithCast = 0;
   for (i = 0; i < movies.length; i++) {
-    if (movies[i].cast && movies[i].cast.length > 0) moviesWithCast++;
+    if (isFilmCard(movies[i]) && movies[i].cast && movies[i].cast.some(isActingCredit)) moviesWithCast++;
   }
 
   return {
@@ -734,6 +738,7 @@ export default function StatsPage() {
   var stats = useMemo(function() {
     return computeStats(movies, directories, trashedMovies);
   }, [movies, directories, trashedMovies]);
+  const directorStats = useMemo(() => computeDirectorStats(movies), [movies]);
   var totalMinutes = useMemo(function() { return totalLibraryMinutes(movies); }, [movies]);
 
   if (movies.length === 0) {
@@ -906,6 +911,10 @@ export default function StatsPage() {
           </div>
         </>
       )}
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="space-y-3">
+        <DirectorInsights stats={directorStats} />
+      </motion.div>
     </div>
   );
 }

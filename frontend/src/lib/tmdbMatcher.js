@@ -226,12 +226,30 @@ export async function findBestMatch(movie, apiKey, opts = {}) {
   return best && best.confidence >= MATCH_THRESHOLD ? best : (best ? { ...best, rejected: true } : null);
 }
 
+const ENGLISH_COUNTRIES = ['US', 'GB', 'CA', 'AU', 'IE', 'NZ'];
+
+// "Also known as": the original-language title plus English alternative titles
+function akaTitles(d) {
+  const seen = new Set([String(d.title || '').trim().toLowerCase()]);
+  const alts = ((d.alternative_titles && d.alternative_titles.titles) || [])
+    .filter(t => ENGLISH_COUNTRIES.includes(t.iso_3166_1)).map(t => t.title);
+  const out = [];
+  [d.original_title, ...alts].forEach(t => {
+    const k = String(t || '').trim().toLowerCase();
+    if (!k || seen.has(k)) return;
+    seen.add(k);
+    out.push(String(t).trim());
+  });
+  return out.slice(0, 6);
+}
+
 // Single request for all rich metadata
 export async function fetchMovieDetails(tmdbId, apiKey) {
-  const d = await tmdbGet(`/movie/${tmdbId}`, apiKey, { append_to_response: 'credits,release_dates,external_ids' });
+  const d = await tmdbGet(`/movie/${tmdbId}`, apiKey, { append_to_response: 'credits,release_dates,external_ids,alternative_titles' });
   if (!d || !d.id) return null;
   const crew = (d.credits && d.credits.crew) || [];
-  const directors = crew.filter(c => c.job === 'Director').map(c => c.name);
+  const directorCrew = crew.filter(c => c.job === 'Director');
+  const directors = directorCrew.map(c => c.name);
   const writers = [...new Set(crew.filter(c => c.department === 'Writing').map(c => c.name))].slice(0, 3);
   let certification = null;
   const rd = (d.release_dates && d.release_dates.results) || [];
@@ -266,7 +284,10 @@ export async function fetchMovieDetails(tmdbId, apiKey) {
       name: c.name,
       character: c.character,
       profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null,
+      dept: c.known_for_department || null,
     })),
+    directors: directorCrew.map(c => ({ name: c.name, profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null })),
+    aka: akaTitles(d),
     media_type: 'movie',
     metadata_updated_at: Date.now(),
   };
