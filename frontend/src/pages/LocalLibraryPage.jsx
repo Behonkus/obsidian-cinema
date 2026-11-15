@@ -85,7 +85,8 @@ import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
-import { filmography, pairFilmography } from "@/lib/peopleStats";
+import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
+import { FilmographyDialog } from "@/components/FilmographyDialog";
 import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, setShowRoots, showRootsFrom, applyCardUpdate, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { ImportTypeDialog } from "@/components/ImportTypePicker";
 import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
@@ -272,7 +273,7 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
   );
 });
 
-function CastRow({ cast, onClear }) {
+function CastRow({ cast, onClear, onPick }) {
   return (
     <div className="space-y-2" data-testid="cast-section">
       <div className="flex items-center justify-between">
@@ -292,7 +293,7 @@ function CastRow({ cast, onClear }) {
       <div className="flex gap-3 overflow-x-auto pb-1">
         {cast.map(function(actor, idx) {
           return (
-            <div key={idx} className="flex flex-col items-center shrink-0 w-20" data-testid={'cast-member-' + idx}>
+            <button type="button" key={idx} onClick={function() { onPick({ name: actor.name, role: 'actor', photo: actor.profile_path }); }} title={'See ' + actor.name + "'s films"} className="flex flex-col items-center shrink-0 w-20 rounded-md py-1 hover:bg-secondary/60 transition-colors" data-testid={'cast-member-' + idx}>
               {actor.profile_path ? (
                 <img src={actor.profile_path} alt={actor.name} className="w-12 h-12 rounded-full object-cover" />
               ) : (
@@ -302,7 +303,7 @@ function CastRow({ cast, onClear }) {
               )}
               <p className="text-[10px] font-medium text-center mt-1.5 leading-tight w-full">{actor.name}</p>
               <p className="text-[9px] text-muted-foreground text-center leading-tight w-full">{actor.character}</p>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -388,6 +389,7 @@ export default function LocalLibraryPage() {
   useMemo(() => setShowRoots(showRootsFrom(JSON.parse(showRootsKey))), [showRootsKey]);
   const [dirToRemove, setDirToRemove] = useState(null);
   const [fileDirToRemove, setFileDirToRemove] = useState(null);
+  const [person, setPerson] = useState(null);
   // Titles that came in through Add Files from this exact folder
   const inFileDir = (m, dir) => String(m.file_path).replace(/[\\/][^\\/]*$/, '').toLowerCase() === dir.toLowerCase();
   const removeFileDir = (dir) => {
@@ -1736,6 +1738,7 @@ export default function LocalLibraryPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
           <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={pickIndividualFiles} />
+          <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} onLeave={() => setSelectedMovie(null)} />
           <Button variant="outline" size="sm" onClick={handleAddFiles} data-testid="add-files-btn" title="Add individual movie files">
             <FilePlus2 className="w-4 h-4 mr-1.5" />
             <span className="text-xs">Add Individual Movies</span>
@@ -2622,7 +2625,9 @@ export default function LocalLibraryPage() {
                     {selectedMovie.certification && <span className="px-1.5 py-0.5 border border-border rounded text-[10px] font-semibold" data-testid="movie-certification">{selectedMovie.certification}</span>}
                     {selectedMovie.runtime ? <span className="flex items-center gap-1" data-testid="movie-runtime"><Clock className="w-3 h-3" />{Math.floor(selectedMovie.runtime / 60) > 0 ? Math.floor(selectedMovie.runtime / 60) + 'h ' : ''}{selectedMovie.runtime % 60}m</span> : null}
                     {selectedMovie.media_type === 'tv' && <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold" data-testid="movie-series-badge">TV SERIES{selectedMovie.episode_count ? ' · ' + selectedMovie.episode_count + ' episodes' : ''}</span>}
-                    {selectedMovie.director && <span data-testid="movie-director">{selectedMovie.media_type === 'tv' ? 'Created by' : 'Directed by'} <span className="text-foreground">{selectedMovie.director}</span></span>}
+                    {selectedMovie.director && <span data-testid="movie-director">{selectedMovie.media_type === 'tv' ? 'Created by' : 'Directed by'} {filmDirectors(selectedMovie).map((d, i) => (
+                      <span key={d.name}>{i > 0 && ', '}<button type="button" onClick={() => setPerson({ name: d.name, role: 'director', photo: d.profile_path })} className="text-foreground hover:text-primary hover:underline" data-testid={'movie-director-link-' + i}>{d.name}</button></span>
+                    ))}</span>}
                     {selectedMovie.imdb_id && (
                       <button className="text-amber-400 hover:underline" onClick={() => { var u = 'https://www.imdb.com/title/' + selectedMovie.imdb_id + '/'; if (window.electronAPI?.openExternal) window.electronAPI.openExternal(u); else window.open(u, '_blank'); }} data-testid="movie-imdb-link">IMDb</button>
                     )}
@@ -2633,7 +2638,7 @@ export default function LocalLibraryPage() {
 
               {/* Cast Section */}
               {selectedMovie.cast && selectedMovie.cast.length > 0 ? (
-                <CastRow cast={selectedMovie.cast} onClear={() => {
+                <CastRow cast={selectedMovie.cast} onPick={setPerson} onClear={() => {
                   setMovies(prev => prev.map(m => m.id === selectedMovie.id ? { ...m, cast: null } : m));
                   setSelectedMovie(prev => ({ ...prev, cast: null }));
                   toast.success('Cast cleared');

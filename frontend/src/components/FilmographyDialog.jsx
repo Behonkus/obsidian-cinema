@@ -58,7 +58,7 @@ const MissingFilms = ({ person, movies }) => {
 };
 
 // person: { name, role: 'actor'|'director', photo } or { actor, director, role: 'pair' }
-export const FilmographyDialog = ({ person, movies, onClose }) => {
+export const FilmographyDialog = ({ person, movies, onClose, onLeave }) => {
   const navigate = useNavigate();
   const films = useMemo(() => {
     if (!person) return [];
@@ -72,6 +72,7 @@ export const FilmographyDialog = ({ person, movies, onClose }) => {
       ? 'person=' + encodeURIComponent(person.actor) + '&role=pair&director=' + encodeURIComponent(person.director)
       : 'person=' + encodeURIComponent(person.name) + '&role=' + person.role;
     onClose();
+    if (onLeave) onLeave();
     navigate('/?' + q);
   };
   return (
@@ -97,7 +98,7 @@ export const FilmographyDialog = ({ person, movies, onClose }) => {
           {films.map(({ movie, character }, i) => (
             <Row key={movie.id} poster={movie.poster_path} title={movie.title} rating={movie.rating} testId={'filmography-item-' + i}
               sub={[movie.year, character && 'as ' + character].filter(Boolean).join(' · ')}
-              onClick={() => { onClose(); navigate('/?open=' + encodeURIComponent(movie.id)); }} />
+              onClick={() => { onClose(); if (onLeave) onLeave(); navigate('/?open=' + encodeURIComponent(movie.id)); }} />
           ))}
           {person.role !== 'pair' && <MissingFilms person={person} movies={movies} />}
         </div>
