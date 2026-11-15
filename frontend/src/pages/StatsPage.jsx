@@ -390,7 +390,7 @@ function MostAppearingActors({ actors, onPick }) {
         <div className="space-y-1.5">
         {actors.map(function(actor, i) {
           return (
-            <div key={actor.name} role="button" tabIndex={0} onClick={function() { onPick({ name: actor.name, role: 'actor', photo: actor.photo }); }} className="flex items-center gap-2 cursor-pointer rounded-md -mx-1 px-1 py-0.5 hover:bg-secondary/60 transition-colors" data-testid={'top-actor-' + i}>
+            <div key={actor.name} role="button" tabIndex={0} onClick={function() { onPick({ name: actor.name, role: 'actor', photo: actor.photo }); }} onKeyDown={function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick({ name: actor.name, role: 'actor', photo: actor.photo }); } }} className="flex items-center gap-2 cursor-pointer rounded-md -mx-1 px-1 py-0.5 hover:bg-secondary/60 transition-colors" data-testid={'top-actor-' + i}>
               <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
                 <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
@@ -420,7 +420,7 @@ function TopRatedActors({ actors, onPick }) {
         <div className="space-y-1.5">
         {actors.map(function(actor, i) {
           return (
-            <div key={actor.name} role="button" tabIndex={0} onClick={function() { onPick({ name: actor.name, role: 'actor', photo: actor.photo }); }} className="flex items-center gap-2 cursor-pointer rounded-md -mx-1 px-1 py-0.5 hover:bg-secondary/60 transition-colors" data-testid={'rated-actor-' + i}>
+            <div key={actor.name} role="button" tabIndex={0} onClick={function() { onPick({ name: actor.name, role: 'actor', photo: actor.photo }); }} onKeyDown={function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick({ name: actor.name, role: 'actor', photo: actor.photo }); } }} className="flex items-center gap-2 cursor-pointer rounded-md -mx-1 px-1 py-0.5 hover:bg-secondary/60 transition-colors" data-testid={'rated-actor-' + i}>
               <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
                 <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
@@ -451,7 +451,7 @@ function GenreChameleons({ actors, onPick }) {
         <div className="space-y-1.5">
         {actors.map(function(actor, i) {
           return (
-            <div key={actor.name} role="button" tabIndex={0} onClick={function() { onPick({ name: actor.name, role: 'actor', photo: actor.photo }); }} className="flex items-center gap-2 cursor-pointer rounded-md -mx-1 px-1 py-0.5 hover:bg-secondary/60 transition-colors" data-testid={'chameleon-actor-' + i}>
+            <div key={actor.name} role="button" tabIndex={0} onClick={function() { onPick({ name: actor.name, role: 'actor', photo: actor.photo }); }} onKeyDown={function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick({ name: actor.name, role: 'actor', photo: actor.photo }); } }} className="flex items-center gap-2 cursor-pointer rounded-md -mx-1 px-1 py-0.5 hover:bg-secondary/60 transition-colors" data-testid={'chameleon-actor-' + i}>
               <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
               {actor.photo ? (
                 <img src={actor.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
@@ -627,9 +627,11 @@ function computeStats(movies, directories, trashedMovies) {
   for (i = 0; i < movies.length; i++) {
     if (!isFilmCard(movies[i])) continue;
     var cast = movies[i].cast;
+    var seenInFilm = {};
     if (cast && Array.isArray(cast)) {
       for (var c = 0; c < cast.length; c++) {
-        if (!isActingCredit(cast[c])) continue;
+        if (!isActingCredit(cast[c]) || seenInFilm[cast[c].name]) continue;
+        seenInFilm[cast[c].name] = true;
         var actorName = cast[c].name;
         if (!actorName) continue;
         actorAppearances[actorName] = (actorAppearances[actorName] || 0) + 1;

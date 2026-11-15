@@ -34,14 +34,14 @@ export function filmography(movies, name, role) {
   return movies.filter(m => isFilmCard(m) && (role === 'director'
     ? filmDirectors(m).some(d => d.name === name)
     : (m.cast || []).some(c => c.name === name && isActingCredit(c))))
-    .map(m => ({ movie: m, character: role === 'actor' ? ((m.cast || []).find(c => c.name === name) || {}).character : null }))
+    .map(m => ({ movie: m, character: role === 'actor' ? ((m.cast || []).find(c => c.name === name && isActingCredit(c)) || {}).character : null }))
     .sort((a, b) => (b.movie.year || 0) - (a.movie.year || 0));
 }
 
-// Films shared by an actor and a director
+// Films shared by an actor (top-5 billed, as counted in the pair badge) and a director
 export function pairFilmography(movies, actor, director) {
-  const a = filmography(movies, actor, 'actor');
-  return a.filter(f => filmDirectors(f.movie).some(d => d.name === director));
+  return filmography(movies, actor, 'actor').filter(f => filmDirectors(f.movie).some(d => d.name === director)
+    && (f.movie.cast || []).filter(isActingCredit).slice(0, 5).some(c => c.name === actor));
 }
 
 // Director insights: most films, top rated (min 5 rated films), genre range, favourite actor-director pairs

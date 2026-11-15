@@ -1,0 +1,30 @@
+{
+  "summary": "Tested the Stats filmography dialog (actor / director / actor-director pair) and Library ?open=<id> using the simulated electronAPI harness. The new test /app/tests/test_iter41_filmography.py ran 31 checks: 30 passed, 1 failed. Actor rows (top/chameleon) open the dialog with the right name, the count matches the badge (8 for Actor X), the list is newest first, the TV, series, documentary and concert cards and the actor's own Himself credit are left out, each row shows 'year · as character' and a rating, and the poster and photo are shown. Director rows (most/rated/range) show 'Directed N films', the director string 'Dir B, Dir C' is split, and the concert, TV and documentary cards are left out. Escape and the X button both close the dialog. Clicking an item closes the dialog, goes to the Library and opens the TEST_F6 detail window, and ?open is removed from the URL. A direct ?open=m603 opens TEST_F3. A bad ?open id is removed quietly. The Library opens normally without ?open, and there were no page errors. One bug: on the pair dialog, the 'Together N' count can be higher than the pair badge. Regression: test_iter40 run_no_directors passed 3/3. run_insights failed 6 checks, and every failure comes from the concert seeds (cast 'Lead Singer', not Himself) now counting (Musician M, Concert Dir, 7 actors/15 movies, 5 directors/15 films). The main agent said this change is intended. All other insights checks passed. The Top-Rated Actors list (rated-actor) was empty in my seed and was not opened; it uses the same onPick as the other actor lists.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "FilmographyDialog pair mode / peopleStats.pairFilmography", "issue": "The pair badge (computeDirectorStats) counts only the top 5 acting credits of each film, but pairFilmography lists every film where the actor has any acting credit. Repro: Actor P is the 4th acting credit in F1 and F2 and the 6th in F10, all directed by Dir A. The badge shows 2 but the dialog says 'Together 3 films' and also lists F10. The spec says N must equal the badge count.", "selector": "[data-testid=director-pairs-2] -> [data-testid=filmography-count]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Stats actor lists", "issues": ["Rows in Most Appearing, Top-Rated and Chameleon are div role=button tabIndex=0 with no onKeyDown, so Enter/Space do nothing when the row has keyboard focus. Director rows are real <button>s and work."]}
+    ]
+  },
+  "test_report_links": ["/app/tests/test_iter41_filmography.py", "/app/tests/test_iter40_aka_directors.py"],
+  "action_items": [
+    "Make the pair count and the pair dialog use the same rule. Either apply the same top-5 acting-credit slice in pairFilmography, or drop the slice(0,5) in computeDirectorStats pairs.",
+    "Update test_iter40 run_insights expectations: concert seeds now count, so expect 7 actors/15 movies, 5 directors/15 films, Concert Dir in most/range, and Musician M in the cast lists. Or change the concert seed characters to 'Himself'.",
+    "Optional: add Enter/Space key handling to the actor list rows."
+  ],
+  "critical_code_review_comments": [
+    "computeDirectorStats pairs use slice(0,5) of acting credits but pairFilmography does not, so the counts can differ.",
+    "filmography() looks up the character with the first cast entry matching the name. If the actor is listed twice (e.g. Himself plus a real role), the 'as' text can show 'Himself'. It should use find(c => c.name===name && isActingCredit(c)).",
+    "StatsPage actor counts add one per credit, not per film: an actor listed twice in one film is counted 2 in the badge but only once in the filmography. This is an edge case."
+  ],
+  "updated_files": ["/app/tests/test_iter41_filmography.py"],
+  "success_rate": {"backend": "N/A", "frontend": "97% (30/31 new checks); regression differences are expected"},
+  "seed_data_creation": "Only in-browser simulated localStorage libraries in separate browser contexts. No real data touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run with g={'page':page}; exec(open('/app/tests/test_iter41_filmography.py').read(), g); await g['run_filmography'](); await g['run_bad_open'](). The 'pair row 2 Actor P' check is the known pair-count bug. The detail window is detected with [data-testid=movie-title-editable]. The test_iter40 run_insights expectations are out of date after the Music/Himself rule change."
+}
