@@ -1767,14 +1767,14 @@ export default function LocalLibraryPage() {
       });
       setMovies(prev => prev.map(m => updates[m.id] ? applyCardUpdate(m, updates[m.id]) : m));
       const count = (k) => list.filter(m => { const u = updates[m.id] || {}; return k === 'genres' ? u.genres && u.genres.length && !(m.genres && m.genres.length) : u[k] && !m[k]; }).length;
-      const parts = [['rating', 'ratings'], ['year', 'years'], ['genres', 'genres']].map(([k, label]) => count(k) + ' ' + label);
+      const parts = [['rating', 'ratings'], ['year', 'years'], ['genres', 'genres']].map(([k, label]) => { const n = count(k); return n + ' ' + (n === 1 && k !== 'genres' ? label.slice(0, -1) : label); });
       const left = list.map(m => ({ ...m, ...(updates[m.id] || {}) })).filter(hasGap).length;
-      if (mismatches.length) {
-        const keep = mismatches.filter(x => !renameIgnored.includes(x.file_path));
+      const keep = mismatches.filter(x => !renameIgnored.includes(x.file_path));
+      if (keep.length) {
         setYearMismatches(prev => [...prev.filter(p => !keep.some(x => x.id === p.id)), ...keep]);
         if (manual) setShowMismatches(true);
       }
-      if (manual) toast.success('Filled ' + parts.join(', ') + (left ? ' · ' + left + ' still incomplete' : '') + (mismatches.length ? ' · ' + mismatches.length + ' file names differ in year' : ''));
+      if (manual) toast.success('Filled ' + parts.join(', ') + (left ? ' · ' + left + ' still incomplete' : '') + (keep.length ? ' · ' + keep.length + (keep.length === 1 ? ' file name differs' : ' file names differ') + ' in year' : ''));
     } finally {
       setFixRun(null);
     }
