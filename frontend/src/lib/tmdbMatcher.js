@@ -347,6 +347,9 @@ export async function fetchTvDetails(tvId, apiKey) {
   return {
     tmdb_id: d.id,
     media_type: 'tv',
+    // Series have creators (in director), not film directors; clear any left from an earlier match
+    directors: [],
+    aka: [],
     poster_path: d.poster_path ? TMDB_IMG + d.poster_path : null,
     backdrop_path: d.backdrop_path ? TMDB_BACKDROP + d.backdrop_path : null,
     overview: d.overview || null,

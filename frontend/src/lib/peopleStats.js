@@ -28,8 +28,12 @@ export function isActingCredit(c) {
 }
 
 export function filmDirectors(m) {
-  if (Array.isArray(m.directors) && m.directors.length) return m.directors;
-  return String(m.director || '').split(',').map(n => n.trim()).filter(Boolean).map(name => ({ name, profile_path: null }));
+  const named = String(m.director || '').split(',').map(n => n.trim()).filter(Boolean);
+  const list = Array.isArray(m.directors) ? m.directors : [];
+  // The director text is the source of truth; photo entries only count when they agree with it
+  if (named.length === 0) return m.director === undefined ? list : [];
+  const photos = new Map(list.map(d => [d.name, d.profile_path]));
+  return named.map(name => ({ name, profile_path: photos.get(name) || null }));
 }
 
 // Films in the library for one person (same film-only rules as the insights), newest first

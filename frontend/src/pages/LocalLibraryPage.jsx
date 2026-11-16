@@ -869,7 +869,8 @@ export default function LocalLibraryPage() {
       rating: null,
       tmdb_id: null,
       genres: null,
-      runtime: null, tagline: null, director: null, writers: null, certification: null,
+      runtime: null, tagline: null, director: null, directors: null, writers: null, certification: null,
+      aka: null, rating_source: null, media_type: null, season_count: null, episode_count: null, gap_checked_at: null,
       imdb_id: null, tmdb_title: null, original_title: null, collection_name: null,
       backdrop_path: null, match_confidence: null, needs_review: false, metadata_updated_at: null,
     };
