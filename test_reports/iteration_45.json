@@ -1,0 +1,33 @@
+{
+  "summary": "Regression test of the v1.7.1 performance pass (partFolder/parseFilename caches, shared parsed library, 1200ms save debounce, lazy pages, Mongo indexes). Backend: new suite test_iter46_perf_regression.py 25/25 (12 non-unique indexes exist; changelog 1.7.1 first with 14 highlights; auth/me via Bearer + cookie; 401 without auth; license validate; usage ping persisted, then removed; admin users/licenses/stats/usage). Web: landing (v1.7.1), dashboard, upgrade, admin (all 5 tabs) and settings lazy pages load with no failed network calls once a session exists. Desktop sim: new suite /app/tests/test_iter46_perf.py run_perf 19/19. Sidebar no-poster/no-rating counts are correct and update 1.27s after deleting a card, and after a rating edit. A rating persists after a reload (>1.5s), and a rating changed just before navigating to Stats persists (unmount flush). Stats Total/Avg Rating/Poster Coverage match the library. The director filmography lists the right 4 films. Settings, Collections and Library render through client navigation, nothing stuck on page-loading, no page errors. Regression suites: iter36 (extras variants 5/5 PASS; folder-type switch anim->dialog, movies->no dialog, tv/docs->dialog, which shows the cache is invalidated; structures), iter38 (6/6 heuristics, button text, nested badge), iter43 run_detail_people 34/34 and run_detail_missing 5/5, iter45 run_drop_main 21/21 after a test update, run_drop_edges 10/10, run_rating_tag 22/22, iter44 run_fix_manual 44/44. iter34: grouping output is correct, but the functions stop at the qf-tv-shows locator, which was removed in iter44 (stale test, not a regression). No functional regressions found.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "legacy suites in /app/backend/tests (test_referral, test_license_api, test_auth_stripe, test_free_tier_limits, test_sse_scan_progress, test_changelog_v170)", "issue": "30 stale failures, unrelated to this change: expired seeded session tokens (401), old 1.7.0 version assertion, old 29.99 price, removed movies/collections fields. Two files also need the REACT_APP_BACKEND_URL env var exported before they run."},
+      {"endpoint": "GET /api/stripe/checkout-status/{id}", "issue": "Returns 500 without auth because the Stripe lookup runs before the auth check. Pre-existing."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Lazy routes", "issues": ["Suspense wraps the whole <Routes> in App.js, so the first visit to a lazy child page (Stats/Settings/Collections/Admin) briefly swaps the whole Layout, sidebar included, for the 'Loading…' fallback. Suggestion: put a second Suspense around <Outlet/> inside Layout so the sidebar stays visible."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_iter46_perf_regression.py", "/app/tests/test_iter46_perf.py", "/app/tests/test_iter45_drop_rating.py", "/app/test_reports/pytest/pytest_iter46.xml"],
+  "action_items": [
+    "Optional: add a Suspense boundary around <Outlet/> in Layout.jsx so the sidebar does not flash on the first lazy-page visit",
+    "Optional: update or remove stale legacy backend tests and the iter34 qf-tv-shows reads"
+  ],
+  "critical_code_review_comments": [
+    "The readLibrary/publishLibrary shared array and the partFolder/parseFilename caches hand the same object to every caller. No caller mutates them today (checked tmdbMatcher, fixMissing, multiPart, LocalLibraryPage, StatsPage: they all copy with spreads/map). A future in-place mutation would corrupt the cache; consider Object.freeze in dev builds.",
+    "The partFolder cache key is the path only. This is correct because computePartFolder depends only on the path plus showRoots, and the cache is cleared whenever the showRoots signature changes. The type-switch test confirms this.",
+    "React runs passive unmount cleanups before new mount effects, so Stats reads the flushed library after an immediate navigation. Verified."
+  ],
+  "updated_files": ["/app/tests/test_iter45_drop_rating.py (re-drop of a file already in the library now expects the 'already in your library' toast and no dialog; the app has filtered known paths since fdf949b)", "/app/tests/test_iter46_perf.py (new)", "/app/backend/tests/test_iter46_perf_regression.py (new)"],
+  "success_rate": {"backend": "100% (25/25 relevant)", "frontend": "100% of relevant checks"},
+  "seed_data_creation": "usage_tracking machine_id TEST_iter46_machine created and deleted in the test. Desktop tests use their own seeded sessionStorage/localStorage contexts.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Run: g={'page':page}; exec(open('/app/tests/test_iter46_perf.py').read(), g); await g['run_perf'](). The Stats StatCards animate, so wait at least 3s before reading them. In the text, each value comes before its label. Backend: pytest /app/backend/tests/test_iter46_perf_regression.py. iter34 functions after the grouping output still read qf-tv-shows (removed); ignore those exceptions."
+}

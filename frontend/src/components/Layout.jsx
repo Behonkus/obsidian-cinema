@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { Outlet, NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -547,7 +547,9 @@ export default function Layout() {
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="min-h-screen"
       >
-        <Outlet context={{ sidebarCollapsed }} />
+        <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center text-sm text-muted-foreground" data-testid="page-loading">Loading…</div>}>
+          <Outlet context={{ sidebarCollapsed }} />
+        </Suspense>
       </motion.main>
 
       <StatusBar sidebarCollapsed={sidebarCollapsed} />

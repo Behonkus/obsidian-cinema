@@ -87,9 +87,9 @@ async def run_drop_main():
         cats = json.loads(await p.evaluate("() => localStorage.getItem('obsidian_cinema_dir_categories')") or "{}")
         chk("folder types saved", cats.get("D:\\Drop") == "movies" and cats.get("D:\\Drop\\Folder") == "movies", cats)
         # Drop the same again -> already in library
-        await drop(p, ["D:\\Drop\\Heat (1995).mkv"]); await p.wait_for_timeout(600)
-        chk("single drop: '1 dropped item'", "1 dropped item." in (await d.inner_text() if await d.count() else ""))
-        await p.locator('[data-testid="files-type-tv"]').click(); await cont.click(); await p.wait_for_timeout(1200)
+        # Already-known paths are filtered before the dialog (toast only, no type dialog)
+        await drop(p, ["D:\\Drop\\Heat (1995).mkv"]); await p.wait_for_timeout(1200)
+        chk("re-drop of known file: no type dialog", await d.count() == 0)
         ts = await H.toasts(p)
         chk("existing path skipped toast", any("already in your library" in t for t in ts), ts)
         chk("count unchanged", len(await H.read_lib(p)) == 3)
