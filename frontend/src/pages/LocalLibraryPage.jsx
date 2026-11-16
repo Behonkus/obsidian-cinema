@@ -94,6 +94,7 @@ import { publishLibrary } from "@/lib/libraryStore";
 import { fixMissingInfo, needsAutoFix, hasGap } from "@/lib/fixMissing";
 
 const YEAR_MISMATCH_KEY = 'obsidian_cinema_year_mismatches';
+const RENAME_IGNORED_KEY = 'obsidian_cinema_year_rename_ignored';
 import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, setShowRoots, showRootsFrom, applyCardUpdate, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { ImportTypeDialog } from "@/components/ImportTypePicker";
 import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
@@ -1769,7 +1770,8 @@ export default function LocalLibraryPage() {
       const parts = [['rating', 'ratings'], ['year', 'years'], ['genres', 'genres']].map(([k, label]) => count(k) + ' ' + label);
       const left = list.map(m => ({ ...m, ...(updates[m.id] || {}) })).filter(hasGap).length;
       if (mismatches.length) {
-        setYearMismatches(prev => [...prev.filter(p => !mismatches.some(x => x.id === p.id)), ...mismatches]);
+        const keep = mismatches.filter(x => !renameIgnored.includes(x.file_path));
+        setYearMismatches(prev => [...prev.filter(p => !keep.some(x => x.id === p.id)), ...keep]);
         if (manual) setShowMismatches(true);
       }
       if (manual) toast.success('Filled ' + parts.join(', ') + (left ? ' · ' + left + ' still incomplete' : '') + (mismatches.length ? ' · ' + mismatches.length + ' file names differ in year' : ''));
@@ -1788,6 +1790,29 @@ export default function LocalLibraryPage() {
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [libraryReady, autoEnrich, fixRun, fetchingPosters, fetchingCast, movies.length]);
+  // Files the user never wants renamed (by path), kept across restarts
+  const [renameIgnored, setRenameIgnored] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(RENAME_IGNORED_KEY) || '[]'); } catch { return []; }
+  });
+  const saveIgnored = (list) => { setRenameIgnored(list); localStorage.setItem(RENAME_IGNORED_KEY, JSON.stringify(list)); };
+  const ignoreMismatch = (item) => {
+    saveIgnored([...new Set([...renameIgnored, item.file_path])]);
+    setYearMismatches(prev => prev.filter(p => p.id !== item.id));
+    toast.success(item.file_name + ' will not be suggested for renaming again');
+  };
+  const resetRenameIgnored = () => {
+    saveIgnored([]);
+    toast.success('Those files can be suggested again on the next check');
+  };
+  // Only titles still in the library, at the same path, and not set to never rename
+  const liveMismatches = useMemo(() => {
+    const byId = new Map(movies.map(m => [m.id, m]));
+    return yearMismatches.filter(x => { const m = byId.get(x.id); return m && m.file_path === x.file_path && !renameIgnored.includes(x.file_path); });
+  }, [yearMismatches, movies, renameIgnored]);
+  useEffect(() => {
+    if (libraryReady && liveMismatches.length !== yearMismatches.length) setYearMismatches(liveMismatches);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [libraryReady, liveMismatches]);
   const renameMismatches = async (items) => {
     let ok = 0;
     const failed = [];
@@ -2046,12 +2071,12 @@ export default function LocalLibraryPage() {
           {!fixList && fixRun && !fixRun.manual && (
             <span className="text-[11px] text-muted-foreground flex items-center gap-1" data-testid="fix-missing-bg"><Loader2 className="w-3 h-3 animate-spin" /> Filling gaps {fixRun.done}/{fixRun.total}</span>
           )}
-          {yearMismatches.length > 0 && (
+          {liveMismatches.length > 0 && (
             <Button variant="ghost" size="sm" className="h-8 text-xs text-amber-400" onClick={() => setShowMismatches(true)} data-testid="year-mismatch-chip">
-              <FileEdit className="w-3 h-3 mr-1" /> {yearMismatches.length} file {yearMismatches.length === 1 ? 'name differs' : 'names differ'} in year
+              <FileEdit className="w-3 h-3 mr-1" /> {liveMismatches.length} file {liveMismatches.length === 1 ? 'name differs' : 'names differ'} in year
             </Button>
           )}
-          {showMismatches && <YearMismatchDialog items={yearMismatches} onClose={() => setShowMismatches(false)} onRename={renameMismatches} />}
+          {showMismatches && <YearMismatchDialog items={liveMismatches} onClose={() => setShowMismatches(false)} onRename={renameMismatches} onIgnore={ignoreMismatch} ignoredCount={renameIgnored.length} onResetIgnored={resetRenameIgnored} />}
           {personParam && (
             <div className="flex items-center gap-2 text-sm" data-testid="person-filter-chip">
               <span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary">

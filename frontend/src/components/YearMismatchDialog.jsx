@@ -1,16 +1,17 @@
-import { useEffect, useState } from "react";
-import { AlertTriangle, FileEdit } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, FileEdit, Ban } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Review file names whose year differs from the found release year, and rename the ticked ones
-export const YearMismatchDialog = ({ items, onClose, onRename }) => {
-  const [picked, setPicked] = useState(new Set());
+export const YearMismatchDialog = ({ items, onClose, onRename, onIgnore, ignoredCount, onResetIgnored }) => {
+  // Everything is ticked unless the user unticks it (survives items being removed from the list)
+  const [unticked, setUnticked] = useState(new Set());
   const [busy, setBusy] = useState(false);
-  useEffect(() => { setPicked(new Set((items || []).map(i => i.id))); }, [items]);
   if (!items || items.length === 0) return null;
-  const toggle = (id) => setPicked(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const picked = new Set(items.filter(i => !unticked.has(i.id)).map(i => i.id));
+  const toggle = (id) => setUnticked(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const run = async () => {
     setBusy(true);
     await onRename(items.filter(i => picked.has(i.id)));
@@ -36,10 +37,25 @@ export const YearMismatchDialog = ({ items, onClose, onRename }) => {
                 <p className="text-muted-foreground truncate line-through">{i.file_name}</p>
                 <p className="text-foreground truncate">{i.newName}</p>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-[11px] text-muted-foreground hover:text-destructive shrink-0"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onIgnore(i); }}
+                title="Remove from this list and never suggest renaming this file again"
+                data-testid={'year-mismatch-ignore-' + idx}
+              >
+                <Ban className="w-3 h-3 mr-1" /> Never rename
+              </Button>
             </label>
           ))}
         </div>
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          {ignoredCount > 0 && (
+            <button type="button" onClick={onResetIgnored} className="mr-auto text-[11px] text-muted-foreground hover:text-foreground underline" data-testid="year-mismatch-reset-ignored">
+              {ignoredCount} {ignoredCount === 1 ? 'file is' : 'files are'} set to never rename · Allow again
+            </button>
+          )}
           <Button variant="outline" onClick={onClose} disabled={busy} data-testid="year-mismatch-later">Not now</Button>
           <Button onClick={run} disabled={busy || picked.size === 0} data-testid="year-mismatch-rename">
             {busy ? 'Renaming…' : 'Rename ' + picked.size + (picked.size === 1 ? ' file' : ' files')}
