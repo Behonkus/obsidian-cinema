@@ -33,6 +33,8 @@ Obsidian Cinema sits between a file manager and a full media server. Point it at
 - **AKA titles (new in 1.7.1)** — English alternative titles and the original title on every movie card and in the details, and searchable.
 - **Director Insights & filmographies (new in 1.7.1)** — most films, top-rated and genre range; click any actor or director to see their films, filter the library to them, or discover well-known films you don't own yet.
 - **Cleaner genres (new in 1.7.1)** — duplicate TV genres like "Action & Adventure" merged into the movie genres.
+- **Fix missing info (new in 1.7.1)** — fills missing ratings, years and genres from TMDB, then Wikidata (IMDb, Metacritic, Rotten Tomatoes scores), then file and folder names; flags file names whose year differs and renames just the year with one click.
+- **Drag & drop (new in 1.7.1)** — drop video files or folders onto the library to add them.
 - **AI-powered recommendations** — personalized movie suggestions based on your viewing and browsing activity, powered by GPT-4o.
 - **One-click playback** in your default media player (VLC, MPC, Windows Media Player — your choice).
 - **Favorites** — star movies with an animated confetti burst. Persists across sessions and survives updates.

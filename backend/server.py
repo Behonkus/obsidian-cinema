@@ -2909,6 +2909,12 @@ CHANGELOG = [
             "Cast Insights show film actors only, plus new Director Insights",
             "Click any actor or director to see their films and well-known films you don't own",
             "Duplicate genres like Action & Adventure merged into Action",
+            "Click any actor or director in a movie's details to see their films",
+            "Fix missing info: fills missing ratings, years and genres from TMDB, then Wikidata",
+            "Notice when a file name's year differs, with one-click renaming of just the year",
+            "Drag video files or folders onto the library to add them",
+            "Small tag on ratings that came from IMDb, Metacritic or Rotten Tomatoes via Wikidata",
+            "Recently Added now shows the newest first",
         ],
     },
     {
