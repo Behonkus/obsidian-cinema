@@ -1,0 +1,18 @@
+{
+  "summary": "Frontend-only retest of v1.7.1 (stale director after Reset metadata or re-match). Every check passed. (1) Null-details guard in applyManualMatch: movie/9002 was mocked to return HTTP 500. Clicking poster-result-movie-9002 shows the error toast 'Could not load details from TMDB — please try again' and no 'Matched to' toast. The detail still reads 'Directed by Dir A' and the poster search stays open so the user can retry. The saved card is exactly the same as before: tmdb_id, director, directors, cast, aka, genres, media_type, title, year, rating, poster_path and match_method show no differences. Stats still counts Dir A at 5 and Dir B at 1. (2) Re-matching a TV card (season_count 2, episode_count 20) to film 9002 shows the success toast. The series badge goes away and the detail reads 'Directed by Dir B'. The card is saved with media_type movie, season_count null, episode_count null and tmdb_id 9002. (3) The full iter48 suite passed again: run_reset, run_rematch and run_corrupted. (4) Regressions passed: run_detail_people (iter43) and run_filmography (iter41). No page errors in any run.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/tests/test_iter49_null_details.py", "/app/tests/test_iter48_reset_directors.py", "/app/tests/test_iter43_detail_filmography.py", "/app/tests/test_iter41_filmography.py"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "applyManualMatch has no loading or disabled state while fetchDetails is running. A quick double-click on two different results can race, and the last response to arrive wins. Low risk, optional.",
+    "Carried over from iter47 (optional): resetMetadata could also clear release_date, vote_count, original_language, studios and countries."
+  ],
+  "updated_files": ["/app/tests/test_iter49_null_details.py"],
+  "success_rate": {"backend": "N/A", "frontend": "100% (new: 20/20; iter48 suite 45/45; regressions all PASS)"},
+  "seed_data_creation": "None. Every library is a simulated electronAPI library in sessionStorage, local to each test browser context.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "New harness: /app/tests/test_iter49_null_details.py. Run: g={'page':page}; exec(open(...).read(), g); then await g['run_fail500'](), g['run_tv_to_film'](). It reuses the iter48 helpers. FailMock returns 500 for movie/9002. Toasts are read from [data-sonner-toast].",
+  "rca of the issue": "The iter47 edge case is fixed. When fetchDetails returns null, applyManualMatch now shows the error toast and returns before any state update, so tmdb_id is never changed and the old metadata is not split across two films. fetchMovieDetails now sets season_count and episode_count to null, and applyCardUpdate copies null values, so a TV-to-film re-match clears the series counts."
+}
