@@ -1,0 +1,28 @@
+{
+  "summary": "Frontend-only test of the v1.7.1 fix for stale directors after Reset metadata or re-match. I used a new harness, /app/tests/test_iter48_reset_directors.py, with mocked TMDB search, movie/9001 (Dir A), movie/9002 (Dir B) and tv/9101 (created_by Creator C). Reset metadata: the detail window loses 'Directed by', the aka line and the rating source tag, and the card loses its aka line. director, directors, aka, rating_source, media_type and tmdb_id are saved as null. The detail-window director pop-up, Stats Director Insights and the Stats pop-up all drop the reset card (Dir A goes from 5 to 4). Re-match from film A to film B: the detail shows 'Directed by Dir B' only; Dir A drops to 3 and Dir B rises to 2, and both pop-ups agree. Re-match from a film to a TV series: the detail shows 'Created by Creator C' with the series badge and no aka; directors and aka are saved as [] and Creator C is not in Director Insights. Corrupted cards: a card with director null and directors [Dir A] shows no director and is not counted. A card with director 'Dir B' and directors [Dir A] shows and counts only Dir B. The 'Show all in Library' person filter excludes both. Regression: run_detail_people, run_filmography and run_no_directors all pass. run_insights fails only on old expectations, explained in context_for_next_testing_agent. One edge case is still open: if the TMDB details call fails during 'Pick the right one', the old director stays on the card (reproduced).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "applyManualMatch fallback when fetchDetails returns null (TMDB error or timeout)", "issue": "The fallback only sets poster_path, tmdb_id, overview, rating and rating_source. The card gets the new tmdb_id but keeps the old director, directors, cast, aka, genres and media_type. So the old director stays on the card, which is the same symptom as the reported bug. Reproduced: movie/9002 returned 500, and afterwards the card had tmdb_id 9002, director 'Dir A' and the old cast.", "affected_selectors": ["[data-testid^=poster-result-]", "[data-testid=movie-director]"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/tests/test_iter48_reset_directors.py"],
+  "action_items": [
+    "In the applyManualMatch fallback (d === null), also clear director, directors, cast, aka, genres, media_type, writers, tagline, runtime, imdb_id, tmdb_title and original_title. Better: show an error toast and do not change tmdb_id at all.",
+    "Optional: the movie output of fetchMovieDetails could set season_count, episode_count: null so a TV-to-film re-match does not keep series counts. resetMetadata could also clear release_date, vote_count, original_language, studios and countries."
+  ],
+  "critical_code_review_comments": [
+    "filmDirectors: when m.director is undefined (legacy card with no director key), it falls back to the directors array. This is intended and is covered by TEST_OnlyArr.",
+    "fetchDetailsForMovie copies a field only when d[k] != null. If TMDB returns no director for the same tmdb_id, the old director text is kept. This is low risk because it is the same film.",
+    "peopleStats.computeDirectorStats still computes 'pairs', but the pairs list was removed from the UI (commit 4ba03c9). This is dead code."
+  ],
+  "updated_files": ["/app/tests/test_iter48_reset_directors.py"],
+  "success_rate": {"backend": "N/A", "frontend": "100% of the requested checks (49/49 in iter48); one extra edge case found (fallback path)"},
+  "seed_data_creation": "None. Every library is a simulated electronAPI library in sessionStorage, local to each test context.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: g={'page':page}; exec(open('/app/tests/test_iter48_reset_directors.py').read(), g); then await g['run_reset'](), g['run_rematch']() and g['run_corrupted'](). Re-match goes through [data-testid=poster-change-trigger] (click with force=True), then poster-search-input, then poster-result-{movie|tv}-{id}. A rematched film takes its year from the TMDB release_date, which changes the newest-first order. run_insights in iter40 fails only on old expectations: concert cards whose single cast credit is 'Lead Singer' now count as films, and the pairs list was removed in 4ba03c9.",
+  "rca of the issue": "The old resetMetadata and TV details left the directors[] array in place, and filmDirectors preferred that array, so the old director stayed. The fix makes the director text the source of truth and verifies correctly. The one remaining path is the applyManualMatch fallback used when the details fetch fails."
+}

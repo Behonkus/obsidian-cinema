@@ -659,12 +659,14 @@ export default function LocalLibraryPage() {
     if (!selectedMovie) return;
     const id = selectedMovie.id;
     const d = await fetchDetails(result.id, result.media_type, tmdbApiKey);
-    if (d && isMultiPart(selectedMovie)) {
+    // Without full details the card would keep the old director/cast under the new title: change nothing
+    if (!d) { toast.error('Could not load details from TMDB — please try again'); return; }
+    if (isMultiPart(selectedMovie)) {
       d.parts = d.media_type === 'tv'
         ? (await attachEpisodes(selectedMovie.parts, d.tmdb_id, tmdbApiKey)).parts
         : selectedMovie.parts.map(p => ({ file_path: p.file_path, file_name: p.file_name }));
     }
-    const data = d ? { ...d, match_confidence: 1, match_method: 'manual', needs_review: false } : { poster_path: result.poster, tmdb_id: result.id, overview: result.overview, rating: result.rating, rating_source: null, needs_review: false };
+    const data = { ...d, match_confidence: 1, match_method: 'manual', needs_review: false };
     if (!data.poster_path) data.poster_path = result.poster;
     setMovies(prev => prev.map(m => m.id === id ? applyCardUpdate(m, data) : m));
     setSelectedMovie(prev => prev && prev.id === id ? applyCardUpdate(prev, data) : prev);

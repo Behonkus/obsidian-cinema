@@ -332,6 +332,8 @@ export async function fetchMovieDetails(tmdbId, apiKey) {
     directors: directorCrew.map(c => ({ name: c.name, profile_path: c.profile_path ? TMDB_PROFILE + c.profile_path : null })),
     aka: akaTitles(d),
     media_type: 'movie',
+    season_count: null,
+    episode_count: null,
     metadata_updated_at: Date.now(),
   };
   return out;
