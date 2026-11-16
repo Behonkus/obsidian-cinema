@@ -90,6 +90,7 @@ import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
 import { FilmographyDialog } from "@/components/FilmographyDialog";
 import { YearMismatchDialog } from "@/components/YearMismatchDialog";
 import { RatingSourceTag } from "@/components/RatingSourceTag";
+import { publishLibrary } from "@/lib/libraryStore";
 import { fixMissingInfo, needsAutoFix, hasGap } from "@/lib/fixMissing";
 
 const YEAR_MISMATCH_KEY = 'obsidian_cinema_year_mismatches';
@@ -494,13 +495,15 @@ export default function LocalLibraryPage() {
       const str = JSON.stringify(data);
       if (sync && window.__ocSaveLibrarySync) window.__ocSaveLibrarySync(str);
       else localStorage.setItem(STORAGE_KEY, str);
+      publishLibrary(data, localStorage.getItem(STORAGE_KEY));
       window.dispatchEvent(new Event('oc-library-updated'));
     } catch (e) { console.error('Library save failed:', e); toast.error('Could not save library — storage is full'); }
   };
   useEffect(() => {
     if (!moviesLoadedRef.current) { moviesLoadedRef.current = true; return; }
     pendingSaveRef.current = movies;
-    const t = setTimeout(() => saveMoviesNow(false), 600);
+    // Fewer, larger writes while many cards change (background matching / enrichment)
+    const t = setTimeout(() => saveMoviesNow(false), 1200);
     return () => clearTimeout(t);
   }, [movies]);
   useEffect(() => {

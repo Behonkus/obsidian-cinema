@@ -24,7 +24,19 @@ export function normalizeTitle(s) {
 }
 
 // Parse a raw file name into a clean title, year and optional IMDb id
+// Same file name always parses the same way: remember results (big libraries parse names constantly)
+const parseCache = new Map();
 export function parseFilename(fileName) {
+  const key = String(fileName || '');
+  const hit = parseCache.get(key);
+  if (hit) return hit;
+  const res = parseFilenameUncached(key);
+  if (parseCache.size > 200000) parseCache.clear();
+  parseCache.set(key, res);
+  return res;
+}
+
+function parseFilenameUncached(fileName) {
   const raw = String(fileName || '').replace(/\.[a-z0-9]{2,4}$/i, '');
   const imdbMatch = raw.match(/\btt\d{7,8}\b/i);
   let s = raw.replace(/\btt\d{7,8}\b/ig, ' ').replace(/[._]/g, ' ');

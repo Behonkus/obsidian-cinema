@@ -3077,6 +3077,23 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+@app.on_event("startup")
+async def ensure_indexes():
+    # Lookup indexes (non-unique so existing data can never block startup)
+    specs = [
+        ("users", "user_id"), ("users", "email"),
+        ("user_sessions", "session_token"), ("user_sessions", "user_id"),
+        ("license_keys", "user_id"), ("license_keys", "license_key"),
+        ("usage_tracking", "machine_id"), ("payment_transactions", "session_id"),
+        ("movies", "id"), ("movies", "file_path"), ("collections", "id"), ("directories", "id"),
+    ]
+    for coll, field in specs:
+        try:
+            await db[coll].create_index(field)
+        except Exception as e:
+            logger.warning(f"Index {coll}.{field} not created: {e}")
+
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()

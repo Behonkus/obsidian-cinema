@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import "@/App.css";
 import { BrowserRouter, HashRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
@@ -16,18 +16,18 @@ import { LicenseProvider, useLicense } from "@/context/LicenseContext";
 import { initTheme } from "@/components/ThemeSelector";
 import Layout from "@/components/Layout";
 import HomePage from "@/pages/HomePage";
-import AccountDashboard from "@/pages/AccountDashboard";
-import DirectoriesPage from "@/pages/DirectoriesPage";
-import SettingsPage from "@/pages/SettingsPage";
-import CollectionsPage from "@/pages/CollectionsPage";
+const AccountDashboard = lazy(() => import("@/pages/AccountDashboard"));
+const DirectoriesPage = lazy(() => import("@/pages/DirectoriesPage"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const CollectionsPage = lazy(() => import("@/pages/CollectionsPage"));
 import LoginPage from "@/pages/LoginPage";
 import AuthCallback from "@/pages/AuthCallback";
-import UpgradePage from "@/pages/UpgradePage";
+const UpgradePage = lazy(() => import("@/pages/UpgradePage"));
 import LicenseActivationPage from "@/pages/LicenseActivationPage";
 import EulaPage from "@/pages/EulaPage";
 import LocalLibraryPage from "@/pages/LocalLibraryPage";
-import StatsPage from "@/pages/StatsPage";
-import AdminPage from "@/pages/AdminPage";
+const StatsPage = lazy(() => import("@/pages/StatsPage"));
+const AdminPage = lazy(() => import("@/pages/AdminPage"));
 import LandingPage from "@/pages/LandingPage";
 import { RefreshCw } from "lucide-react";
 import WhatsNewDialog from "@/components/WhatsNewDialog";
@@ -135,6 +135,8 @@ function AppRouter() {
   }
 
   return (
+    // Less-used pages load on first visit so the app starts faster
+    <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center text-sm text-muted-foreground" data-testid="page-loading">Loading…</div>}>
     <Routes>
       {/* Desktop-specific routes */}
       <Route path="/activate" element={<LicenseActivationPage />} />
@@ -177,6 +179,7 @@ function AppRouter() {
         element={<UpgradePage />}
       />
     </Routes>
+    </Suspense>
   );
 }
 

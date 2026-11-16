@@ -53,3 +53,19 @@ function installLibraryStore() {
 }
 
 installLibraryStore();
+
+// Parsed library shared across pages: parse only when the stored text actually changed
+let parsedRaw = null;
+let parsedList = [];
+export function readLibrary() {
+  const raw = window.localStorage.getItem(LIBRARY_KEY);
+  if (raw === parsedRaw) return parsedList;
+  try { parsedList = raw ? JSON.parse(raw) : []; } catch { parsedList = []; }
+  parsedRaw = raw;
+  return parsedList;
+}
+// The library page hands over the array it just saved, so nobody has to re-parse it
+export function publishLibrary(list, raw) {
+  parsedList = list;
+  parsedRaw = raw;
+}

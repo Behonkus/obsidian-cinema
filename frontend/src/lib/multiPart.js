@@ -99,9 +99,26 @@ const EXTRAS_DIR = /^(?:(?:season|series|s)[\s._-]*\d{1,2}[\s._-]+)?(?:extras?|b
 
 // TV Shows / Documentaries / Animations library folders: each sub-folder is one show
 let showRoots = [];
+let showRootsSig = '';
 export function setShowRoots(roots) {
-  showRoots = (roots || []).map(r => ({ dir: String(r.dir).replace(/[\\/]+$/, ''), cat: r.cat }))
+  const next = (roots || []).map(r => ({ dir: String(r.dir).replace(/[\\/]+$/, ''), cat: r.cat }))
     .sort((a, b) => b.dir.length - a.dir.length);
+  const sig = JSON.stringify(next);
+  if (sig === showRootsSig) return;
+  showRootsSig = sig;
+  showRoots = next;
+  folderCache.clear();
+}
+
+// partFolder results per path (depend only on the path and the folder types above)
+const folderCache = new Map();
+export function partFolder(filePath) {
+  const hit = folderCache.get(filePath);
+  if (hit) return hit;
+  const res = computePartFolder(filePath);
+  if (folderCache.size > 200000) folderCache.clear();
+  folderCache.set(filePath, res);
+  return res;
 }
 
 // Loose files read as one series: mostly numbered, named after the folder, or sharing a name start
@@ -160,7 +177,7 @@ function rootShow(dir, filePath) {
 }
 
 // Folder role of a file: inside a Season N / Specials folder, or an Extras folder of a show
-export function partFolder(filePath) {
+function computePartFolder(filePath) {
   const dir = dirOf(filePath);
   const rs = rootShow(dir, filePath);
   // Extras anywhere in the path (Show\\Extras\\Sub\\file, Show\\Season 1\\Extras\\file) belong to the show

@@ -29,6 +29,7 @@ import {
   Tv
 } from "lucide-react";
 import { isSeries, setShowRoots, showRootsFrom } from "@/lib/multiPart";
+import { readLibrary } from "@/lib/libraryStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -135,8 +136,7 @@ function SidebarWidgets() {
 
   const refreshStats = useCallback(() => {
     try {
-      const raw = localStorage.getItem('obsidian_cinema_local_movies');
-      const movies = raw ? JSON.parse(raw) : [];
+      const movies = readLibrary();
       const dirs = localStorage.getItem('obsidian_cinema_local_dirs');
       const dirList = dirs ? JSON.parse(dirs) : [];
       const dirCount = dirList.length;
@@ -232,8 +232,7 @@ function FreeTierBadge() {
   useEffect(() => {
     const check = () => {
       try {
-        const raw = localStorage.getItem('obsidian_cinema_local_movies');
-        const movies = raw ? JSON.parse(raw) : [];
+        const movies = readLibrary();
         setMovieCount(movies.length);
       } catch {}
     };
