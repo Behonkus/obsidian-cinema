@@ -97,7 +97,8 @@ const YEAR_MISMATCH_KEY = 'obsidian_cinema_year_mismatches';
 const RENAME_IGNORED_KEY = 'obsidian_cinema_year_rename_ignored';
 import { findPartGroups, mergeIntoOne, splitParts, isMultiPart, isSeries, mainParts, allLibraryPaths, partsOf, attachEpisodes, setShowRoots, showRootsFrom, applyCardUpdate, partSection as partSectionName, partFolder as partFolderOf, MULTIPART_DISMISSED_KEY } from "@/lib/multiPart";
 import { ImportTypeDialog } from "@/components/ImportTypePicker";
-import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
+import { DirectoryDropdowns, DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir, cardCategory, folderCategory, categoryCountLabel } from "@/components/DirectoryDropdowns";
+import { MoreVertical as MoreIcon, CheckSquare as SelectIcon, FolderInput as MoveIcon, CircleCheck as SelectedIcon, Circle as UnselectedIcon, Undo2 as UndoIcon } from "lucide-react";
 import { PartsPlayDialog, PartsList, MultiPartSuggestDialog, MergePickerDialog } from "@/components/MultiPartDialogs";
 
 const FREE_TIER_MOVIE_LIMIT = 500;
@@ -186,8 +187,41 @@ const GRID_SIZES = {
 };
 
 // Reusable movie card component
-const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie, isFavorite, onToggleFav }) {
-  var onClick = function() { onOpen(movie); };
+// "Move to" menu on each card
+function CardMoveMenu({ movie, category, onMove }) {
+  var stop = function(e) { e.stopPropagation(); };
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="absolute top-9 right-1.5 z-20 p-1 rounded-full bg-black/50 hover:bg-black/75 text-white/80 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity" onClick={stop} title="Move to another category" data-testid={`card-menu-${movie.id}`}>
+          <MoreIcon className="w-4 h-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52" onClick={stop} data-testid={`card-move-menu-${movie.id}`}>
+        <DropdownMenuLabel className="text-xs flex items-center gap-1.5"><MoveIcon className="w-3.5 h-3.5" /> Move to</DropdownMenuLabel>
+        {DIR_CATEGORIES.map(function(c) {
+          var Icon = c.icon;
+          return (
+            <DropdownMenuItem key={c.id} disabled={c.id === category} onSelect={function() { onMove([movie.id], c.id); }} data-testid={`card-move-${c.id}-${movie.id}`}>
+              {c.id === category ? <Check className="w-3.5 h-3.5 mr-2" /> : <Icon className="w-3.5 h-3.5 mr-2 opacity-60" />}{c.label}
+            </DropdownMenuItem>
+          );
+        })}
+        {movie.category_override && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={function() { onMove([movie.id], null); }} data-testid={`card-move-reset-${movie.id}`}>
+              <UndoIcon className="w-3.5 h-3.5 mr-2 opacity-60" />Back to folder's type
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie, isFavorite, onToggleFav, category, onMove, selectMode, selected, onSelect }) {
+  var onClick = function() { if (selectMode) onSelect(movie.id); else onOpen(movie); };
   var onPlay = function(e) { e.stopPropagation(); onPlayMovie(movie); };
   var onToggleFavorite = function(e) { onToggleFav(movie.id, e); };
   var [showConfetti, setShowConfetti] = useState(false);
@@ -221,8 +255,14 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
           <span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span />
         </div>
       )}
-      <Card className="overflow-hidden hover:border-primary/50 transition-colors cursor-pointer" onClick={onClick}>
+      <Card className={'overflow-hidden hover:border-primary/50 transition-colors cursor-pointer ' + (selected ? 'ring-2 ring-primary border-primary' : '')} onClick={onClick} data-testid={`movie-card-${movie.id}`}>
         <div className="aspect-[2/3] bg-gradient-to-br from-primary/20 to-secondary relative flex items-center justify-center overflow-hidden">
+          {selectMode && (
+            <span className={'absolute inset-0 z-30 flex items-start justify-start p-1.5 transition-colors ' + (selected ? 'bg-primary/25' : 'bg-black/20 hover:bg-black/10')} data-testid={`card-select-${movie.id}`}>
+              {selected ? <SelectedIcon className="w-6 h-6 text-primary fill-background" /> : <UnselectedIcon className="w-6 h-6 text-white/80" />}
+            </span>
+          )}
+          {!selectMode && <CardMoveMenu movie={movie} category={category} onMove={onMove} />}
           {movie.poster_path ? (
             <img src={thumbUrl(movie.poster_path, gridSize === 'large' ? 'w500' : 'w342')} alt={movie.title} className="w-full h-full object-cover" loading="lazy" decoding="async" onLoad={handlePosterLoad} />
           ) : (
@@ -1519,10 +1559,30 @@ export default function LocalLibraryPage() {
     const col = collections.find(c => c.id === activeCollection);
     return col ? new Set(col.movie_ids) : null;
   }, [activeCollection, collections]);
-  const activeCategoryDirs = useMemo(
-    () => (activeCategory ? [...new Set([...directories, ...Object.keys(dirCategories)])].filter(d => dirCategory(dirCategories, d) === activeCategory) : null),
-    [activeCategory, directories, dirCategories]
-  );
+  const typedDirs = useMemo(() => [...new Set([...directories, ...Object.keys(dirCategories)])], [directories, dirCategories]);
+  const categoryOf = useCallback((m) => cardCategory(m, dirCategories, typedDirs), [dirCategories, typedDirs]);
+  // Move titles to a type; picking the folder's own type clears the override
+  const moveToCategory = useCallback((ids, cat) => {
+    const idSet = new Set(ids);
+    setMovies(prev => prev.map(m => {
+      if (!idSet.has(m.id)) return m;
+      const next = { ...m };
+      if (!cat || cat === folderCategory(m, dirCategories, typedDirs)) delete next.category_override;
+      else next.category_override = cat;
+      return next;
+    }));
+    const n = idSet.size;
+    const label = cat ? (DIR_CATEGORIES.find(c => c.id === cat) || {}).label : "their folder's type";
+    toast.success('Moved ' + n + (n === 1 ? ' title' : ' titles') + ' to ' + label);
+  }, [dirCategories, typedDirs]);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const toggleSelect = useCallback((id) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  }), []);
+  const exitSelect = () => { setSelectMode(false); setSelectedIds(new Set()); };
   // ?person=<name>&role=actor|director|pair[&director=<name>] (from a Stats filmography) limits the grid to their films
   const personParam = searchParams.get('person');
   const personRole = searchParams.get('role');
@@ -1556,8 +1616,8 @@ export default function LocalLibraryPage() {
       // Directory filter
       if (activeDirectory) {
         if (!inDir(movie.file_path, activeDirectory)) return false;
-      } else if (activeCategoryDirs) {
-        if (!activeCategoryDirs.some(d => inDir(movie.file_path, d))) return false;
+      } else if (activeCategory) {
+        if (categoryOf(movie) !== activeCategory) return false;
       }
       // Collection filter
       if (activeCollectionIds && !activeCollectionIds.has(movie.id)) return false;
@@ -1571,7 +1631,7 @@ export default function LocalLibraryPage() {
              (movie.cast && movie.cast.some(c => c.name?.toLowerCase().includes(query)));
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [movies, quickFilter, selectedGenre, activeDirectory, activeCategoryDirs, activeCollectionIds, deferredSearch, sortBy, favoriteSet, showRootsKey, personIds]);
+  ), [movies, quickFilter, selectedGenre, activeDirectory, activeCategory, categoryOf, activeCollectionIds, deferredSearch, sortBy, favoriteSet, showRootsKey, personIds]);
 
   const openMovieDetailCb = useCallback((m) => { setSelectedMovie(m); trackActivity(m.id, 'view'); }, []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1656,7 +1716,6 @@ export default function LocalLibraryPage() {
     toast.success('Opening: ' + part.file_name);
   };
   // Scanned folders plus folders typed through Add Files
-  const typedDirs = useMemo(() => [...new Set([...directories, ...Object.keys(dirCategories)])], [directories, dirCategories]);
   const libraryCounts = useMemo(() => {
     const dirCounts = {};
     let missingPoster = 0, needsReview = 0, needsDetails = 0;
@@ -1668,12 +1727,12 @@ export default function LocalLibraryPage() {
     typedDirs.forEach(d => { dirCounts[d] = 0; });
     const catCounts = {};
     movies.forEach(m => {
-      const cats = new Set();
-      typedDirs.forEach(d => { if (inDir(m.file_path, d)) { dirCounts[d]++; cats.add(dirCategory(dirCategories, d)); } });
-      cats.forEach(c => { catCounts[c] = (catCounts[c] || 0) + 1; });
+      typedDirs.forEach(d => { if (inDir(m.file_path, d)) dirCounts[d]++; });
+      const c = categoryOf(m);
+      catCounts[c] = (catCounts[c] || 0) + 1;
     });
     return { dirCounts, catCounts, missingPoster, needsReview, needsDetails };
-  }, [movies, typedDirs, dirCategories]);
+  }, [movies, typedDirs, categoryOf]);
 
   const displayedMovies = filteredMovies.slice(0, visibleCount);
   const hasMore = visibleCount < filteredMovies.length;
@@ -1755,10 +1814,6 @@ export default function LocalLibraryPage() {
   });
   const [showMismatches, setShowMismatches] = useState(false);
   const fixTriedRef = useRef(new Set());
-  const categoryOf = (m) => {
-    const d = typedDirs.filter(x => inDir(m.file_path, x)).sort((a, b) => b.length - a.length)[0];
-    return d ? dirCategory(dirCategories, d) : 'movies';
-  };
   const runFixMissing = async (list, manual) => {
     if (fixRun || list.length === 0) return;
     list.forEach(m => fixTriedRef.current.add(m.id));
@@ -1886,8 +1941,11 @@ export default function LocalLibraryPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Film className="w-6 h-6 text-primary" />
             Local Library
-            <span className="text-sm font-normal text-muted-foreground ml-1">
-              {movies.length} movies &middot; {directories.length} folders
+            <span className="text-sm font-normal text-muted-foreground ml-1" data-testid="library-header-counts">
+              {DIR_CATEGORIES.filter(c => libraryCounts.catCounts[c.id]).map(c => (
+                <span key={c.id} data-testid={`header-count-${c.id}`}>{categoryCountLabel(c, libraryCounts.catCounts[c.id])} &middot; </span>
+              ))}
+              {movies.length === 0 && '0 titles · '}{directories.length} folders
             </span>
           </h1>
         </div>
@@ -1917,6 +1975,12 @@ export default function LocalLibraryPage() {
             <Button variant="outline" size="sm" onClick={rescanAllDirectories} disabled={isRescanning} data-testid="update-library-btn" title="Rescan all directories for changes">
               <RefreshCw className={`w-4 h-4 mr-1.5 ${isRescanning ? 'animate-spin' : ''}`} />
               <span className="text-xs">{isRescanning ? 'Scanning...' : 'Update Library'}</span>
+            </Button>
+          )}
+          {movies.length > 0 && (
+            <Button variant={selectMode ? 'default' : 'outline'} size="sm" onClick={() => (selectMode ? exitSelect() : setSelectMode(true))} data-testid="select-mode-btn" title="Select titles to move them to another category">
+              <SelectIcon className="w-4 h-4 mr-1.5" />
+              <span className="text-xs">{selectMode ? 'Done' : 'Select'}</span>
             </Button>
           )}
           {movies.length > 0 && (
@@ -2375,7 +2439,7 @@ export default function LocalLibraryPage() {
                 </div>
                 <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
                   {dirMovies.map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} />
+                    <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} />
                   ))}
                 </div>
               </div>
@@ -2384,17 +2448,53 @@ export default function LocalLibraryPage() {
         ) : (
         <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
           {displayedMovies.map((movie) => (
-            <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} />
+            <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} />
           ))}
         </div>
         )
+      )}
+
+      {selectMode && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-border bg-background/90 backdrop-blur-xl shadow-2xl px-4 py-2" data-testid="select-bar">
+          <span className="text-sm font-medium whitespace-nowrap" data-testid="select-count">{selectedIds.size} selected</span>
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setSelectedIds(new Set(filteredMovies.map(m => m.id)))} data-testid="select-all-shown-btn">
+            Select all shown ({filteredMovies.length.toLocaleString()})
+          </Button>
+          {selectedIds.size > 0 && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setSelectedIds(new Set())} data-testid="select-clear-btn">Clear</Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" className="h-8 rounded-full gap-1.5" disabled={selectedIds.size === 0} data-testid="bulk-move-btn">
+                <MoveIcon className="w-3.5 h-3.5" /> Move to…
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="top" className="w-52" data-testid="bulk-move-menu">
+              {DIR_CATEGORIES.map(c => {
+                const Icon = c.icon;
+                return (
+                  <DropdownMenuItem key={c.id} onSelect={() => { moveToCategory([...selectedIds], c.id); exitSelect(); }} data-testid={`bulk-move-${c.id}`}>
+                    <Icon className="w-3.5 h-3.5 mr-2 opacity-60" />{c.label}
+                  </DropdownMenuItem>
+                );
+              })}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => { moveToCategory([...selectedIds], null); exitSelect(); }} data-testid="bulk-move-reset">
+                <UndoIcon className="w-3.5 h-3.5 mr-2 opacity-60" />Back to folder's type
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full" onClick={exitSelect} title="Cancel" data-testid="select-cancel-btn">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       )}
 
       {/* Load More */}
       {hasMore && !showTrash && (
         <div className="flex flex-col items-center gap-2 py-4">
           <p className="text-xs text-muted-foreground">
-            Showing {displayedMovies.length} of {filteredMovies.length} movies
+            Showing {displayedMovies.length} of {filteredMovies.length} titles
           </p>
           <Button
             variant="outline"

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import { DIR_CATEGORIES, DIR_CATEGORIES_KEY, dirCategory, inDir } from "@/components/DirectoryDropdowns";
+import { DIR_CATEGORIES, DIR_CATEGORIES_KEY, cardCategory } from "@/components/DirectoryDropdowns";
 import { partsOf, isMultiPart } from "@/lib/multiPart";
 
 const EST_MOVIE_MIN = 88;
@@ -39,9 +39,9 @@ export function computeTypeStats(movies, directories) {
   try { categories = JSON.parse(localStorage.getItem(DIR_CATEGORIES_KEY) || '{}'); } catch (e) { categories = {}; }
   const out = {};
   DIR_CATEGORIES.forEach(c => { out[c.id] = { titles: 0, files: 0, episodes: 0, minutes: 0, known: 0 }; });
+  const dirs = [...new Set([...directories, ...Object.keys(categories)])];
   movies.forEach(m => {
-    const dir = [...directories, ...Object.keys(categories)].filter(d => inDir(m.file_path, d)).sort((a, b) => b.length - a.length)[0];
-    const cat = dir ? dirCategory(categories, dir) : 'movies';
+    const cat = cardCategory(m, categories, dirs);
     const t = out[cat] || out.movies;
     const r = cardMinutes(m);
     t.titles++;

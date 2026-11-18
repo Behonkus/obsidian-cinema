@@ -8,15 +8,28 @@ import {
 export const DIR_CATEGORIES_KEY = 'obsidian_cinema_dir_categories';
 
 export const DIR_CATEGORIES = [
-  { id: 'movies', label: 'Movies', icon: Film, cls: 'border-sky-500/50 text-sky-300 hover:bg-sky-500/15', active: 'bg-sky-500/25 border-sky-400 text-sky-100' },
-  { id: 'tv', label: 'TV Shows', icon: Tv, cls: 'border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/15', active: 'bg-emerald-500/25 border-emerald-400 text-emerald-100' },
-  { id: 'docs', label: 'Documentaries', icon: Leaf, cls: 'border-amber-500/50 text-amber-300 hover:bg-amber-500/15', active: 'bg-amber-500/25 border-amber-400 text-amber-100' },
-  { id: 'anim', label: 'Animations', icon: Sparkles, cls: 'border-fuchsia-500/50 text-fuchsia-300 hover:bg-fuchsia-500/15', active: 'bg-fuchsia-500/25 border-fuchsia-400 text-fuchsia-100' },
+  { id: 'movies', label: 'Movies', one: 'Movie', icon: Film, cls: 'border-sky-500/50 text-sky-300 hover:bg-sky-500/15', active: 'bg-sky-500/25 border-sky-400 text-sky-100' },
+  { id: 'tv', label: 'TV Shows', one: 'TV Show', icon: Tv, cls: 'border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/15', active: 'bg-emerald-500/25 border-emerald-400 text-emerald-100' },
+  { id: 'docs', label: 'Documentaries', one: 'Documentary', icon: Leaf, cls: 'border-amber-500/50 text-amber-300 hover:bg-amber-500/15', active: 'bg-amber-500/25 border-amber-400 text-amber-100' },
+  { id: 'anim', label: 'Animations', one: 'Animation', icon: Sparkles, cls: 'border-fuchsia-500/50 text-fuchsia-300 hover:bg-fuchsia-500/15', active: 'bg-fuchsia-500/25 border-fuchsia-400 text-fuchsia-100' },
 ];
 
 export function dirCategory(categories, dir) {
   return (categories && categories[dir]) || 'movies';
 }
+
+// Type from the deepest typed folder holding the title
+export function folderCategory(m, categories, dirs) {
+  const d = dirs.filter(x => inDir(m.file_path, x)).sort((a, b) => b.length - a.length)[0];
+  return d ? dirCategory(categories, d) : 'movies';
+}
+
+// A title's own "Move to" choice wins over its folder's type
+export function cardCategory(m, categories, dirs) {
+  return m.category_override || folderCategory(m, categories, dirs);
+}
+
+export const categoryCountLabel = (cat, n) => n.toLocaleString() + ' ' + (n === 1 ? cat.one : cat.label);
 
 // True when a file path is inside a folder (D:\TV must not match D:\TVShows)
 export function inDir(filePath, dir) {
@@ -52,7 +65,7 @@ function CategoryDropdown({ cat, dirs, counts, catTotal, activeDirectory, active
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[220px] max-h-80 overflow-y-auto" data-testid={`dir-cat-menu-${cat.id}`}>
-        {dirs.length === 0 ? (
+        {dirs.length === 0 && !total ? (
           <div className="px-2 py-2 text-xs text-muted-foreground max-w-[240px]">
             No folders set as {cat.label} yet. Choose a type for each folder in Manage Directories (gear icon).
           </div>
@@ -63,7 +76,7 @@ function CategoryDropdown({ cat, dirs, counts, catTotal, activeDirectory, active
               <span className="flex-1 font-medium">All {cat.label}</span>
               <span className="text-[10px] text-muted-foreground ml-3">{total}</span>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {dirs.length > 0 && <DropdownMenuSeparator />}
             {dirs.map(d => (
               <DropdownMenuItem key={d} onClick={() => onPickDir(d)} title={d} data-testid={`dir-cat-item-${cat.id}-${dirLabel(d)}`}>
                 {activeDirectory === d ? <Check className="w-3.5 h-3.5 mr-2" /> : <FolderOpen className="w-3.5 h-3.5 mr-2 opacity-60" />}
