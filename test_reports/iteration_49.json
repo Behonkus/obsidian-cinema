@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only test of the per-title 'Move to' category feature (card 3-dot menu and multi-select bulk move), the category_override persistence, the per-category header counts and the Stats TypeStats. I reused the simulated electronAPI harness: library in sessionStorage, folders D:\\Movies typed movies and D:\\TV typed tv, a 2-part merged card, plus a run with no TV folder. All 3 scenarios pass (60/60 checks) with no page errors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Library header", "issue": "Folder count is not singular-aware: shows '1 folders' (e.g. '5 Movies · 1 folders')", "selector": "[data-testid=library-header-counts]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Library select mode", "issues": ["The hover 'Play' button and the favourite star still show through the translucent card-select overlay. The overlay does catch the click, so selection works, but it looks like Play can be clicked. Consider hiding the hover Play and fav controls while selectMode is on."]}
+    ]
+  },
+  "test_report_links": ["/app/tests/test_iter50_move_category.py"],
+  "action_items": [
+    "(Low) Make the header folder count singular-aware: '1 folder' instead of '1 folders'",
+    "(Low) Hide the hover Play and favourite controls on cards while select mode is on",
+    "(Low, unverified) mergeIntoOne in lib/multiPart.js keeps only the primary card's category_override. If a non-primary card had an override, it is silently lost on merge"
+  ],
+  "critical_code_review_comments": [
+    "moveToCategory and categoryOf are memoized correctly. The filter, the catCounts and the MovieCard 'category' prop all use categoryOf. Moving a title to its folder's own type removes the override, as intended.",
+    "Rescan keeps the override because existing cards are spread ({...m}). Verified for single and multi-part cards.",
+    "LocalLibraryPage.jsx is about 3600 lines and should be split (CardMoveMenu and SelectBar could be their own components)."
+  ],
+  "updated_files": ["/app/tests/test_iter50_move_category.py"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% (60/60 checks)"},
+  "seed_data_creation": "None in the DB. Only a simulated library in isolated browser-context sessionStorage and localStorage.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: g={'page':page}; exec(open('/app/tests/test_iter50_move_category.py').read(), g); then await g['run_main'](), g['run_select']() and g['run_no_tv_folder'](). Its open_ctx adds a second init script that seeds obsidian_cinema_dir_categories, guarded by the sessionStorage 'catseed' flag. Verified: header per-category counts with singular forms; card-menu-<id> opens without opening the detail modal; the current category is disabled; card-move-<cat>-<id> shows a toast and updates the header and badges; dir-cat-all-tv/docs is offered even with no typed folder; card-move-reset appears only for overridden titles; moving back to the folder's type clears the override; select mode toggles selection without opening the detail modal; select-all-shown, clear and bulk-move work and bulk-move exits select mode; bulk-move-reset works; the override persists after reload and after Update Library; the Stats type-stat-* counts honour the override; search, folder filter and normal click to open the detail modal still work."
+}

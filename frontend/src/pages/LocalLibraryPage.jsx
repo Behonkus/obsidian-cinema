@@ -278,7 +278,7 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
             </span>
           )}
           {/* Favorite star - top right */}
-          <button
+          {!selectMode && <button
             className={'absolute top-1.5 right-1.5 z-10 p-1 rounded-full backdrop-blur-sm transition-all ' + (isFavorite ? 'bg-amber-500/20 animate-[favGlow_2s_ease-in-out_infinite]' : 'bg-black/40 hover:bg-black/60')}
             onClick={handleFavorite}
             data-testid={`fav-star-${movie.id}`}
@@ -290,13 +290,13 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
                   : 'text-white/50 hover:text-white/80'
               }`}
             />
-          </button>
+          </button>}
           {/* Play button - center */}
-          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          {!selectMode && <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <Button size="sm" onClick={onPlay}>
               <Play className="w-4 h-4 mr-1" /> Play
             </Button>
-          </div>
+          </div>}
           {/* Synopsis - bottom, only on hover */}
           {movie.overview && (
             <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 bg-black/85 backdrop-blur-sm p-2 pointer-events-none">
@@ -1945,7 +1945,7 @@ export default function LocalLibraryPage() {
               {DIR_CATEGORIES.filter(c => libraryCounts.catCounts[c.id]).map(c => (
                 <span key={c.id} data-testid={`header-count-${c.id}`}>{categoryCountLabel(c, libraryCounts.catCounts[c.id])} &middot; </span>
               ))}
-              {movies.length === 0 && '0 titles · '}{directories.length} folders
+              {movies.length === 0 && '0 titles · '}{directories.length} {directories.length === 1 ? 'folder' : 'folders'}
             </span>
           </h1>
         </div>

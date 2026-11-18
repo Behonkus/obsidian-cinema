@@ -385,8 +385,10 @@ export function mergeIntoOne(cards, title, year) {
     return true;
   }).map(p => (p.episode ? { file_path: p.file_path, file_name: p.file_name, episode: p.episode } : { file_path: p.file_path, file_name: p.file_name }));
   const addedAt = Math.min.apply(null, cards.map(c => c.added_at || Date.now()));
+  const override = primary.category_override || (cards.find(c => c.category_override) || {}).category_override;
   return {
     ...primary,
+    ...(override ? { category_override: override } : {}),
     title: title || primary.title,
     year: primary.year || year || null,
     parts,

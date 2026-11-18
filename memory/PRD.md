@@ -124,3 +124,9 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - 1.7.1 performance pass: partFolder + parseFilename caches (23k cards grouping 95ms -> 27ms), shared parsed library (readLibrary/publishLibrary) for sidebar + Stats, save debounce 1200ms, lazy-loaded secondary pages (Suspense in App + around Layout Outlet), Mongo lookup indexes at startup. Tested iteration_45 (no regressions).
 - 1.7.1: Year rename list: per-row 'Never rename' (paths in localStorage obsidian_cinema_year_rename_ignored, filtered from future runs, 'Allow again' reset); stale entries (title removed or path changed) auto-pruned once the library loads. Fix toast counts only non-ignored mismatches, singular wording. Tested iteration_46 (40/40).
 - 1.7.1 BUGFIX: stale directors after Reset metadata / re-match. resetMetadata clears director+directors+aka+rating_source+media_type+season/episode counts+gap_checked_at; fetchTvDetails returns directors:[]/aka:[]; fetchMovieDetails returns season_count/episode_count null; filmDirectors() uses the director text as source of truth (repairs already-affected cards); applyManualMatch aborts with an error toast if TMDB details fail (no half-updated card). Tested iteration_47 + iteration_48 (all pass).
+
+## 2026-06 — Move titles between categories
+- Card 3-dot "Move to" menu (Movies / TV Shows / Documentaries / Animations, "Back to folder's type") + Select mode with bottom bar (select all shown, bulk Move to…).
+- Stored as `category_override` on the card (persists across reload, rescan, merges); category filters, counts, Stats TypeStats and auto-fix use `cardCategory()` (DirectoryDropdowns.jsx).
+- Library header now shows per-category breakdown ("4 Movies · 1 TV Show · 2 folders").
+- Tested: iteration_49 (60/60), /app/tests/test_iter50_move_category.py.
