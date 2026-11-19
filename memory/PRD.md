@@ -144,3 +144,6 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 
 ## 2026-06 — Poster backdrop glow
 - lib/posterColor.js (samples w92 poster on a tiny canvas, vivid-weighted average, lifted for dark UI, cached; title-hue fallback if image can't be read) + components/PosterBackdrop.jsx (fixed soft radial wash, colour animated via @property). Hover on any MovieCard tints; fades out 350ms after leaving. Always on (user choice), independent of effects level.
+
+## 2026-06 — Details window tint
+- Movie details card (movie-detail-card) gets poster colour via getPosterColor: top fade (::before) + tinted border/edge glow, pop-in animation; colour vars registered with @property inherits:true.

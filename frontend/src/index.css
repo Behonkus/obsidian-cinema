@@ -394,9 +394,9 @@ code {
 }
 
 /* ── Poster backdrop glow ── */
-@property --oc-r { syntax: '<number>'; inherits: false; initial-value: 225; }
-@property --oc-g { syntax: '<number>'; inherits: false; initial-value: 29; }
-@property --oc-b { syntax: '<number>'; inherits: false; initial-value: 72; }
+@property --oc-r { syntax: '<number>'; inherits: true; initial-value: 225; }
+@property --oc-g { syntax: '<number>'; inherits: true; initial-value: 29; }
+@property --oc-b { syntax: '<number>'; inherits: true; initial-value: 72; }
 .oc-backdrop {
   background:
     radial-gradient(ellipse 70% 55% at 35% 0%, rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.20), transparent 70%),
@@ -404,3 +404,21 @@ code {
   transition: opacity 0.7s ease, --oc-r 0.9s ease, --oc-g 0.9s ease, --oc-b 0.9s ease;
 }
 @media (prefers-reduced-motion: reduce) { .oc-backdrop { transition: opacity 0.3s ease; } }
+
+/* ── Details window tint ── */
+.oc-detail {
+  transition: box-shadow 0.8s ease, border-color 0.8s ease, --oc-r 0.8s ease, --oc-g 0.8s ease, --oc-b 0.8s ease;
+  animation: ocChipIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.oc-detail::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 260px; pointer-events: none; z-index: 0;
+  background: linear-gradient(180deg, rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.30), rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.08) 55%, transparent);
+  opacity: 0; transition: opacity 0.8s ease;
+}
+.oc-detail > * { position: relative; z-index: 1; }
+.oc-detail-on::before { opacity: 1; }
+.oc-detail-on {
+  border-color: rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.45);
+  box-shadow: 0 0 0 1px rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.18), 0 0 60px -10px rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.55), 0 30px 80px -20px rgba(0, 0, 0, 0.8);
+}
+@media (prefers-reduced-motion: reduce) { .oc-detail { animation: none; } }

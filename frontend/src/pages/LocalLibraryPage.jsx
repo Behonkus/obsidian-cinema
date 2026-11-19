@@ -1658,6 +1658,15 @@ export default function LocalLibraryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const playMovieCb = useCallback((m) => playMovie(m), []);
   const [glow, setGlow] = useState(null);
+  const [detailRgb, setDetailRgb] = useState(null);
+  const detailPoster = selectedMovie ? selectedMovie.poster_path : null;
+  const detailTitle = selectedMovie ? selectedMovie.title : null;
+  useEffect(() => {
+    if (!detailTitle) { setDetailRgb(null); return undefined; }
+    let live = true;
+    getPosterColor(detailPoster, detailTitle).then(rgb => { if (live) setDetailRgb(rgb); });
+    return () => { live = false; };
+  }, [detailPoster, detailTitle]);
   const glowRef = useRef({ key: null, timer: null });
   const hoverPoster = useCallback((m) => {
     const g = glowRef.current;
@@ -2499,7 +2508,7 @@ export default function LocalLibraryPage() {
       {selectedMovie && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
              onClick={closeDetail}>
-          <Card className="max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <Card className={'oc-detail max-w-lg w-full max-h-[90vh] overflow-y-auto relative ' + (detailRgb ? 'oc-detail-on' : '')} style={detailRgb ? { '--oc-r': detailRgb[0], '--oc-g': detailRgb[1], '--oc-b': detailRgb[2] } : undefined} onClick={(e) => e.stopPropagation()} data-testid="movie-detail-card" data-rgb={detailRgb ? detailRgb.join(',') : ''}>
             <CardContent className="p-6 space-y-4 relative">
               {/* Close X */}
               <button
