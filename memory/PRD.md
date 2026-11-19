@@ -133,3 +133,6 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 
 ## 2026-06 — Landing/pricing copy: "bring your own files"
 - Reworded LandingPage.jsx, UpgradePage.jsx and index.html meta/JSON-LD so nothing implies Obsidian Cinema supplies movies; limits now "Organize up to 500 of your own files" / "No limit on library size". JSON-LD price fixed to $25 and free limit to 500. No separate notice banner (user choice). In-app text unchanged (user choice).
+
+## 2026-06 — Landing FAQ + Before/After slider
+- components/BeforeAfterSlider.jsx (drag/keyboard slider, generated Explorer vs poster-wall mockups, after hero) and components/LandingFaq.jsx (4 Qs: source of movies, requirements, privacy, NAS/external) before CTA; navbar FAQ link. Verified via screenshot.

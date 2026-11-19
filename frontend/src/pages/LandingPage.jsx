@@ -33,6 +33,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
+import { LandingFaq } from "@/components/LandingFaq";
 
 const FEATURES = [
   {
@@ -263,6 +265,15 @@ export default function LandingPage() {
             >
               Pricing
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => document.getElementById("faq")?.scrollIntoView({ behavior: "smooth" })}
+              className="hidden sm:inline-flex text-muted-foreground hover:text-foreground"
+              data-testid="nav-faq-link"
+            >
+              FAQ
+            </Button>
             <Button size="sm" onClick={handleLogin} data-testid="nav-signin-btn">
               Sign In
             </Button>
@@ -324,6 +335,8 @@ export default function LandingPage() {
         </motion.div>
 
       </section>
+
+      <BeforeAfterSlider />
 
       {/* ── Features ── */}
       <section id="features" className="relative py-20 md:py-28 px-6">
@@ -519,6 +532,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <LandingFaq />
 
       {/* ── CTA ── */}
       <section className="py-20 md:py-28 px-6 border-t border-border/30">
