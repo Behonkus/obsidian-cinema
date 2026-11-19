@@ -140,7 +140,7 @@ export default function AccountDashboard() {
               {isPro ? (
                 <>
                   <div className="space-y-2">
-                    {["Unlimited movies", "Unlimited collections", "Priority support", "Early access to new features"].map((feature) => (
+                    {["No limit on library size", "Unlimited collections", "Priority support", "Early access to new features"].map((feature) => (
                       <div key={feature} className="flex items-center gap-2 text-sm">
                         <CheckCircle className="w-4 h-4 text-green-400" />
                         <span className="text-foreground">{feature}</span>
@@ -156,7 +156,7 @@ export default function AccountDashboard() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Film className="w-4 h-4 text-muted-foreground" />
-                      <span>Up to 500 movies</span>
+                      <span>Organize up to 500 of your own files</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <FolderOpen className="w-4 h-4 text-muted-foreground" />
