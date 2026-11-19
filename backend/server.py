@@ -2898,6 +2898,20 @@ async def admin_get_stats(request: Request, session_token: Optional[str] = Cooki
 
 CHANGELOG = [
     {
+        "version": "1.7.2",
+        "date": "2026-06",
+        "highlights": [
+            "Cleaner library toolbar: just Add Folder, Update Library and a new Tools menu",
+            "Tools menu groups posters, details, fixes, PDF export and more, with a badge when something needs your attention",
+            "Search, type filters, genre and sort sit on one bar that stays in view as you scroll",
+            "Glowing highlight slides to the category you're viewing; empty categories are hidden",
+            "Posters tilt, glow and catch the light on hover, and cards fade in as they load",
+            "Library background softly takes on the colours of the poster you hover",
+            "Details window and its Play button are tinted with the poster's colours",
+            "New Visual Effects setting (Auto, Full or Lite); Auto keeps big libraries smooth",
+        ],
+    },
+    {
         "version": "1.7.1",
         "date": "2026-06",
         "highlights": [

@@ -148,3 +148,6 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 ## 2026-06 — Details window tint
 - Movie details card (movie-detail-card) gets poster colour via getPosterColor: top fade (::before) + tinted border/edge glow, pop-in animation; colour vars registered with @property inherits:true.
 - Play button in details (detail-play-btn) keeps theme red with a pulsing poster-coloured halo (.oc-play-glow).
+
+## 2026-06 — v1.7.2 release prep
+- package.json 1.7.2; backend CHANGELOG 1.7.2 entry (toolbar + visual effects only, per user); Admin gift email intro + download line; marketing_materials.md (v1.7.2 bullets, '500 of your own files' wording throughout).
