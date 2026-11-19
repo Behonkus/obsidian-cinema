@@ -392,3 +392,15 @@ code {
   .oc-card-full, .oc-chip-in, .oc-title-shine, .oc-title-icon, .oc-attn { animation: none !important; }
   .oc-card-full .oc-card-surface { transform: none !important; }
 }
+
+/* ── Poster backdrop glow ── */
+@property --oc-r { syntax: '<number>'; inherits: false; initial-value: 225; }
+@property --oc-g { syntax: '<number>'; inherits: false; initial-value: 29; }
+@property --oc-b { syntax: '<number>'; inherits: false; initial-value: 72; }
+.oc-backdrop {
+  background:
+    radial-gradient(ellipse 70% 55% at 35% 0%, rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.20), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 100% 100%, rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.12), transparent 70%);
+  transition: opacity 0.7s ease, --oc-r 0.9s ease, --oc-g 0.9s ease, --oc-b 0.9s ease;
+}
+@media (prefers-reduced-motion: reduce) { .oc-backdrop { transition: opacity 0.3s ease; } }

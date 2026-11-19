@@ -141,3 +141,6 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - LibraryHeader.jsx (title shine, animated count chips, Add Folder / Update Library / Tools), LibraryTools.jsx (grouped dropdown: attention items w/ badge, metadata tools, select/add files/PDF), sticky glass toolbar (search, type filters with sliding highlight, genre, sort, activity chips). Empty categories hidden.
 - Card effects: staggered entrance, 3D tilt + glow + sheen (full), simple lift (lite). lib/effects.js: Auto (lite above 3000 titles, latched per visit) / Full / Lite; Settings > Library Visual Effects (EffectsSetting.jsx). Respects prefers-reduced-motion.
 - Tested iteration_50 (199/199) + /app/tests/test_iter51_library_header.py re-run after polish (all pass).
+
+## 2026-06 — Poster backdrop glow
+- lib/posterColor.js (samples w92 poster on a tiny canvas, vivid-weighted average, lifted for dark UI, cached; title-hue fallback if image can't be read) + components/PosterBackdrop.jsx (fixed soft radial wash, colour animated via @property). Hover on any MovieCard tints; fades out 350ms after leaving. Always on (user choice), independent of effects level.

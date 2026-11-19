@@ -88,6 +88,8 @@ import PdfExportDialog from "@/components/PdfExportDialog";
 import { LibraryHeader } from "@/components/LibraryHeader";
 import { LibraryTools } from "@/components/LibraryTools";
 import { useEffectsLevel } from "@/lib/effects";
+import { getPosterColor } from "@/lib/posterColor";
+import { PosterBackdrop } from "@/components/PosterBackdrop";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
 import { FilmographyDialog } from "@/components/FilmographyDialog";
@@ -223,7 +225,7 @@ function CardMoveMenu({ movie, category, onMove }) {
   );
 }
 
-const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie, isFavorite, onToggleFav, category, onMove, selectMode, selected, onSelect, fx, index }) {
+const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie, isFavorite, onToggleFav, category, onMove, selectMode, selected, onSelect, fx, index, onHover }) {
   var onClick = function() { if (selectMode) onSelect(movie.id); else onOpen(movie); };
   var onPlay = function(e) { e.stopPropagation(); onPlayMovie(movie); };
   var onToggleFavorite = function(e) { onToggleFav(movie.id, e); };
@@ -265,7 +267,8 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
       className={'group relative oc-card ' + (fx === 'full' ? 'oc-card-full' : 'oc-card-lite')}
       style={fx === 'full' ? { animationDelay: ((index || 0) % 24) * 28 + 'ms' } : undefined}
       onMouseMove={fx === 'full' ? tilt : undefined}
-      onMouseLeave={fx === 'full' ? untilt : undefined}
+      onMouseEnter={function() { onHover(movie); }}
+      onMouseLeave={function(e) { onHover(null); if (fx === 'full') untilt(e); }}
     >
       {showConfetti && (
         <div className="fav-confetti" style={{ position: 'absolute', top: '0.75rem', right: '1rem', zIndex: 50 }}>
@@ -1654,6 +1657,15 @@ export default function LocalLibraryPage() {
   const openMovieDetailCb = useCallback((m) => { setSelectedMovie(m); trackActivity(m.id, 'view'); }, []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const playMovieCb = useCallback((m) => playMovie(m), []);
+  const [glow, setGlow] = useState(null);
+  const glowRef = useRef({ key: null, timer: null });
+  const hoverPoster = useCallback((m) => {
+    const g = glowRef.current;
+    clearTimeout(g.timer);
+    if (!m) { g.key = null; g.timer = setTimeout(() => setGlow(null), 350); return; }
+    g.key = m.id;
+    getPosterColor(m.poster_path, m.title).then(rgb => { if (glowRef.current.key === m.id) setGlow(rgb); });
+  }, []);
   const multipartGroups = useMemo(() => findPartGroups(movies, multipartDismissed), [movies, multipartDismissed, showRootsKey]);
   useEffect(() => {
     const catDir = catCheckDirRef.current;
@@ -1936,7 +1948,8 @@ export default function LocalLibraryPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 relative min-h-full" onDragOver={onLibraryDragOver} onDragLeave={onLibraryDragLeave} onDrop={onLibraryDrop} data-testid="library-drop-zone">
+    <div className="p-6 space-y-6 relative isolate min-h-full" onDragOver={onLibraryDragOver} onDragLeave={onLibraryDragLeave} onDrop={onLibraryDrop} data-testid="library-drop-zone">
+      <PosterBackdrop rgb={glow} />
       {dragOver && (
         <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center bg-background/70 backdrop-blur-sm" data-testid="library-drop-overlay">
           <div className="px-8 py-6 rounded-2xl border-2 border-dashed border-primary bg-card/90 text-center">
@@ -2403,7 +2416,7 @@ export default function LocalLibraryPage() {
                 </div>
                 <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
                   {dirMovies.map((movie, i) => (
-                    <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} />
+                    <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} />
                   ))}
                 </div>
               </div>
@@ -2412,7 +2425,7 @@ export default function LocalLibraryPage() {
         ) : (
         <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
           {displayedMovies.map((movie, i) => (
-            <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} />
+            <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} />
           ))}
         </div>
         )
