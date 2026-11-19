@@ -422,3 +422,12 @@ code {
   box-shadow: 0 0 0 1px rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.18), 0 0 60px -10px rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.55), 0 30px 80px -20px rgba(0, 0, 0, 0.8);
 }
 @media (prefers-reduced-motion: reduce) { .oc-detail { animation: none; } }
+@keyframes ocPlayPulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.35), 0 0 14px 0 rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.45); }
+  50% { box-shadow: 0 0 0 1px rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.6), 0 0 30px 4px rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.7); }
+}
+.oc-detail-on .oc-play-glow { animation: ocPlayPulse 2.6s ease-in-out infinite; transition: transform 0.2s ease; }
+.oc-detail-on .oc-play-glow:hover { transform: translateY(-1px); }
+@media (prefers-reduced-motion: reduce) {
+  .oc-detail-on .oc-play-glow { animation: none; box-shadow: 0 0 22px 2px rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.6); }
+}

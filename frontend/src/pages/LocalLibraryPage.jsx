@@ -3139,7 +3139,7 @@ export default function LocalLibraryPage() {
               )}
 
               <div className="flex gap-2">
-                <Button className="flex-1" onClick={() => playMovie(selectedMovie)}>
+                <Button className="flex-1 oc-play-glow" onClick={() => playMovie(selectedMovie)} data-testid="detail-play-btn">
                   <Play className="w-4 h-4 mr-2" />
                   {isMultiPart(selectedMovie) ? 'Play a Part…' : 'Play (Default Player)'}
                 </Button>
