@@ -39,7 +39,7 @@ export default function LicenseActivationPage() {
     if (setFreeTier) {
       setFreeTier();
     }
-    toast.success("Welcome! You're using the free tier (500 movies, 3 collections)");
+    toast.success("Welcome! You're using the free tier (up to 500 of your own files, 3 collections)");
     navigate("/");
   };
 
@@ -108,7 +108,7 @@ export default function LicenseActivationPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Status</span>
-                <span className="text-green-500 font-medium">Pro - Unlimited</span>
+                <span className="text-green-500 font-medium">Pro - No library limit</span>
               </div>
             </div>
 
@@ -156,7 +156,7 @@ export default function LicenseActivationPage() {
               <span className="text-xs text-muted-foreground">No license needed</span>
             </div>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Up to 500 movies</li>
+              <li>• Organize up to 500 of your own files</li>
               <li>• Up to 3 collections</li>
               <li>• Full local drive access</li>
             </ul>
@@ -176,7 +176,7 @@ export default function LicenseActivationPage() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Or unlock unlimited
+                Or remove the library limit
               </span>
             </div>
           </div>
@@ -188,7 +188,7 @@ export default function LicenseActivationPage() {
                 <Sparkles className="w-4 h-4" />
                 Pro License
               </h3>
-              <span className="text-xs text-amber-400">Unlimited everything</span>
+              <span className="text-xs text-amber-400">No limits on your collection</span>
             </div>
             
             <div className="space-y-2">

@@ -89,11 +89,11 @@ export default function DesktopAppBanner({ onDismiss, isPro, hasLicense }) {
               {isPro ? (
                 <p className="text-xs text-green-400 text-center flex items-center justify-center gap-1">
                   <Crown className="w-3 h-3" />
-                  Pro: Unlimited movies
+                  Pro: No library size limit
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground text-center">
-                  Free: 500 movies • <span className="text-purple-400 cursor-pointer hover:underline" onClick={() => window.location.href = '/upgrade'}>Upgrade for unlimited</span>
+                  Free: up to 500 of your files • <span className="text-purple-400 cursor-pointer hover:underline" onClick={() => window.location.href = '/upgrade'}>Upgrade to remove the limit</span>
                 </p>
               )}
             </div>

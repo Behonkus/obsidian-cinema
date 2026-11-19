@@ -1154,7 +1154,7 @@ export default function SettingsPage() {
                 ) : (
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      You're on the free tier (500 movies, 3 collections). Have a license key?
+                      You're on the free tier (up to 500 of your own files, 3 collections). Have a license key?
                     </p>
                     <Button
                       size="sm"

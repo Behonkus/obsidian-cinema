@@ -625,7 +625,7 @@ Recipient: ${gift.email}
 
 Hey there,
 
-Great news — release 1.7.1 brings whole TV shows in one card (every season plus extras, with episode names), a TV Shows filter, folder dropdowns for Movies, TV Shows, Documentaries and Animations, stats with real total hours for each, a type picker when importing, AKA titles on every movie, Director Insights and clickable actor / director filmographies, new files matched automatically, multi-part titles in one card (documentary episodes, Part 1/Part 2, CD1/CD2), unlimited library size for huge collections, plus a smarter movie-matching engine with director, runtime, age rating and IMDb links, uncertain matches flagged for you to check, much faster fetching, and 10 Professional color themes. The free tier also includes up to 500 movies. But...
+Great news — release 1.7.1 brings whole TV shows in one card (every season plus extras, with episode names), a TV Shows filter, folder dropdowns for Movies, TV Shows, Documentaries and Animations, stats with real total hours for each, a type picker when importing, AKA titles on every movie, Director Insights and clickable actor / director filmographies, new files matched automatically, multi-part titles in one card (documentary episodes, Part 1/Part 2, CD1/CD2), unlimited library size for huge collections, plus a smarter movie-matching engine with director, runtime, age rating and IMDb links, uncertain matches flagged for you to check, much faster fetching, and 10 Professional color themes. The free tier also organizes up to 500 of your own movie files. But...
 
 You've just been gifted a complimentary Obsidian Cinema PRO license! Consider this your all-access pass to the full cinematic experience.
 
@@ -643,7 +643,7 @@ https://www.obsidiancinema.com
 4. Enter the key above and hit Activate
 
 What you're unlocking:
-- Unlimited movies in your library (no more caps)
+- No limit on how many of your own files your library can hold
 - Unlimited collections to organize however you like
 - AI-powered movie recommendations tailored to your taste
 - Priority access to every new feature we ship

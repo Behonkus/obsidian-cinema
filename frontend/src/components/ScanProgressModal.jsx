@@ -247,7 +247,7 @@ export default function ScanProgressModal({ isOpen, onClose, onComplete }) {
                     className="text-amber-400 h-auto p-0 mt-1"
                     onClick={() => navigate("/upgrade")}
                   >
-                    Upgrade to Pro for unlimited movies →
+                    Upgrade to Pro for no library size limit →
                   </Button>
                 </div>
               )}

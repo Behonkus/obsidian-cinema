@@ -1174,11 +1174,11 @@ export default function LocalLibraryPage() {
       });
       const slotsLeft = FREE_TIER_MOVIE_LIMIT - movies.length;
       if (slotsLeft <= 0) {
-        toast.error(`Free tier is limited to ${FREE_TIER_MOVIE_LIMIT} movies. Upgrade to Pro for unlimited!`);
+        toast.error(`Free tier organizes up to ${FREE_TIER_MOVIE_LIMIT} of your own files. Upgrade to Pro to remove the limit!`);
         return;
       }
       if (uniqueNewMovies.length > slotsLeft) {
-        toast.warning(`Free tier limit: only adding ${slotsLeft} of ${uniqueNewMovies.length} movies. Upgrade to Pro for unlimited!`);
+        toast.warning(`Free tier limit: only adding ${slotsLeft} of ${uniqueNewMovies.length} files. Upgrade to Pro to remove the limit!`);
         uniqueNewMovies = uniqueNewMovies.slice(0, slotsLeft);
       }
     }
@@ -1286,7 +1286,7 @@ export default function LocalLibraryPage() {
         if (isFreeTierUser()) {
           const slotsLeft = FREE_TIER_MOVIE_LIMIT - movies.length;
           if (slotsLeft <= 0) {
-            toast.error(`Free tier is limited to ${FREE_TIER_MOVIE_LIMIT} movies. Upgrade to Pro for unlimited!`);
+            toast.error(`Free tier organizes up to ${FREE_TIER_MOVIE_LIMIT} of your own files. Upgrade to Pro to remove the limit!`);
             return;
           }
           if (moviesToAdd.length > slotsLeft) {
