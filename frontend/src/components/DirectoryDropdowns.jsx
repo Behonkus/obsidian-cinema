@@ -108,11 +108,13 @@ export function DirectoryDropdowns({ directories, categories, counts, catCounts,
         All
         <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-1">{totalCount}</Badge>
       </Button>
-      {DIR_CATEGORIES.map(cat => (
+      {DIR_CATEGORIES.map(cat => ({ cat, dirs: directories.filter(d => dirCategory(categories, d) === cat.id) }))
+        .filter(({ cat, dirs }) => dirs.length > 0 || (catCounts && catCounts[cat.id]) || activeCategory === cat.id)
+        .map(({ cat, dirs }) => (
         <CategoryDropdown
           key={cat.id}
           cat={cat}
-          dirs={directories.filter(d => dirCategory(categories, d) === cat.id)}
+          dirs={dirs}
           counts={counts}
           catTotal={catCounts ? (catCounts[cat.id] || 0) : undefined}
           activeDirectory={activeDirectory}

@@ -9,8 +9,11 @@ export const setEffectsPref = (v) => localStorage.setItem(EFFECTS_KEY, v);
 // 'full' or 'lite'; auto turns effects down on big libraries
 export function useEffectsLevel(count) {
   const [pref] = useState(getEffectsPref);
+  const latched = useRef(null);
   if (pref === 'full' || pref === 'lite') return pref;
-  return count > LITE_THRESHOLD ? 'lite' : 'full';
+  // Decide once per visit so cards don't switch style mid-scan
+  if (!latched.current && count > 0) latched.current = count > LITE_THRESHOLD ? 'lite' : 'full';
+  return latched.current || 'full';
 }
 
 // Animates from the previous value to the new one

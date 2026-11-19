@@ -59,7 +59,19 @@ async def T(p, tid):
 
 
 async def header(p):
-    return await T(p, "library-header-counts")
+    # iter51: header is now chips; rebuild old "A · B · N folders" text
+    chips = await p.locator('[data-testid^="header-count-"]').all_inner_texts()
+    f = await T(p, "header-folder-count")
+    f = f.replace(" folder", " folders") if f and f.endswith(" folder") else f
+    return " · ".join([c.strip() for c in chips] + ([f] if f else []))
+
+
+async def open_select(p):
+    # iter51: select-mode-btn moved into the Tools menu
+    if await p.locator('[data-testid="select-bar"]').count():
+        return
+    await p.locator('[data-testid="library-tools-btn"]').click(); await p.wait_for_timeout(400)
+    await p.locator('[data-testid="select-mode-btn"]').click(); await p.wait_for_timeout(400)
 
 
 async def titles(p):
@@ -197,7 +209,7 @@ async def run_main():
 async def run_select():
     ctx, p, errs = await open_ctx(lib50(), {"D:\\Movies": "movies", "D:\\TV": "tv"})
     try:
-        await p.locator('[data-testid="select-mode-btn"]').click(); await p.wait_for_timeout(500)
+        await open_select(p)
         chk("select-bar shown", await p.locator('[data-testid="select-bar"]').count() == 1)
         chk("0 selected", await T(p, "select-count") == "0 selected", await T(p, "select-count"))
         chk("bulk-move-btn disabled at 0", await p.locator('[data-testid="bulk-move-btn"]').is_disabled())
@@ -222,11 +234,11 @@ async def run_select():
         await p.locator('[data-testid="bulk-move-anim"]', ).click(); await p.wait_for_timeout(900)
         ts = await toasts(p)
         chk("toast Moved 3 titles to Animations", any("Moved 3 titles to Animations" in t for t in ts), ts)
-        chk("select mode exited", await p.locator('[data-testid="select-bar"]').count() == 0 and await T(p, "select-mode-btn") == "Select", await T(p, "select-mode-btn"))
+        chk("select mode exited", await p.locator('[data-testid="select-bar"]').count() == 0 )
         h = await header(p); print("header:", h)
         chk("header 2 Movies · 1 TV Show · 3 Animations", h == "2 Movies · 1 TV Show · 3 Animations · 2 folders", h)
         # bulk reset
-        await p.locator('[data-testid="select-mode-btn"]').click(); await p.wait_for_timeout(300)
+        await open_select(p)
         for c in ("m2", "m3"):
             await p.locator(f'[data-testid="card-select-{c}"]').click(); await p.wait_for_timeout(200)
         await p.locator('[data-testid="bulk-move-btn"]').click(); await p.wait_for_timeout(500)
@@ -236,8 +248,8 @@ async def run_select():
         L = await lib_store(p)
         chk("store: m2/m3 no override, mp1 anim", "category_override" not in L["m2"] and "category_override" not in L["m3"] and L["mp1"].get("category_override") == "anim")
         # select via Done button exit
-        await p.locator('[data-testid="select-mode-btn"]').click(); await p.wait_for_timeout(300)
-        await p.locator('[data-testid="select-mode-btn"]').click(); await p.wait_for_timeout(300)
+        await open_select(p)
+        await p.locator('[data-testid="select-cancel-btn"]').click(); await p.wait_for_timeout(300)
         chk("Done exits select mode", await p.locator('[data-testid="select-bar"]').count() == 0)
         chk("no page errors", not errs, errs)
     finally:

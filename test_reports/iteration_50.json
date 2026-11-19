@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend-only test of the Local Library header redesign, run in a simulated electronAPI harness at 1920x1080, plus one 1280x800 pass. Tested: LibraryHeader (count chips, folder count, Add Folder, Update Library, Tools), the Tools dropdown and every item in it, the sticky glass toolbar (search and clear, directory/category filters with the sliding layoutId highlight, manage dirs, genre, sort, activity chips, person chip), card effects (entrance class, 3D tilt CSS vars and transform, sheen, click opens detail, card menu, favourite star, select mode), the Settings effects switch (auto/full/lite saved to localStorage and applied to the cards; auto turns lite at 3100 titles), and regressions (move to category from iteration 50, adapted to the new UI; reset metadata; drag-drop overlay; over-limit banner; TMDB key warning; collections filter row; Load More). 199 of 199 checks passed after test-script fixes. No page errors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Library toolbar at 1280px width (common laptop size)", "issues": [
+        "The sticky toolbar wraps onto 3 rows, about 130px tall: the search box alone, then the filter chips plus Genre, then Sort alone on a row. That takes a lot of space once it sticks and works against the 'streamlined' goal. Consider keeping search, filters, Genre and Sort on one row (e.g. shrink the search box or collapse the Documentaries/Animations dropdowns when they have 0 titles).",
+        "The divider `span.w-px` after the search box is left dangling at the end of row 1 when the toolbar wraps.",
+        "The search placeholder 'Search titles, years, actors...' is cut off at w-64."
+      ]},
+      {"screen": "Library toolbar (all sizes)", "issues": [
+        "The Documentaries and Animations dropdowns always show, even with 0 titles and no folders of that type. This adds clutter; consider hiding categories that have 0 titles and no folder."
+      ]},
+      {"screen": "Cards with full effects", "issues": [
+        "On the hovered card, the title text looks slightly blurred because of the rotateX/rotateY plus scale(1.02) transform with will-change. Minor; could use backface-visibility or a smaller scale."
+      ]}
+    ]
+  },
+  "test_report_links": ["/app/tests/test_iter51_library_header.py", "/app/tests/test_iter50_move_category.py"],
+  "action_items": [
+    "Optional design polish: stop the toolbar wrapping to 3 rows at around 1280px, hide the dangling divider when it wraps, and fix the cut-off search placeholder.",
+    "Optional: hide the Docs/Animations category dropdowns when they have 0 titles and no typed folder."
+  ],
+  "critical_code_review_comments": [
+    "effects.js useEffectsLevel reads the saved setting once with useState, so a change in Settings only applies after the library page remounts. This is fine today because Settings is a separate route.",
+    "In 'auto' mode, fx is worked out from the current movies.length. When a scan pushes the library past 3000 titles, every card switches from full to lite in the middle of the session. Acceptable, but it could be latched per session.",
+    "MovieCard's tilt handler writes 4 CSS vars on every mousemove with no requestAnimationFrame throttle. A minor performance point; effects are already lite above 3000 titles.",
+    "LocalLibraryPage.jsx is 3572 lines, far over the 700-line guideline. Keep pulling out components (as was done with LibraryHeader and LibraryTools)."
+  ],
+  "updated_files": ["/app/tests/test_iter51_library_header.py (new)", "/app/tests/test_iter50_move_category.py (adapted: header() rebuilds text from the chips; select-mode-btn is now reached through the Tools menu; exit via select-cancel-btn)"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% (199/199 checks)"},
+  "seed_data_creation": "None in the DB. All library data lives in isolated browser contexts (sessionStorage/localStorage), and the TMDB API is mocked with empty results.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: g={'page':page}; exec(open('/app/tests/test_iter51_library_header.py').read(), g); then await run_tools(), run_no_key(), run_toolbar_cards(), run_effects() and run_regression(); g['RES'] holds the pass/fail counts. The iteration 50 file still works through run_main, run_select and run_no_tv_folder. Facts: the year-mismatch chip can be seeded with localStorage 'obsidian_cinema_year_mismatches'. Two separate cards 'X CD1.mkv' and 'X CD2.mkv' in one folder produce a multipart suggestion. manage-dirs opens an AlertDialog (role=alertdialog). The library container scrolls, so scroll back to the top before using mouse.move for hover tests. A library of 50 or more titles triggers the milestone banner, which covers the top of the screen."
+}

@@ -2030,10 +2030,10 @@ export default function LocalLibraryPage() {
 
       {/* Toolbar: search, type filters, genre and sort */}
       <div className="oc-toolbar sticky top-2 z-30 rounded-2xl border border-border/60 bg-background/70 backdrop-blur-xl shadow-lg shadow-black/20 px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-2" data-testid="library-toolbar">
-        <div className="relative w-64 focus-within:w-80 transition-[width] duration-300">
+        <div className="relative w-52 xl:w-64 focus-within:w-72 xl:focus-within:w-80 transition-[width] duration-300">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search titles, years, actors..."
+            placeholder="Search titles, actors…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-12 h-8 text-sm rounded-full bg-secondary/50 border-transparent focus-visible:border-primary/50 focus-visible:ring-primary/30"
@@ -2051,7 +2051,6 @@ export default function LocalLibraryPage() {
         </div>
         {typedDirs.length > 0 && (
           <>
-            <span className="hidden md:block w-px h-5 bg-border/70" />
             <DirectoryDropdowns
               directories={typedDirs}
               categories={dirCategories}

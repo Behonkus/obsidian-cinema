@@ -136,3 +136,8 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 
 ## 2026-06 — Landing FAQ + Before/After slider
 - components/BeforeAfterSlider.jsx (drag/keyboard slider, generated Explorer vs poster-wall mockups, after hero) and components/LandingFaq.jsx (4 Qs: source of movies, requirements, privacy, NAS/external) before CTA; navbar FAQ link. Verified via screenshot.
+
+## 2026-06 — Library toolbar redesign + visual effects
+- LibraryHeader.jsx (title shine, animated count chips, Add Folder / Update Library / Tools), LibraryTools.jsx (grouped dropdown: attention items w/ badge, metadata tools, select/add files/PDF), sticky glass toolbar (search, type filters with sliding highlight, genre, sort, activity chips). Empty categories hidden.
+- Card effects: staggered entrance, 3D tilt + glow + sheen (full), simple lift (lite). lib/effects.js: Auto (lite above 3000 titles, latched per visit) / Full / Lite; Settings > Library Visual Effects (EffectsSetting.jsx). Respects prefers-reduced-motion.
+- Tested iteration_50 (199/199) + /app/tests/test_iter51_library_header.py re-run after polish (all pass).
