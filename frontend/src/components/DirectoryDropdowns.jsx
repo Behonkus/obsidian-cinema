@@ -1,5 +1,6 @@
 import { ChevronDown, Film, Tv, Leaf, Sparkles, FolderOpen, Settings, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -55,9 +56,10 @@ function CategoryDropdown({ cat, dirs, counts, catTotal, activeDirectory, active
         <Button
           variant="outline"
           size="sm"
-          className={'h-7 text-xs rounded-full px-3 gap-1.5 bg-transparent transition-colors ' + (isActive ? cat.active : cat.cls)}
+          className={'relative h-7 text-xs rounded-full px-3 gap-1.5 bg-transparent transition-colors ' + (isActive ? cat.active : cat.cls)}
           data-testid={`dir-cat-${cat.id}`}
         >
+          {isActive && <motion.span layoutId="oc-active-filter" className="absolute inset-0 rounded-full ring-1 ring-current/40 shadow-[0_0_18px_-4px_currentColor]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
           <Icon className="w-3.5 h-3.5" />
           <span className="max-w-[240px] truncate">{activeDir ? cat.label + ': ' + dirLabel(activeDir) : cat.label}</span>
           <Badge variant="secondary" className="h-4 px-1 text-[10px]">{activeDir ? (counts[activeDir] || 0) : total}</Badge>
@@ -95,14 +97,14 @@ function CategoryDropdown({ cat, dirs, counts, catTotal, activeDirectory, active
 export function DirectoryDropdowns({ directories, categories, counts, catCounts, totalCount, activeDirectory, activeCategory, onPickDir, onPickCategory, onClearAll, onManage }) {
   return (
     <div className="flex flex-wrap items-center gap-2" data-testid="directory-filter">
-      <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
-      <Button
+            <Button
         variant={!activeDirectory && !activeCategory ? "default" : "outline"}
         size="sm"
-        className="h-7 text-xs rounded-full px-3"
+        className="relative h-7 text-xs rounded-full px-3"
         onClick={onClearAll}
         data-testid="dir-filter-all"
       >
+        {!activeDirectory && !activeCategory && <motion.span layoutId="oc-active-filter" className="absolute inset-0 rounded-full shadow-[0_0_18px_-4px_hsl(var(--primary))]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
         All
         <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-1">{totalCount}</Badge>
       </Button>

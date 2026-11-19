@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { EffectsSetting } from "@/components/EffectsSetting";
 import { useNavigate } from "react-router-dom";
 import { useLicense } from "@/context/LicenseContext";
 import { motion } from "framer-motion";
@@ -1395,6 +1396,10 @@ export default function SettingsPage() {
             </Card>
           </motion.div>
         )}
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.275 }}>
+          <EffectsSetting />
+        </motion.div>
 
         {/* Library Management Card - Desktop Only */}
         {isElectron() && (

@@ -257,9 +257,9 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
 
   return (
     <>
-      <Button onClick={handleBrowseClick} className="gap-2" data-testid="browse-local-drives-btn">
+      <Button onClick={handleBrowseClick} className="oc-cta gap-2 h-9 rounded-full px-4 text-xs" data-testid="browse-local-drives-btn" title="Browse local and network drives for a folder of your movie files">
         <FolderOpen className="w-4 h-4" />
-        Browse Local Drives
+        Add Folder
       </Button>
 
       {/* Naming Convention Tip */}

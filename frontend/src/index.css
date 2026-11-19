@@ -345,3 +345,50 @@ code {
   background-size: 200% 100%;
   animation: posterShimmer 1s ease-out forwards;
 }
+
+/* ── Library visual effects ── */
+@keyframes ocCardIn { from { opacity: 0; transform: translateY(14px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes ocChipIn { from { opacity: 0; transform: translateY(6px) scale(0.9); } to { opacity: 1; transform: none; } }
+@keyframes ocShine { 0% { background-position: 200% 50%; } 100% { background-position: -200% 50%; } }
+@keyframes ocAttn { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); } 50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); } }
+@keyframes ocGlowPulse { 0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45); } 50% { box-shadow: 0 0 22px 2px hsl(var(--primary) / 0.25); } }
+
+.oc-chip-in { animation: ocChipIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.oc-attn { animation: ocAttn 2s ease-in-out infinite; }
+.oc-cta { box-shadow: 0 6px 22px -8px hsl(var(--primary) / 0.7); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.oc-cta:hover { transform: translateY(-1px); box-shadow: 0 10px 28px -8px hsl(var(--primary) / 0.85); }
+.oc-title-icon { animation: ocGlowPulse 3.5s ease-in-out infinite; }
+.oc-title-shine {
+  background: linear-gradient(100deg, hsl(var(--foreground)) 40%, hsl(var(--primary)) 50%, hsl(var(--foreground)) 60%);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: ocShine 7s linear infinite;
+}
+.oc-toolbar { transition: box-shadow 0.3s ease, border-color 0.3s ease; }
+
+.oc-card-lite .oc-card-surface { transition: transform 0.2s ease, border-color 0.2s ease; }
+.oc-card-lite:hover .oc-card-surface { transform: translateY(-3px); }
+
+.oc-card-full { animation: ocCardIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; perspective: 900px; }
+.oc-card-full .oc-card-surface {
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.18s ease-out, box-shadow 0.3s ease, border-color 0.3s ease;
+  will-change: transform;
+}
+.oc-card-full:hover .oc-card-surface {
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-4px) scale(1.02);
+  box-shadow: 0 18px 40px -12px hsl(var(--primary) / 0.45), 0 0 0 1px hsl(var(--primary) / 0.35);
+}
+.oc-card-full .oc-poster { transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.oc-card-full:hover .oc-poster { transform: scale(1.06); }
+.oc-sheen {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5; opacity: 0; transition: opacity 0.3s ease;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.22), transparent 55%);
+  mix-blend-mode: overlay;
+}
+.oc-card-full:hover .oc-sheen { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .oc-card-full, .oc-chip-in, .oc-title-shine, .oc-title-icon, .oc-attn { animation: none !important; }
+  .oc-card-full .oc-card-surface { transform: none !important; }
+}

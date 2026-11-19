@@ -85,6 +85,9 @@ import LocalDirectoryBrowser from "@/components/LocalDirectoryBrowser";
 import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
+import { LibraryHeader } from "@/components/LibraryHeader";
+import { LibraryTools } from "@/components/LibraryTools";
+import { useEffectsLevel } from "@/lib/effects";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
 import { FilmographyDialog } from "@/components/FilmographyDialog";
@@ -220,7 +223,7 @@ function CardMoveMenu({ movie, category, onMove }) {
   );
 }
 
-const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie, isFavorite, onToggleFav, category, onMove, selectMode, selected, onSelect }) {
+const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie, isFavorite, onToggleFav, category, onMove, selectMode, selected, onSelect, fx, index }) {
   var onClick = function() { if (selectMode) onSelect(movie.id); else onOpen(movie); };
   var onPlay = function(e) { e.stopPropagation(); onPlayMovie(movie); };
   var onToggleFavorite = function(e) { onToggleFav(movie.id, e); };
@@ -235,6 +238,19 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
     onToggleFavorite(e);
   };
 
+  var tilt = function(e) {
+    var r = e.currentTarget.getBoundingClientRect();
+    var x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    e.currentTarget.style.setProperty('--rx', ((0.5 - y) * 10).toFixed(2) + 'deg');
+    e.currentTarget.style.setProperty('--ry', ((x - 0.5) * 12).toFixed(2) + 'deg');
+    e.currentTarget.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
+    e.currentTarget.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+  };
+  var untilt = function(e) {
+    e.currentTarget.style.setProperty('--rx', '0deg');
+    e.currentTarget.style.setProperty('--ry', '0deg');
+  };
+
   var handlePosterLoad = function() {
     var key = 'oc_shimmer_' + movie.id;
     if (!sessionStorage.getItem(key)) {
@@ -245,17 +261,18 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="group relative"
+    <div
+      className={'group relative oc-card ' + (fx === 'full' ? 'oc-card-full' : 'oc-card-lite')}
+      style={fx === 'full' ? { animationDelay: ((index || 0) % 24) * 28 + 'ms' } : undefined}
+      onMouseMove={fx === 'full' ? tilt : undefined}
+      onMouseLeave={fx === 'full' ? untilt : undefined}
     >
       {showConfetti && (
         <div className="fav-confetti" style={{ position: 'absolute', top: '0.75rem', right: '1rem', zIndex: 50 }}>
           <span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span />
         </div>
       )}
-      <Card className={'overflow-hidden hover:border-primary/50 transition-colors cursor-pointer ' + (selected ? 'ring-2 ring-primary border-primary' : '')} onClick={onClick} data-testid={`movie-card-${movie.id}`}>
+      <Card className={'oc-card-surface overflow-hidden hover:border-primary/50 transition-colors cursor-pointer ' + (selected ? 'ring-2 ring-primary border-primary' : '')} onClick={onClick} data-testid={`movie-card-${movie.id}`}>
         <div className="aspect-[2/3] bg-gradient-to-br from-primary/20 to-secondary relative flex items-center justify-center overflow-hidden">
           {selectMode && (
             <span className={'absolute inset-0 z-30 flex items-start justify-start p-1.5 transition-colors ' + (selected ? 'bg-primary/25' : 'bg-black/20 hover:bg-black/10')} data-testid={`card-select-${movie.id}`}>
@@ -264,10 +281,11 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
           )}
           {!selectMode && <CardMoveMenu movie={movie} category={category} onMove={onMove} />}
           {movie.poster_path ? (
-            <img src={thumbUrl(movie.poster_path, gridSize === 'large' ? 'w500' : 'w342')} alt={movie.title} className="w-full h-full object-cover" loading="lazy" decoding="async" onLoad={handlePosterLoad} />
+            <img src={thumbUrl(movie.poster_path, gridSize === 'large' ? 'w500' : 'w342')} alt={movie.title} className="oc-poster w-full h-full object-cover" loading="lazy" decoding="async" onLoad={handlePosterLoad} />
           ) : (
             <Film className="w-12 h-12 text-primary/50" />
           )}
+          {fx === 'full' && <div className="oc-sheen" />}
           {showShimmer && <div className="poster-shimmer" />}
           {movie.needs_review && (
             <span className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded bg-amber-500/90 text-black text-[9px] font-bold" title="Uncertain match — open to verify" data-testid={`needs-review-badge-${movie.id}`}>CHECK</span>
@@ -317,7 +335,7 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
           )}
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 });
 
@@ -1813,6 +1831,8 @@ export default function LocalLibraryPage() {
     return next;
   });
   const [showMismatches, setShowMismatches] = useState(false);
+  const [showPdf, setShowPdf] = useState(false);
+  const fx = useEffectsLevel(movies.length);
   const fixTriedRef = useRef(new Set());
   const runFixMissing = async (list, manual) => {
     if (fixRun || list.length === 0) return;
@@ -1934,119 +1954,156 @@ export default function LocalLibraryPage() {
           {milestone.toLocaleString()} movies in your library! 
         </div>
       )}
-      {/* Header */}
-      <div className="space-y-3">
-        {/* Row 1: Title + counts inline */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Film className="w-6 h-6 text-primary" />
-            Local Library
-            <span className="text-sm font-normal text-muted-foreground ml-1" data-testid="library-header-counts">
-              {DIR_CATEGORIES.filter(c => libraryCounts.catCounts[c.id]).map(c => (
-                <span key={c.id} data-testid={`header-count-${c.id}`}>{categoryCountLabel(c, libraryCounts.catCounts[c.id])} &middot; </span>
-              ))}
-              {movies.length === 0 && '0 titles · '}{directories.length} {directories.length === 1 ? 'folder' : 'folders'}
-            </span>
-          </h1>
-        </div>
-        {/* Row 2: Action buttons */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
-          <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={onFilesTypePicked} dropCount={dropCount} />
-          <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} onLeave={() => setSelectedMovie(null)} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" data-testid="more-actions-btn" title="More ways to add titles">
-                <span className="text-xs">More</span>
-                <ChevronDown className="w-3.5 h-3.5 ml-1" />
+      {/* Dialogs driven by the toolbar */}
+      <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={onFilesTypePicked} dropCount={dropCount} />
+      <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} onLeave={() => setSelectedMovie(null)} />
+      <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
+      <MergePickerDialog movie={mergeTarget} movies={movies} onClose={() => setMergeTarget(null)} onMerge={mergeManual} />
+      {showMismatches && <YearMismatchDialog items={liveMismatches} onClose={() => setShowMismatches(false)} onRename={renameMismatches} onIgnore={ignoreMismatch} ignoredCount={renameIgnored.length} onResetIgnored={resetRenameIgnored} />}
+      {showMultiPart && multipartGroups.length > 0 && (
+        <MultiPartSuggestDialog open={showMultiPart} onOpenChange={setShowMultiPart} groups={multipartGroups} onMerge={mergeGroups} onDismiss={dismissMultipartGroup} />
+      )}
+      {!showMultiPart && autoMultiGroups.length > 0 && (
+        <MultiPartSuggestDialog
+          open
+          onOpenChange={(o) => { if (!o) setAutoMultiKeys(null); }}
+          groups={autoMultiGroups}
+          onMerge={mergeGroups}
+          onDismiss={dismissMultipartGroup}
+          heading={autoMultiHeading || "New files belong with existing titles"}
+        />
+      )}
+      {showPdf && (
+        <PdfExportDialog
+          autoOpen
+          onClose={() => setShowPdf(false)}
+          movies={filteredMovies}
+          listTitle={activeCollection ? 'Collection' : (activeDirectory ? activeDirectory.split(/[\\/]/).pop() : (activeCategory ? 'All ' + (DIR_CATEGORIES.find(c => c.id === activeCategory) || {}).label : 'My Movie Library'))}
+        />
+      )}
+
+      {/* Header: title, counts and the three main actions */}
+      <LibraryHeader
+        catCounts={libraryCounts.catCounts}
+        total={movies.length}
+        folders={directories.length}
+        fx={fx}
+        actions={
+          <>
+            <LocalDirectoryBrowser onMoviesFound={handleMoviesFound} />
+            {directories.length > 0 && (
+              <Button variant="outline" size="sm" className="h-9 rounded-full px-4 gap-1.5 border-border/70 hover:border-primary/60 transition-colors" onClick={rescanAllDirectories} disabled={isRescanning} data-testid="update-library-btn" title="Rescan all directories for changes">
+                <RefreshCw className={`w-4 h-4 ${isRescanning ? 'animate-spin' : ''}`} />
+                <span className="text-xs">{isRescanning ? 'Scanning...' : 'Update Library'}</span>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64">
-              <DropdownMenuItem onSelect={handleAddFiles} data-testid="add-files-btn" className="flex items-start gap-2 cursor-pointer">
-                <FilePlus2 className="w-4 h-4 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm">Add individual files</p>
-                  <p className="text-[11px] text-muted-foreground">For files outside your library folders, e.g. one film in Downloads</p>
-                </div>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {directories.length > 0 && (
-            <Button variant="outline" size="sm" onClick={rescanAllDirectories} disabled={isRescanning} data-testid="update-library-btn" title="Rescan all directories for changes">
-              <RefreshCw className={`w-4 h-4 mr-1.5 ${isRescanning ? 'animate-spin' : ''}`} />
-              <span className="text-xs">{isRescanning ? 'Scanning...' : 'Update Library'}</span>
-            </Button>
-          )}
-          {movies.length > 0 && (
-            <Button variant={selectMode ? 'default' : 'outline'} size="sm" onClick={() => (selectMode ? exitSelect() : setSelectMode(true))} data-testid="select-mode-btn" title="Select titles to move them to another category">
-              <SelectIcon className="w-4 h-4 mr-1.5" />
-              <span className="text-xs">{selectMode ? 'Done' : 'Select'}</span>
-            </Button>
-          )}
-          {movies.length > 0 && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={startFetchPosters}
-              disabled={fetchingPosters}
-              data-testid="fetch-posters-btn"
-            >
-              {fetchingPosters ? (
-                <RefreshCw className="w-4 h-4 mr-1.5 animate-spin" />
-              ) : (
-                <Image className="w-4 h-4 mr-1.5" />
-              )}
-              <span className="text-xs">
-              {fetchingPosters 
-                ? 'Fetching...' 
-                : (libraryCounts.missingPoster > 0 ? 'Fetch Posters (' + libraryCounts.missingPoster + ')' : 'Fetch Posters')
-              }
-              </span>
-            </Button>
-          )}
-          {tmdbApiKey && movies.length > 0 && (
+            )}
+            <LibraryTools
+              hasTitles={movies.length > 0}
+              needsReview={libraryCounts.needsReview}
+              reviewActive={quickFilter === 'needs-review'}
+              onToggleReview={() => setQuickFilter(quickFilter === 'needs-review' ? null : 'needs-review')}
+              multipart={multipartGroups.length}
+              onMultipart={() => setShowMultiPart(true)}
+              mismatches={liveMismatches.length}
+              onMismatches={() => setShowMismatches(true)}
+              missingPoster={movies.length > 0 ? libraryCounts.missingPoster : 0}
+              fetchingPosters={fetchingPosters}
+              onFetchPosters={startFetchPosters}
+              needsDetails={libraryCounts.needsDetails}
+              fetchingCast={fetchingCast}
+              castProgress={castFetchProgress}
+              onEnrich={fetchAllCast}
+              fixCount={fixList ? fixList.length : null}
+              fixRun={fixRun}
+              onFix={() => runFixMissing(fixList, true)}
+              showAutoFill={!!tmdbApiKey && movies.length > 0}
+              autoEnrich={autoEnrich}
+              bgEnrich={bgEnrich}
+              onToggleAutoFill={toggleAutoEnrich}
+              onSelect={() => setSelectMode(true)}
+              onAddFiles={handleAddFiles}
+              onPdf={() => setShowPdf(true)}
+            />
+          </>
+        }
+      />
+
+      {/* Toolbar: search, type filters, genre and sort */}
+      <div className="oc-toolbar sticky top-2 z-30 rounded-2xl border border-border/60 bg-background/70 backdrop-blur-xl shadow-lg shadow-black/20 px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-2" data-testid="library-toolbar">
+        <div className="relative w-64 focus-within:w-80 transition-[width] duration-300">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search titles, years, actors..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-12 h-8 text-sm rounded-full bg-secondary/50 border-transparent focus-visible:border-primary/50 focus-visible:ring-primary/30"
+            data-testid="movie-search-input"
+          />
+          {searchQuery && (
             <button
-              type="button"
-              onClick={toggleAutoEnrich}
-              className={'h-8 px-2.5 rounded-md border text-[11px] flex items-center gap-1.5 transition-colors ' + (autoEnrich ? 'border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10' : 'border-border text-muted-foreground hover:bg-secondary/60')}
-              title={autoEnrich ? 'New files are matched automatically and missing details (runtime, cast, director) are filled in quietly in the background. Click to pause.' : 'Click to fill in missing details automatically in the background'}
-              data-testid="auto-enrich-toggle"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="movie-search-clear-btn"
             >
-              {bgEnrich ? <Loader2 className="w-3 h-3 animate-spin" /> : (autoEnrich ? <Sparkles className="w-3 h-3" /> : <Pause className="w-3 h-3" />)}
-              <span data-testid="auto-enrich-status">
-                {bgEnrich ? 'Auto-filling ' + bgEnrich.done + '/' + bgEnrich.total : (autoEnrich ? 'Auto-fill on' : 'Auto-fill paused')}
-              </span>
+              Clear
             </button>
           )}
-          {libraryCounts.needsDetails > 0 && (
-            <Button variant="outline" size="sm" onClick={fetchAllCast} disabled={fetchingCast || fetchingPosters} data-testid="enrich-metadata-btn" title="Add cast, director, runtime, rating and more to already-matched movies">
-              <Sparkles className={`w-4 h-4 mr-1.5 ${fetchingCast ? 'animate-pulse' : ''}`} />
-              <span className="text-xs">{fetchingCast ? 'Enriching... ' + castFetchProgress + '%' : 'Enrich Details (' + libraryCounts.needsDetails + ')'}</span>
+        </div>
+        {typedDirs.length > 0 && (
+          <>
+            <span className="hidden md:block w-px h-5 bg-border/70" />
+            <DirectoryDropdowns
+              directories={typedDirs}
+              categories={dirCategories}
+              counts={libraryCounts.dirCounts}
+              catCounts={libraryCounts.catCounts}
+              totalCount={movies.length}
+              activeDirectory={activeDirectory}
+              activeCategory={activeCategory}
+              onPickDir={(d) => { setActiveCategory(null); setActiveDirectory(activeDirectory === d ? null : d); }}
+              onPickCategory={(c) => { setActiveDirectory(null); setActiveCategory(activeCategory === c ? null : c); }}
+              onClearAll={() => { setActiveDirectory(null); setActiveCategory(null); }}
+              onManage={() => setShowDirManager(true)}
+            />
+          </>
+        )}
+        <div className="flex-1" />
+        {quickFilter === 'needs-review' && (
+          <button type="button" onClick={() => setQuickFilter(null)} className="oc-chip-in h-7 px-2.5 rounded-full bg-amber-500/15 text-amber-300 text-[11px] flex items-center gap-1" data-testid="needs-review-active-chip">
+            <AlertTriangle className="w-3 h-3" /> Checking matches <X className="w-3 h-3 ml-0.5" />
+          </button>
+        )}
+        {fetchingCast && (
+          <span className="oc-chip-in h-7 pl-2.5 pr-1 rounded-full bg-primary/15 text-primary text-[11px] flex items-center gap-1.5" data-testid="enrich-activity">
+            <Sparkles className="w-3 h-3 animate-pulse" /> Enriching {castFetchProgress}%
+            <button type="button" onClick={abortFetch} className="h-5 px-2 rounded-full bg-background/60 text-amber-300 hover:bg-background" data-testid="abort-enrich-btn">Pause</button>
+          </span>
+        )}
+        {!fetchingCast && bgEnrich && (
+          <span className="oc-chip-in h-7 px-2.5 rounded-full bg-emerald-500/10 text-emerald-300 text-[11px] flex items-center gap-1.5" data-testid="auto-enrich-activity">
+            <Loader2 className="w-3 h-3 animate-spin" /> Auto-filling {bgEnrich.done}/{bgEnrich.total}
+          </span>
+        )}
+        {fixRun && (
+          <span className="oc-chip-in h-7 px-2.5 rounded-full bg-secondary text-muted-foreground text-[11px] flex items-center gap-1.5" data-testid="fix-missing-bg">
+            <Loader2 className="w-3 h-3 animate-spin" /> Filling gaps {fixRun.done}/{fixRun.total}
+          </span>
+        )}
+        {personParam && (
+          <div className="flex items-center gap-1 text-sm" data-testid="person-filter-chip">
+            <span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary text-xs">
+              {personRole === 'pair' ? personParam + ' & ' + personDirector : personParam} · {personIds ? personIds.size : 0} {personIds && personIds.size === 1 ? 'film' : 'films'}
+            </span>
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearPersonFilter} data-testid="person-filter-clear">
+              <X className="w-3 h-3 mr-1" /> Show all
             </Button>
-          )}
-          {libraryCounts.needsReview > 0 && (
-            <Button variant={quickFilter === 'needs-review' ? 'default' : 'outline'} size="sm" className={quickFilter === 'needs-review' ? '' : 'border-amber-500/40 text-amber-400'} onClick={() => setQuickFilter(quickFilter === 'needs-review' ? null : 'needs-review')} data-testid="needs-review-filter-btn" title="Show movies whose match was uncertain">
-              <AlertTriangle className="w-4 h-4 mr-1.5" />
-              <span className="text-xs">Check Matches ({libraryCounts.needsReview})</span>
-            </Button>
-          )}
-          {multipartGroups.length > 0 && (
-            <Button variant="outline" size="sm" className="border-primary/40" onClick={() => setShowMultiPart(true)} data-testid="multipart-suggest-btn" title="Files that look like parts of one title">
-              <Layers className="w-4 h-4 mr-1.5" />
-              <span className="text-xs">Multi-Part ({multipartGroups.length})</span>
-            </Button>
-          )}
-          {fetchingCast && (
-            <Button variant="ghost" size="sm" className="text-amber-400" onClick={abortFetch} data-testid="abort-enrich-btn">
-              <span className="text-xs">Pause</span>
-            </Button>
-          )}
-          <div className="flex-1" />
+          </div>
+        )}
           {/* Genre Filter */}
           {availableGenres.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant={selectedGenre ? "default" : "outline"} size="sm" className="gap-1.5" data-testid="genre-dropdown">
+                <Button variant={selectedGenre ? "default" : "outline"} size="sm" className="gap-1.5 h-8 rounded-full" data-testid="genre-dropdown">
                   <Tag className="w-3.5 h-3.5" />
                   <span className="text-xs">{selectedGenre || 'Genre'}</span>
                   <ChevronDown className="w-3 h-3" />
@@ -2071,7 +2128,7 @@ export default function LocalLibraryPage() {
           {/* Sort Options */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5" data-testid="sort-dropdown">
+              <Button variant="outline" size="sm" className="gap-1.5 h-8 rounded-full" data-testid="sort-dropdown">
                 <ArrowUpDown className="w-3.5 h-3.5" />
                 <span className="text-xs">{SORT_OPTIONS[sortBy]?.label}</span>
                 <ChevronDown className="w-3 h-3" />
@@ -2126,60 +2183,6 @@ export default function LocalLibraryPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          
-          {/* PDF Export */}
-          <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
-          <MergePickerDialog movie={mergeTarget} movies={movies} onClose={() => setMergeTarget(null)} onMerge={mergeManual} />
-          {fixList && (
-            <Button variant="outline" size="sm" className="h-8 text-xs" disabled={!!fixRun || fixList.length === 0} onClick={() => runFixMissing(fixList, true)} data-testid="fix-missing-btn">
-              {fixRun ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Fixing {fixRun.done}/{fixRun.total}</> : <><Wand2 className="w-3 h-3 mr-1" /> Fix missing info ({fixList.length})</>}
-            </Button>
-          )}
-          {!fixList && fixRun && !fixRun.manual && (
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1" data-testid="fix-missing-bg"><Loader2 className="w-3 h-3 animate-spin" /> Filling gaps {fixRun.done}/{fixRun.total}</span>
-          )}
-          {liveMismatches.length > 0 && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-amber-400" onClick={() => setShowMismatches(true)} data-testid="year-mismatch-chip">
-              <FileEdit className="w-3 h-3 mr-1" /> {liveMismatches.length} file {liveMismatches.length === 1 ? 'name differs' : 'names differ'} in year
-            </Button>
-          )}
-          {showMismatches && <YearMismatchDialog items={liveMismatches} onClose={() => setShowMismatches(false)} onRename={renameMismatches} onIgnore={ignoreMismatch} ignoredCount={renameIgnored.length} onResetIgnored={resetRenameIgnored} />}
-          {personParam && (
-            <div className="flex items-center gap-2 text-sm" data-testid="person-filter-chip">
-              <span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary">
-                {personRole === 'pair' ? personParam + ' & ' + personDirector : personParam} · {personIds ? personIds.size : 0} {personIds && personIds.size === 1 ? 'film' : 'films'}
-              </span>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearPersonFilter} data-testid="person-filter-clear">
-                <X className="w-3 h-3 mr-1" /> Show all
-              </Button>
-            </div>
-          )}
-          {showMultiPart && multipartGroups.length > 0 && (
-            <MultiPartSuggestDialog open={showMultiPart} onOpenChange={setShowMultiPart} groups={multipartGroups} onMerge={mergeGroups} onDismiss={dismissMultipartGroup} />
-          )}
-          {!showMultiPart && autoMultiGroups.length > 0 && (
-            <MultiPartSuggestDialog
-              open
-              onOpenChange={(o) => { if (!o) setAutoMultiKeys(null); }}
-              groups={autoMultiGroups}
-              onMerge={mergeGroups}
-              onDismiss={dismissMultipartGroup}
-              heading={autoMultiHeading || "New files belong with existing titles"}
-            />
-          )}
-          {movies.length > 0 && (
-            <PdfExportDialog
-              movies={filteredMovies}
-              listTitle={activeCollection ? 'Collection' : (activeDirectory ? activeDirectory.split(/[\\/]/).pop() : (activeCategory ? 'All ' + (DIR_CATEGORIES.find(c => c.id === activeCategory) || {}).label : 'My Movie Library'))}
-              trigger={
-                <Button variant="outline" size="sm" className="gap-1.5" data-testid="pdf-export-trigger">
-                  <FileDown className="w-3.5 h-3.5" />
-                  <span className="text-xs">PDF</span>
-                </Button>
-              }
-            />
-          )}
-        </div>
       </div>
 
       {/* Poster Fetch Progress */}
@@ -2245,23 +2248,6 @@ export default function LocalLibraryPage() {
       )}
 
 
-      {/* Directory Filter: one colored dropdown per folder type */}
-      {typedDirs.length > 0 && (
-        <DirectoryDropdowns
-          directories={typedDirs}
-          categories={dirCategories}
-          counts={libraryCounts.dirCounts}
-          catCounts={libraryCounts.catCounts}
-          totalCount={movies.length}
-          activeDirectory={activeDirectory}
-          activeCategory={activeCategory}
-          onPickDir={(d) => { setActiveCategory(null); setActiveDirectory(activeDirectory === d ? null : d); }}
-          onPickCategory={(c) => { setActiveDirectory(null); setActiveCategory(activeCategory === c ? null : c); }}
-          onClearAll={() => { setActiveDirectory(null); setActiveCategory(null); }}
-          onManage={() => setShowDirManager(true)}
-        />
-      )}
-
       {/* Collections Filter */}
       {collections.length > 0 && (
         <div className="flex flex-wrap items-center gap-2" data-testid="collections-filter">
@@ -2290,27 +2276,6 @@ export default function LocalLibraryPage() {
           ))}
         </div>
       )}
-
-      {/* Search */}
-      <div className="relative w-80">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search movies, years, actors..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 pr-12 h-9 text-sm"
-          data-testid="movie-search-input"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-            data-testid="movie-search-clear-btn"
-          >
-            Clear
-          </button>
-        )}
-      </div>
 
       {/* Movies Grid or Trash View */}
       {showTrash ? (
@@ -2438,8 +2403,8 @@ export default function LocalLibraryPage() {
                   <Badge variant="secondary" className="text-xs">{dirMovies.length}</Badge>
                 </div>
                 <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
-                  {dirMovies.map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} />
+                  {dirMovies.map((movie, i) => (
+                    <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} />
                   ))}
                 </div>
               </div>
@@ -2447,8 +2412,8 @@ export default function LocalLibraryPage() {
           </div>
         ) : (
         <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
-          {displayedMovies.map((movie) => (
-            <MovieCard key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} />
+          {displayedMovies.map((movie, i) => (
+            <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} />
           ))}
         </div>
         )
