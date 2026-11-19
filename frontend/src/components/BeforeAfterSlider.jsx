@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { ChevronsLeftRight } from "lucide-react";
 
 const BEFORE = "https://static.prod-images.emergentagent.com/jobs/2ff8f579-4e90-4c18-854e-f3fd4c43af64/images/9989ca61673025e4fdd5cc3598090db7f0c384594b30c0f8ceed9dbf8ec92900.jpeg";
-const AFTER = "https://static.prod-images.emergentagent.com/jobs/2ff8f579-4e90-4c18-854e-f3fd4c43af64/images/103c6373904a8d3e5fd5dc3f092944fc22ca9ef7be6ff86c292048d1d03ab092.jpeg";
+const AFTER = "https://static.prod-images.emergentagent.com/jobs/2ff8f579-4e90-4c18-854e-f3fd4c43af64/images/811c82ab9bcbe01ec5d7466a54c1ef033a5ba57f20274dc180460cd62496a605.jpeg";
 
 export const BeforeAfterSlider = () => {
   const [pos, setPos] = useState(50);
