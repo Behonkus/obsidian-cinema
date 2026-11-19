@@ -130,3 +130,6 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Stored as `category_override` on the card (persists across reload, rescan, merges); category filters, counts, Stats TypeStats and auto-fix use `cardCategory()` (DirectoryDropdowns.jsx).
 - Library header now shows per-category breakdown ("4 Movies · 1 TV Show · 2 folders").
 - Tested: iteration_49 (60/60), /app/tests/test_iter50_move_category.py.
+
+## 2026-06 — Landing/pricing copy: "bring your own files"
+- Reworded LandingPage.jsx, UpgradePage.jsx and index.html meta/JSON-LD so nothing implies Obsidian Cinema supplies movies; limits now "Organize up to 500 of your own files" / "No limit on library size". JSON-LD price fixed to $25 and free limit to 500. No separate notice banner (user choice). In-app text unchanged (user choice).

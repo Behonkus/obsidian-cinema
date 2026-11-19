@@ -37,14 +37,14 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Free tier feature list
 const FREE_FEATURES = [
-  "Up to 500 movies",
+  "Organize up to 500 of your own files",
   "Up to 3 collections",
   "Basic features"
 ];
 
 // Pro tier feature list
 const PRO_FEATURES = [
-  "Unlimited movies",
+  "No limit on library size",
   "Unlimited collections",
   "Priority support",
   "Early access to new features"
@@ -128,7 +128,7 @@ function LicenseKeyCard({ user }) {
             Download Desktop App
           </CardTitle>
           <CardDescription>
-            Access your local movie library directly from your Windows PC.
+            Manage and play the movie files you already own, right from your Windows PC.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -192,7 +192,7 @@ function LicenseKeyCard({ user }) {
                 <ul className="space-y-1 text-muted-foreground">
                   <li>• Launch Obsidian Cinema</li>
                   <li>• Click "Continue with Free" to start</li>
-                  <li>• Free tier supports up to 500 movies and 3 collections</li>
+                  <li>• Free plan organizes up to 500 of your own files and 3 collections</li>
                 </ul>
               </div>
 
@@ -201,8 +201,8 @@ function LicenseKeyCard({ user }) {
                 <ul className="space-y-1 text-muted-foreground">
                   <li>• Go to Directories in the sidebar</li>
                   <li>• Click "Add Directory"</li>
-                  <li>• Browse to your movie folder (e.g., S:\Movies)</li>
-                  <li>• Click "Scan" to import movies</li>
+                  <li>• Browse to the folder holding your own movie files (e.g., S:\Movies)</li>
+                  <li>• Click "Scan" to add your files to the library</li>
                 </ul>
               </div>
 
@@ -217,7 +217,7 @@ function LicenseKeyCard({ user }) {
 
               <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
                 <p className="text-purple-400 text-xs">
-                  <strong>Upgrade to Pro:</strong> Enter a license key (from below) to unlock unlimited movies and collections.
+                  <strong>Upgrade to Pro:</strong> Enter a license key (from below) to remove the library size limit and unlock unlimited collections.
                 </p>
               </div>
             </div>
@@ -502,7 +502,7 @@ export default function UpgradePage() {
               You're a Pro Member!
             </h1>
             <p className="text-muted-foreground">
-              Enjoy unlimited movies, collections, and all premium features.
+              Enjoy no limit on library size, unlimited collections, and all premium features for your own collection.
             </p>
           </motion.div>
 
@@ -598,7 +598,7 @@ export default function UpgradePage() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-foreground mb-1">Download the desktop app</h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Install on your Windows PC to scan local drives for movies.
+                      Install on your Windows PC to scan your drives for the movie files you own.
                     </p>
                     <Button
                       variant="outline"
@@ -695,7 +695,7 @@ export default function UpgradePage() {
             Upgrade to <span className="text-amber-400">Pro</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Unlock unlimited movies and collections with a single payment
+            Manage a library of any size and unlimited collections with a single payment. Obsidian Cinema organizes and plays your own files — it does not provide movies.
           </p>
         </motion.div>
 
@@ -711,7 +711,7 @@ export default function UpgradePage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <Film className="w-4 h-4 text-primary" />
-                  <span className="text-sm">Movies</span>
+                  <span className="text-sm">Files in library</span>
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-bold">{limits.movies?.current || 0}</span>
@@ -787,7 +787,7 @@ export default function UpgradePage() {
                   <Crown className="w-5 h-5 text-amber-400" />
                   Pro
                 </CardTitle>
-                <CardDescription>Unlimited everything, forever</CardDescription>
+                <CardDescription>No limits on your collection, forever</CardDescription>
                 <div className="mt-4">
                   {appliedDiscount?.valid ? (
                     <div className="flex items-baseline gap-2">

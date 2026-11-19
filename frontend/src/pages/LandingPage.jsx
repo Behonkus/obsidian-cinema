@@ -38,27 +38,27 @@ const FEATURES = [
   {
     icon: HardDrive,
     title: "Scan Any Drive",
-    desc: "Local drives, network shares, USB — Obsidian Cinema finds every movie file automatically.",
+    desc: "Point it at the movie files you already own — local drives, network shares, USB — and it finds every one automatically.",
   },
   {
     icon: Film,
     title: "TMDB Posters & Cast",
-    desc: "Fetches high-quality posters, ratings, release years, genres, and full cast data from The Movie Database.",
+    desc: "Dresses your own files with high-quality posters, ratings, release years, genres, and full cast data from The Movie Database.",
   },
   {
     icon: Play,
     title: "One-Click Playback",
-    desc: "Launch movies instantly in your default media player. No complicated setup required.",
+    desc: "Play any file from your collection in your favourite media player with one click.",
   },
   {
     icon: Sparkles,
     title: "AI Recommendations",
-    desc: "Get personalized movie suggestions powered by AI, based on your viewing and browsing activity.",
+    desc: "Rediscover what you already own — AI picks titles from your own library based on what you watch and browse.",
   },
   {
     icon: Heart,
     title: "Favorites & Collections",
-    desc: "Star your favorite movies and organize them into custom collections for easy access.",
+    desc: "Star favourites from your collection and group your files into custom collections.",
   },
   {
     icon: SortAsc,
@@ -83,7 +83,7 @@ const FEATURES = [
   {
     icon: Trash2,
     title: "Recently Deleted",
-    desc: "Accidentally removed a movie? Restore it from the trash within 30 days.",
+    desc: "Removed a title from your library by mistake? Restore it from the trash within 30 days.",
   },
   {
     icon: Search,
@@ -98,14 +98,14 @@ const FEATURES = [
 ];
 
 const FREE_LIMITS = [
-  "Up to 500 movies",
+  "Organize up to 500 of your own files",
   "Up to 3 collections",
   "All core features",
   "TMDB posters & metadata",
   "Library stats & charts",
 ];
 const PRO_PERKS = [
-  "Unlimited movies & collections",
+  "No limit on library size or collections",
   "AI-powered recommendations",
   "Full backup & restore",
   "Priority support",
@@ -154,7 +154,7 @@ function TmdbSetupSection() {
             Get your free TMDB API key
           </p>
           <p className="text-sm text-muted-foreground mt-3 max-w-lg mx-auto">
-            Obsidian Cinema uses The Movie Database (TMDB) to fetch posters, ratings, and cast data. Getting a key takes less than 2 minutes — it's completely free with no credit card required.
+            Obsidian Cinema uses The Movie Database (TMDB) to fetch posters, ratings, and cast data for the files in your collection. Getting a key takes less than 2 minutes — it's completely free with no credit card required.
           </p>
         </motion.div>
 
@@ -288,13 +288,13 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-[Outfit] font-extrabold tracking-tight leading-[1.1]">
-            Your movie library,
+            Your movie collection,
             <br />
             <span className="text-primary">beautifully organized.</span>
           </h1>
 
           <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Obsidian Cinema scans your local and network drives, fetches posters and cast data from TMDB, gives you AI-powered recommendations, and lets you play any movie with one click.
+            Stop scrolling endless walls of files in Windows Explorer. Obsidian Cinema turns the movie files you already own — on your local and network drives — into a beautiful, immersive library with posters, cast and ratings, and plays any of them with one click.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-10">
@@ -319,7 +319,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Free tier supports up to 500 movies in your library. No credit card required.
+            Bring your own files — Obsidian Cinema manages and plays your collection; it does not supply any movies. Free plan organizes up to 500 of your own files. No credit card required.
           </p>
         </motion.div>
 
@@ -338,7 +338,7 @@ export default function LandingPage() {
               Everything you need
             </h2>
             <p className="text-2xl sm:text-3xl font-[Outfit] font-bold tracking-tight">
-              A powerful movie library manager
+              A powerful manager for the movies you own
             </p>
           </motion.div>
 
@@ -396,13 +396,13 @@ export default function LandingPage() {
                 step: "02",
                 icon: FolderOpen,
                 title: "Point to Your Drives",
-                desc: "Add your movie directories — local folders, network shares, or USB drives.",
+                desc: "Add the folders where your own movie files live — local folders, network shares, or USB drives.",
               },
               {
                 step: "03",
                 icon: Grid3X3,
                 title: "Browse, Play & Discover",
-                desc: "Posters appear automatically. Star favorites, get AI recommendations, and track your stats.",
+                desc: "Your files turn into a poster wall automatically. Play with one click, star favourites and track your stats.",
               },
             ].map((s, i) => (
               <motion.div
@@ -529,10 +529,10 @@ export default function LandingPage() {
           className="max-w-2xl mx-auto text-center"
         >
           <h2 className="text-2xl sm:text-3xl font-[Outfit] font-bold tracking-tight mb-4">
-            Ready to organize your movie collection?
+            Ready to give your movie collection the home it deserves?
           </h2>
           <p className="text-muted-foreground mb-8">
-            Join thousands of movie lovers using Obsidian Cinema — free to start, takes less than a minute.
+            Join thousands of collectors who manage and play their own self-hosted movie files with Obsidian Cinema — free to start, takes less than a minute.
           </p>
           <Button
             size="lg"
