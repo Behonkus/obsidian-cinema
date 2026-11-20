@@ -1366,14 +1366,23 @@ export default function LocalLibraryPage() {
     setIsRescanning(true);
     try {
       let allScanned = [];
+      // Folders we couldn't read: their titles are kept, never treated as deleted
+      const unreadable = [];
       for (const dir of directories) {
         try {
-          const files = await window.electronAPI.scanForVideos(dir, true);
-          allScanned = allScanned.concat(files);
+          if (window.electronAPI.rescanFolder) {
+            const res = await window.electronAPI.rescanFolder(dir);
+            allScanned = allScanned.concat(res.videos || []);
+            unreadable.push(...(res.failed || []));
+          } else {
+            allScanned = allScanned.concat(await window.electronAPI.scanForVideos(dir, true));
+          }
         } catch (e) {
           console.error('Failed to scan:', dir, e);
+          unreadable.push(dir);
         }
       }
+      const offlineRoots = directories.filter(d => unreadable.includes(d));
 
       const scannedPaths = new Set(allScanned.map(f => f.file_path));
       const dirSet = new Set(directories);
@@ -1388,7 +1397,7 @@ export default function LocalLibraryPage() {
         .filter(f => !knownPaths.has(f.file_path))
         .map(f => withParsedName({ ...f, added_at: now }));
 
-      const removedPaths = [...existingPaths].filter(p => !scannedPaths.has(p));
+      const removedPaths = [...existingPaths].filter(p => !scannedPaths.has(p) && !unreadable.some(u => p === u || inDir(p, u)));
 
       let updated = movies;
       if (removedPaths.length > 0) {
@@ -1417,6 +1426,10 @@ export default function LocalLibraryPage() {
         toast.info('All directories are up to date — no changes found');
       } else {
         toast.success(`Library updated: ${parts.join(', ')}`);
+      }
+      if (unreadable.length > 0) {
+        const where = offlineRoots.length ? offlineRoots.join(', ') : unreadable.length + ' subfolder' + (unreadable.length === 1 ? '' : 's');
+        toast.warning(`Couldn't reach ${where} — titles there were kept. Connect the drive and run Update Library again.`, { duration: 9000 });
       }
     } catch (err) {
       console.error('Rescan all failed:', err);

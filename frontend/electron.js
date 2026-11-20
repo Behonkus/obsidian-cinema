@@ -63,7 +63,7 @@ function listDirectory(dirPath) {
 }
 
 // Scan directory for video files
-function scanForVideos(dirPath, recursive = true) {
+function scanForVideos(dirPath, recursive = true, failed = null) {
   const videos = [];
   
   function scan(currentPath) {
@@ -108,6 +108,7 @@ function scanForVideos(dirPath, recursive = true) {
       }
     } catch (err) {
       console.error('Error scanning:', currentPath, err.message);
+      if (failed) failed.push(currentPath);
     }
   }
   
@@ -126,6 +127,13 @@ ipcMain.handle('fs:listDirectory', (event, dirPath) => {
 
 ipcMain.handle('fs:scanForVideos', (event, dirPath, recursive) => {
   return scanForVideos(dirPath, recursive);
+});
+
+// Rescan that also reports folders it couldn't read (offline drive, sleeping NAS, no access)
+ipcMain.handle('fs:rescanFolder', (event, dirPath) => {
+  const failed = [];
+  const videos = scanForVideos(dirPath, true, failed);
+  return { videos, failed, reachable: !failed.includes(dirPath) };
 });
 
 ipcMain.handle('fs:pathExists', (event, checkPath) => {

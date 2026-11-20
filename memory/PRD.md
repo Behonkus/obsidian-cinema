@@ -160,3 +160,4 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Tools > 'Add folders…' (multi-select native folder picker, recursive scan, saved as library folders with chosen type). Dropped folders now scanned recursively once and saved as library folders. addFolders() replaces handleMoviesFound internals (functional state updates).
 - package.json 1.7.3, CHANGELOG 1.7.3 (Add Folder fixes + folders), gift email + marketing updated. Regression suite iter51 54/54 pass.
 - Welcome guide (components/WelcomeGuide.jsx) replaces empty-library card: 3 steps, Add your first folder + Add several folders buttons, drag tip, network/admin tip. Added to 1.7.3 changelog.
+- Update Library safety: new IPC fs:rescanFolder returns {videos, failed}; titles under unreadable folders (offline drive/NAS, access denied) are kept, warning toast lists them. Added to 1.7.3 changelog.

@@ -2909,6 +2909,7 @@ CHANGELOG = [
             "New \"Add folders\u2026\" in the Tools menu: pick several folders at once, every season subfolder included",
             "Folders you drag onto the library now include all their subfolders and are rescanned on Update Library",
             "New welcome guide on an empty library walks you through adding your first folder in three steps",
+            "Update Library no longer removes titles from a drive that's unplugged, asleep or unreachable \u2014 it keeps them and tells you which folder it couldn't reach",
         ],
     },
     {
