@@ -89,11 +89,24 @@ def shot(sid, caption):
     for ext in (".png", ".jpg", ".jpeg"):
         path = os.path.join(SHOTS, sid + ext)
         if os.path.exists(path):
-            img = Image(path)
+            from PIL import Image as PILImage
+            src = PILImage.open(path).convert("RGB")
+            src.thumbnail((1800, 1800))
+            tmp = os.path.join("/tmp", sid + "-guide.jpg")
+            src.save(tmp, "JPEG", quality=82, optimize=True)
+            img = Image(tmp)
             ratio = img.imageHeight / float(img.imageWidth)
             w = 170 * mm
-            img.drawWidth, img.drawHeight = w, min(w * ratio, 120 * mm)
-            story.append(KeepTogether([img, Paragraph(caption, S["small"]), Spacer(1, 8)]))
+            h = w * ratio
+            if h > 125 * mm:
+                h = 125 * mm
+                w = h / ratio
+            img.drawWidth, img.drawHeight = w, h
+            frame = Table([[img]], colWidths=[w + 2])
+            frame.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#C9CDD4")),
+                                       ("LEFTPADDING", (0, 0), (-1, -1), 1), ("RIGHTPADDING", (0, 0), (-1, -1), 1),
+                                       ("TOPPADDING", (0, 0), (-1, -1), 1), ("BOTTOMPADDING", (0, 0), (-1, -1), 1)]))
+            story.append(KeepTogether([frame, Spacer(1, 3), Paragraph(caption, S["small"]), Spacer(1, 8)]))
             return
     t = Table([[Paragraph(f"<b>SCREENSHOT {sid}</b><br/>{caption}", ParagraphStyle("ph", parent=S["small"], alignment=1))]],
               colWidths=[170 * mm], rowHeights=[38 * mm])
@@ -139,7 +152,7 @@ steps(["Download the installer from the Obsidian Cinema website (Download for Wi
        "Run the downloaded <b>.exe</b> file. If Windows SmartScreen shows \u201cWindows protected your PC\u201d, click "
        "<b>More info</b> and then <b>Run anyway</b>.",
        "Follow the installer. Obsidian Cinema opens when it finishes and adds a Start menu and desktop shortcut."])
-shot("01-installer", "The installer and the first launch of Obsidian Cinema.")
+shot("01-installer", "First launch: the welcome guide on an empty library.")
 box("Open Obsidian Cinema normally. Avoid \u201cRun as administrator\u201d: Windows hides mapped network drives from "
     "programs run as administrator, so your NAS drives may not appear.", "warn")
 h2("Updates")
@@ -230,7 +243,7 @@ bullets(["In a TV Shows folder each show becomes one card. Open it to see season
          "Extras and bonus folders are kept with their show or film.",
          "<b>Tools \u203a Combine multi-part titles</b> suggests files that belong together. After Update Library, new episodes "
          "for existing shows are offered for merging."])
-shot("06-tv-show", "A TV show card opened, with seasons and episodes.")
+shot("06-tv-show", "A TV show\u2019s details window, scrolled to its seasons and episodes \u2013 each one can be played.")
 
 h1("Keeping your library up to date")
 p("Whenever you copy new films or episodes into a library folder, click <b>Update Library</b>. It rescans every library "
@@ -265,7 +278,7 @@ bullets(["Its titles stay in the library, dimmed, with a <b>Drive offline</b> ba
 h2("Drive nicknames")
 p("Give drives friendly names such as \u201cBlue USB\u201d or \u201cLiving-room NAS\u201d using the pencil next to a drive in the "
   "Offline Drives view or in <b>Manage Directories \u203a Drives</b>. Names follow the drive letter or share path.")
-shot("07-drives", "Manage Directories with the Drives list and nicknames.")
+shot("07-drives", "Manage Directories: folders with their types, and the Drives list with nicknames (E:\\ is offline).")
 
 h1("Collections, Stats and insights")
 h2("Collections")
