@@ -389,7 +389,7 @@ export default function AdminPage() {
                     </div>
                     <div>
                       <p className="text-xl font-bold">{(usageData.summary?.total_movies || 0).toLocaleString()}</p>
-                      <p className="text-[11px] text-muted-foreground">Total Movies (all users)</p>
+                      <p className="text-[11px] text-muted-foreground">Total Media (all users)</p>
                     </div>
                   </CardContent>
                 </Card>
