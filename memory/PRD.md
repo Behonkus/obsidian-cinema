@@ -164,3 +164,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Offline drive badge: IPC fs:checkRoots (2.5s probe per drive/UNC share); checked on open, every 60s, after Update Library; cards dim + 'Drive offline' badge, Play/VLC/parts blocked with toast, details Play shows 'Drive offline (E:\)'; 'back online' toast. lib/driveRoots.js rootOf(). In 1.7.3 changelog.
 - Offline Drives filter: qf=offline; toolbar chip (offline-drives-chip) + sidebar qf-offline (via 'oc-offline-drives' event); grouped by drive view (offline-groups). In 1.7.3 changelog.
 - Drive nicknames: localStorage obsidian_cinema_drive_names {root: name}; DriveNameEditor.jsx inline editor in offline group headings + Manage Directories 'Drives' section (status dot, counts); labels used in chip tooltip, badges, toasts, details Play. In 1.7.3 changelog.
+
+## 2026-06 — User Guide PDF
+- /app/scripts/build_user_guide.py (reportlab) -> /app/frontend/public/Obsidian-Cinema-User-Guide.pdf (19 pages, 16 chapters incl. troubleshooting, TOC + bookmarks). Screenshot placeholders 01-installer…08-stats; drop images in /app/docs/guide_screenshots/<id>.png and rerun script.
+- Landing: nav 'User Guide' link, footer download link, FAQ 'Is there a user guide?'.

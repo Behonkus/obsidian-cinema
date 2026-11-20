@@ -274,6 +274,9 @@ export default function LandingPage() {
             >
               FAQ
             </Button>
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex text-muted-foreground hover:text-foreground" data-testid="nav-guide-link">
+              <a href="/Obsidian-Cinema-User-Guide.pdf" target="_blank" rel="noopener noreferrer">User Guide</a>
+            </Button>
             <Button size="sm" onClick={handleLogin} data-testid="nav-signin-btn">
               Sign In
             </Button>
@@ -568,6 +571,9 @@ export default function LandingPage() {
             <Film className="w-4 h-4 text-primary" />
             <span className="font-[Outfit] font-semibold text-sm">Obsidian Cinema</span>
           </div>
+          <a href="/Obsidian-Cinema-User-Guide.pdf" download className="text-xs text-muted-foreground hover:text-primary transition-colors" data-testid="footer-guide-download">
+            Download the User Guide (PDF)
+          </a>
           <p className="text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} Obsidian Cinema. All rights reserved.
           </p>

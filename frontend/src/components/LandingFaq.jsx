@@ -22,6 +22,11 @@ const FAQS = [
     q: "Does it work with a NAS or external drive?",
     a: "Yes. Add any folder Windows can open: local drives, USB and external drives, network shares or a NAS. Run Update Library whenever you add new files and they appear automatically.",
   },
+  {
+    id: "guide",
+    q: "Is there a user guide?",
+    a: "Yes. The Obsidian Cinema User Guide (PDF) covers installing, adding folders, TV shows, keeping your library up to date, drives, backups, Pro and troubleshooting. Download it from the User Guide link at the top or bottom of this page.",
+  },
 ];
 
 export const LandingFaq = () => (
