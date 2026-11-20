@@ -162,3 +162,4 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Welcome guide (components/WelcomeGuide.jsx) replaces empty-library card: 3 steps, Add your first folder + Add several folders buttons, drag tip, network/admin tip. Added to 1.7.3 changelog.
 - Update Library safety: new IPC fs:rescanFolder returns {videos, failed}; titles under unreadable folders (offline drive/NAS, access denied) are kept, warning toast lists them. Added to 1.7.3 changelog.
 - Offline drive badge: IPC fs:checkRoots (2.5s probe per drive/UNC share); checked on open, every 60s, after Update Library; cards dim + 'Drive offline' badge, Play/VLC/parts blocked with toast, details Play shows 'Drive offline (E:\)'; 'back online' toast. lib/driveRoots.js rootOf(). In 1.7.3 changelog.
+- Offline Drives filter: qf=offline; toolbar chip (offline-drives-chip) + sidebar qf-offline (via 'oc-offline-drives' event); grouped by drive view (offline-groups). In 1.7.3 changelog.

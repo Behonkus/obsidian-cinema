@@ -2911,6 +2911,7 @@ CHANGELOG = [
             "New welcome guide on an empty library walks you through adding your first folder in three steps",
             "Update Library no longer removes titles from a drive that's unplugged, asleep or unreachable \u2014 it keeps them and tells you which folder it couldn't reach",
             "Titles on a disconnected drive or sleeping NAS show a \"Drive offline\" badge and dimmed poster; Play waits until the drive is back",
+            "New Offline Drives filter (sidebar and library bar) lists everything on disconnected drives, grouped by drive, so you know what to plug in",
         ],
     },
     {

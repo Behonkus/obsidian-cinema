@@ -1684,45 +1684,6 @@ export default function LocalLibraryPage() {
     ['person', 'role', 'director'].forEach(k => next.delete(k));
     setSearchParams(next, { replace: true });
   };
-  const filteredMovies = useMemo(() => (quickFilter === 'recent' ? sortNewestAdded : sortMovies)(
-    movies.filter(movie => {
-      if (personIds && !personIds.has(movie.id)) return false;
-      // Quick filter
-      if (quickFilter === 'no-poster' && movie.poster_path) return false;
-      if (quickFilter === 'no-rating' && movie.rating) return false;
-      if (quickFilter === 'no-year' && movie.year) return false;
-      if (quickFilter === 'no-genre' && movie.genres && movie.genres.length > 0) return false;
-      if (quickFilter === 'favorites' && !favoriteSet.has(movie.id)) return false;
-      if (quickFilter === 'needs-review' && !movie.needs_review) return false;
-      if (quickFilter === 'recent' && !recentIds.has(movie.id)) return false;
-      // Genre filter
-      if (selectedGenre) {
-        const movieGenres = (movie.genres || []).map(g => typeof g === 'object' && g.name ? g.name : String(g));
-        if (!movieGenres.includes(selectedGenre)) return false;
-      }
-      // Directory filter
-      if (activeDirectory) {
-        if (!inDir(movie.file_path, activeDirectory)) return false;
-      } else if (activeCategory) {
-        if (categoryOf(movie) !== activeCategory) return false;
-      }
-      // Collection filter
-      if (activeCollectionIds && !activeCollectionIds.has(movie.id)) return false;
-      if (!deferredSearch) return true;
-      const query = deferredSearch.toLowerCase();
-      return String(movie.title || '').toLowerCase().includes(query) || 
-             movie.file_name?.toLowerCase().includes(query) ||
-             (movie.year && String(movie.year) === query) ||
-             (movie.director && movie.director.toLowerCase().includes(query)) ||
-             (movie.aka && movie.aka.some(a => a.toLowerCase().includes(query))) ||
-             (movie.cast && movie.cast.some(c => c.name?.toLowerCase().includes(query)));
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [movies, quickFilter, selectedGenre, activeDirectory, activeCategory, categoryOf, activeCollectionIds, deferredSearch, sortBy, favoriteSet, showRootsKey, personIds]);
-
-  const openMovieDetailCb = useCallback((m) => { setSelectedMovie(m); trackActivity(m.id, 'view'); }, []);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const playMovieCb = useCallback((m) => playMovie(m), []);
   // Drives / shares that aren't reachable right now (checked on open, every minute, after Update Library)
   const [offlineRoots, setOfflineRoots] = useState(() => new Set());
   const offlineRef = useRef(offlineRoots);
@@ -1749,6 +1710,61 @@ export default function LocalLibraryPage() {
     return () => clearInterval(t);
   }, [checkDrives]);
   const detailOffline = !!selectedMovie && !isMultiPart(selectedMovie) && offlineRoots.has(rootOf(selectedMovie.file_path));
+  const isOfflineTitle = useCallback((m) => offlineRoots.size > 0 && partsOf(m).some(p => offlineRoots.has(rootOf(p.file_path))), [offlineRoots]);
+  const offlineByDrive = useMemo(() => {
+    const out = {};
+    if (!offlineRoots.size) return out;
+    movies.forEach(m => {
+      const r = [...new Set(partsOf(m).map(p => rootOf(p.file_path)))].find(x => offlineRoots.has(x));
+      if (r) (out[r] = out[r] || []).push(m);
+    });
+    return out;
+  }, [movies, offlineRoots]);
+  const offlineTitleCount = useMemo(() => Object.values(offlineByDrive).reduce((n, l) => n + l.length, 0), [offlineByDrive]);
+  useEffect(() => {
+    window.__ocOffline = { titles: offlineTitleCount, drives: offlineRoots.size };
+    window.dispatchEvent(new CustomEvent('oc-offline-drives', { detail: window.__ocOffline }));
+  }, [offlineTitleCount, offlineRoots]);
+  const filteredMovies = useMemo(() => (quickFilter === 'recent' ? sortNewestAdded : sortMovies)(
+    movies.filter(movie => {
+      if (personIds && !personIds.has(movie.id)) return false;
+      // Quick filter
+      if (quickFilter === 'no-poster' && movie.poster_path) return false;
+      if (quickFilter === 'no-rating' && movie.rating) return false;
+      if (quickFilter === 'no-year' && movie.year) return false;
+      if (quickFilter === 'no-genre' && movie.genres && movie.genres.length > 0) return false;
+      if (quickFilter === 'favorites' && !favoriteSet.has(movie.id)) return false;
+      if (quickFilter === 'needs-review' && !movie.needs_review) return false;
+      if (quickFilter === 'recent' && !recentIds.has(movie.id)) return false;
+      if (quickFilter === 'offline' && !isOfflineTitle(movie)) return false;
+      // Genre filter
+      if (selectedGenre) {
+        const movieGenres = (movie.genres || []).map(g => typeof g === 'object' && g.name ? g.name : String(g));
+        if (!movieGenres.includes(selectedGenre)) return false;
+      }
+      // Directory filter
+      if (activeDirectory) {
+        if (!inDir(movie.file_path, activeDirectory)) return false;
+      } else if (activeCategory) {
+        if (categoryOf(movie) !== activeCategory) return false;
+      }
+      // Collection filter
+      if (activeCollectionIds && !activeCollectionIds.has(movie.id)) return false;
+      if (!deferredSearch) return true;
+      const query = deferredSearch.toLowerCase();
+      return String(movie.title || '').toLowerCase().includes(query) || 
+             movie.file_name?.toLowerCase().includes(query) ||
+             (movie.year && String(movie.year) === query) ||
+             (movie.director && movie.director.toLowerCase().includes(query)) ||
+             (movie.aka && movie.aka.some(a => a.toLowerCase().includes(query))) ||
+             (movie.cast && movie.cast.some(c => c.name?.toLowerCase().includes(query)));
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [movies, quickFilter, selectedGenre, activeDirectory, activeCategory, categoryOf, activeCollectionIds, deferredSearch, sortBy, favoriteSet, showRootsKey, personIds, isOfflineTitle]);
+
+  const openMovieDetailCb = useCallback((m) => { setSelectedMovie(m); trackActivity(m.id, 'view'); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const playMovieCb = useCallback((m) => playMovie(m), []);
   const [glow, setGlow] = useState(null);
   const [detailRgb, setDetailRgb] = useState(null);
   const detailPoster = selectedMovie ? selectedMovie.poster_path : null;
@@ -2183,6 +2199,19 @@ export default function LocalLibraryPage() {
           </>
         )}
         <div className="flex-1" />
+        {offlineRoots.size > 0 && (
+          <button
+            type="button"
+            onClick={() => setSearchParams(quickFilter === 'offline' ? {} : { qf: 'offline' })}
+            className={'oc-chip-in h-7 px-2.5 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ' + (quickFilter === 'offline' ? 'bg-amber-500 text-black' : 'bg-amber-500/15 text-amber-300 hover:bg-amber-500/25')}
+            title={'Not connected: ' + [...offlineRoots].join(', ')}
+            data-testid="offline-drives-chip"
+          >
+            <HardDrive className="w-3 h-3" />
+            {offlineRoots.size} {offlineRoots.size === 1 ? 'drive' : 'drives'} offline · {offlineTitleCount}
+            {quickFilter === 'offline' && <X className="w-3 h-3 ml-0.5" />}
+          </button>
+        )}
         {quickFilter === 'needs-review' && (
           <button type="button" onClick={() => setQuickFilter(null)} className="oc-chip-in h-7 px-2.5 rounded-full bg-amber-500/15 text-amber-300 text-[11px] flex items-center gap-1" data-testid="needs-review-active-chip">
             <AlertTriangle className="w-3 h-3" /> Checking matches <X className="w-3 h-3 ml-0.5" />
@@ -2493,6 +2522,33 @@ export default function LocalLibraryPage() {
           addFolderButton={<LocalDirectoryBrowser onMoviesFound={handleMoviesFound} label="Add your first folder" testId="welcome-add-folder-btn" />}
           onAddFolders={isElectron() ? addFolderPicks : null}
         />
+      ) : quickFilter === 'offline' ? (
+        <div className="space-y-8" data-testid="offline-groups">
+          {Object.keys(offlineByDrive).length === 0 && (
+            <Card className="p-8 text-center text-sm text-muted-foreground" data-testid="offline-none">All your drives are connected — nothing to plug in.</Card>
+          )}
+          {Object.keys(offlineByDrive).sort().map(root => {
+            const ids = new Set(filteredMovies.map(m => m.id));
+            const list = offlineByDrive[root].filter(m => ids.has(m.id));
+            if (!list.length) return null;
+            return (
+              <div key={root} data-testid={`offline-group-${root.replace(/[^a-zA-Z0-9]/g, '')}`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-300 flex items-center justify-center"><HardDrive className="w-4 h-4" /></span>
+                  <div>
+                    <h3 className="font-semibold font-mono">{root}</h3>
+                    <p className="text-xs text-muted-foreground">{list.length} {list.length === 1 ? 'title' : 'titles'} · plug in this drive (or wake your NAS) to play them</p>
+                  </div>
+                </div>
+                <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
+                  {list.map((movie, i) => (
+                    <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} offline />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
         sortBy === 'directory' ? (
           /* Grouped by directory view */

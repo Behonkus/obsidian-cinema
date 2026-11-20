@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { Outlet, NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
+  HardDrive,
   Film, 
   FolderOpen, 
   Settings, 
@@ -163,6 +164,13 @@ function SidebarWidgets() {
     } catch {}
   }, []);
 
+  const [offline, setOffline] = useState(() => window.__ocOffline || { titles: 0, drives: 0 });
+  useEffect(() => {
+    const on = (e) => setOffline(e.detail);
+    window.addEventListener('oc-offline-drives', on);
+    return () => window.removeEventListener('oc-offline-drives', on);
+  }, []);
+
   useEffect(() => {
     refreshStats();
     window.addEventListener('oc-library-updated', refreshStats);
@@ -211,6 +219,7 @@ function SidebarWidgets() {
           {qfBtn("No Year", <CalendarOff className="w-3.5 h-3.5" />, "no-year", stats.noYear)}
           {qfBtn("No Genre", <TagsIcon className="w-3.5 h-3.5" />, "no-genre", stats.noGenre)}
           {qfBtn("Recently Added", <Clock className="w-3.5 h-3.5" />, "recent", stats.recentCount)}
+          {offline.titles > 0 && qfBtn("Offline Drives", <HardDrive className="w-3.5 h-3.5 text-amber-400" />, "offline", offline.titles)}
         </div>
       </div>
 
