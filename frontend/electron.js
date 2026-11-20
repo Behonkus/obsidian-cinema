@@ -116,10 +116,24 @@ function scanForVideos(dirPath, recursive = true, failed = null) {
   return videos;
 }
 
+// Which drives / network shares are reachable right now
+async function checkRoots(roots) {
+  const probe = (r) => Promise.race([
+    fs.promises.access(r).then(() => true, () => false),
+    new Promise(res => setTimeout(() => res(false), 2500)),
+  ]);
+  const ok = await Promise.all((roots || []).map(probe));
+  const out = {};
+  (roots || []).forEach((r, i) => { out[r] = ok[i]; });
+  return out;
+}
+
 // IPC Handlers for local file system
 ipcMain.handle('fs:getDrives', () => {
   return process.platform === 'win32' ? getWindowsDrives() : [{ name: '/', path: '/' }];
 });
+
+ipcMain.handle('fs:checkRoots', (event, roots) => checkRoots(roots));
 
 ipcMain.handle('fs:listDirectory', (event, dirPath) => {
   return listDirectory(dirPath);

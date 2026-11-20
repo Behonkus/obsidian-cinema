@@ -90,6 +90,7 @@ import { WelcomeGuide } from "@/components/WelcomeGuide";
 import { LibraryTools } from "@/components/LibraryTools";
 import { useEffectsLevel } from "@/lib/effects";
 import { getPosterColor } from "@/lib/posterColor";
+import { rootOf } from "@/lib/driveRoots";
 import { PosterBackdrop } from "@/components/PosterBackdrop";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
@@ -226,7 +227,7 @@ function CardMoveMenu({ movie, category, onMove }) {
   );
 }
 
-const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie, isFavorite, onToggleFav, category, onMove, selectMode, selected, onSelect, fx, index, onHover }) {
+const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie, isFavorite, onToggleFav, category, onMove, selectMode, selected, onSelect, fx, index, onHover, offline }) {
   var onClick = function() { if (selectMode) onSelect(movie.id); else onOpen(movie); };
   var onPlay = function(e) { e.stopPropagation(); onPlayMovie(movie); };
   var onToggleFavorite = function(e) { onToggleFav(movie.id, e); };
@@ -276,7 +277,7 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
           <span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span />
         </div>
       )}
-      <Card className={'oc-card-surface overflow-hidden hover:border-primary/50 transition-colors cursor-pointer ' + (selected ? 'ring-2 ring-primary border-primary' : '')} onClick={onClick} data-testid={`movie-card-${movie.id}`}>
+      <Card className={(offline ? 'oc-offline ' : '') + 'oc-card-surface overflow-hidden hover:border-primary/50 transition-colors cursor-pointer ' + (selected ? 'ring-2 ring-primary border-primary' : '')} onClick={onClick} data-testid={`movie-card-${movie.id}`}>
         <div className="aspect-[2/3] bg-gradient-to-br from-primary/20 to-secondary relative flex items-center justify-center overflow-hidden">
           {selectMode && (
             <span className={'absolute inset-0 z-30 flex items-start justify-start p-1.5 transition-colors ' + (selected ? 'bg-primary/25' : 'bg-black/20 hover:bg-black/10')} data-testid={`card-select-${movie.id}`}>
@@ -299,6 +300,11 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
               <Layers className="w-2.5 h-2.5" />{movie.parts.length} PARTS
             </span>
           )}
+          {offline && (
+            <span className="absolute bottom-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded-md bg-black/75 backdrop-blur-sm text-[10px] font-medium text-amber-300 flex items-center gap-1" title={'The drive for this title (' + rootOf(movie.file_path) + ') is not connected'} data-testid={`offline-badge-${movie.id}`}>
+              <HardDrive className="w-3 h-3" /> Drive offline
+            </span>
+          )}
           {/* Favorite star - top right */}
           {!selectMode && <button
             className={'absolute top-1.5 right-1.5 z-10 p-1 rounded-full backdrop-blur-sm transition-all ' + (isFavorite ? 'bg-amber-500/20 animate-[favGlow_2s_ease-in-out_infinite]' : 'bg-black/40 hover:bg-black/60')}
@@ -315,9 +321,15 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
           </button>}
           {/* Play button - center */}
           {!selectMode && <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <Button size="sm" onClick={onPlay}>
-              <Play className="w-4 h-4 mr-1" /> Play
-            </Button>
+            {offline ? (
+              <Button size="sm" variant="secondary" className="opacity-80" onClick={onPlay} data-testid={`card-play-offline-${movie.id}`}>
+                <HardDrive className="w-4 h-4 mr-1" /> Drive offline
+              </Button>
+            ) : (
+              <Button size="sm" onClick={onPlay}>
+                <Play className="w-4 h-4 mr-1" /> Play
+              </Button>
+            )}
           </div>}
           {/* Synopsis - bottom, only on hover */}
           {movie.overview && (
@@ -1427,6 +1439,7 @@ export default function LocalLibraryPage() {
       } else {
         toast.success(`Library updated: ${parts.join(', ')}`);
       }
+      checkDrives();
       if (unreadable.length > 0) {
         const where = offlineRoots.length ? offlineRoots.join(', ') : unreadable.length + ' subfolder' + (unreadable.length === 1 ? '' : 's');
         toast.warning(`Couldn't reach ${where} — titles there were kept. Connect the drive and run Update Library again.`, { duration: 9000 });
@@ -1439,8 +1452,15 @@ export default function LocalLibraryPage() {
     }
   };
 
+  const offlineGuard = (path) => {
+    const r = rootOf(path);
+    if (r && offlineRef.current.has(r)) { toast.error(`${r} isn't connected — plug in the drive (or wake your NAS) to play this`); return true; }
+    return false;
+  };
+
   const playMovie = (movie) => {
     if (isMultiPart(movie)) { setPartsMovie(movie); return; }
+    if (offlineGuard(movie.file_path)) return;
     trackActivity(movie.id, 'play');
     if (isElectron()) {
       // Open with system default player
@@ -1458,6 +1478,7 @@ export default function LocalLibraryPage() {
   };
 
   const openInVLC = (movie) => {
+    if (offlineGuard(movie.file_path)) return;
     if (isElectron() && window.electronAPI?.openExternal) {
       // VLC command line format
       const vlcPath = `vlc://${movie.file_path}`;
@@ -1702,6 +1723,32 @@ export default function LocalLibraryPage() {
   const openMovieDetailCb = useCallback((m) => { setSelectedMovie(m); trackActivity(m.id, 'view'); }, []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const playMovieCb = useCallback((m) => playMovie(m), []);
+  // Drives / shares that aren't reachable right now (checked on open, every minute, after Update Library)
+  const [offlineRoots, setOfflineRoots] = useState(() => new Set());
+  const offlineRef = useRef(offlineRoots);
+  const libraryRoots = useMemo(() => {
+    const set = new Set();
+    movies.forEach(m => partsOf(m).forEach(p => { const r = rootOf(p.file_path); if (r) set.add(r); }));
+    return [...set].sort();
+  }, [movies]);
+  const rootsKey = libraryRoots.join('|');
+  const checkDrives = useCallback(async () => {
+    if (!window.electronAPI?.checkRoots || !libraryRoots.length) return;
+    const res = await window.electronAPI.checkRoots(libraryRoots).catch(() => null);
+    if (!res) return;
+    const next = new Set(libraryRoots.filter(r => res[r] === false));
+    const prev = offlineRef.current;
+    if (next.size === prev.size && [...next].every(r => prev.has(r))) return;
+    [...prev].filter(r => !next.has(r)).forEach(r => toast.success(`${r} is back online`));
+    offlineRef.current = next;
+    setOfflineRoots(next);
+  }, [rootsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    checkDrives();
+    const t = setInterval(checkDrives, 60000);
+    return () => clearInterval(t);
+  }, [checkDrives]);
+  const detailOffline = !!selectedMovie && !isMultiPart(selectedMovie) && offlineRoots.has(rootOf(selectedMovie.file_path));
   const [glow, setGlow] = useState(null);
   const [detailRgb, setDetailRgb] = useState(null);
   const detailPoster = selectedMovie ? selectedMovie.poster_path : null;
@@ -1794,6 +1841,7 @@ export default function LocalLibraryPage() {
   };
 
   const playPart = (movie, part) => {
+    if (offlineGuard(part.file_path)) return;
     trackActivity(movie.id, 'play');
     if (window.electronAPI?.openPath) window.electronAPI.openPath(part.file_path);
     else if (window.electronAPI?.openExternal) window.electronAPI.openExternal(part.file_path);
@@ -2465,7 +2513,7 @@ export default function LocalLibraryPage() {
                 </div>
                 <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
                   {dirMovies.map((movie, i) => (
-                    <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} />
+                    <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} offline={offlineRoots.size > 0 && offlineRoots.has(rootOf(movie.file_path))} />
                   ))}
                 </div>
               </div>
@@ -2474,7 +2522,7 @@ export default function LocalLibraryPage() {
         ) : (
         <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
           {displayedMovies.map((movie, i) => (
-            <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} />
+            <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} offline={offlineRoots.size > 0 && offlineRoots.has(rootOf(movie.file_path))} />
           ))}
         </div>
         )
@@ -3179,9 +3227,9 @@ export default function LocalLibraryPage() {
               )}
 
               <div className="flex gap-2">
-                <Button className="flex-1 oc-play-glow" onClick={() => playMovie(selectedMovie)} data-testid="detail-play-btn">
-                  <Play className="w-4 h-4 mr-2" />
-                  {isMultiPart(selectedMovie) ? 'Play a Part…' : 'Play (Default Player)'}
+                <Button className={'flex-1 ' + (detailOffline ? 'opacity-60' : 'oc-play-glow')} variant={detailOffline ? 'secondary' : 'default'} onClick={() => playMovie(selectedMovie)} data-testid="detail-play-btn">
+                  {detailOffline ? <HardDrive className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+                  {detailOffline ? `Drive offline (${rootOf(selectedMovie.file_path)})` : isMultiPart(selectedMovie) ? 'Play a Part…' : 'Play (Default Player)'}
                 </Button>
                 <Button variant="outline" onClick={() => setMergeTarget(selectedMovie)} title="Merge other cards into this one as parts" data-testid="merge-parts-btn">
                   <Layers className="w-4 h-4" />

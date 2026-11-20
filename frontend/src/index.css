@@ -431,3 +431,7 @@ code {
 @media (prefers-reduced-motion: reduce) {
   .oc-detail-on .oc-play-glow { animation: none; box-shadow: 0 0 22px 2px rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.6); }
 }
+
+/* ── Offline drive ── */
+.oc-offline .oc-poster, .oc-offline .poster-placeholder { filter: grayscale(0.85) brightness(0.55); transition: filter 0.4s ease; }
+.oc-offline:hover .oc-poster { filter: grayscale(0.6) brightness(0.7); }
