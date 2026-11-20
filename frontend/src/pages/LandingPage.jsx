@@ -35,6 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { LandingFaq } from "@/components/LandingFaq";
+import { ScreenshotGallery } from "@/components/ScreenshotGallery";
 
 const FEATURES = [
   {
@@ -382,6 +383,8 @@ export default function LandingPage() {
           </motion.div>
         </div>
       </section>
+
+      <ScreenshotGallery />
 
       {/* ── How It Works ── */}
       <section className="py-20 md:py-28 px-6 border-t border-border/30">

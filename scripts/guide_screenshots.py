@@ -42,6 +42,8 @@ async def ctx_for(browser, offline=None, lib=None, w=1440, h=900):
 async def settle(p, ms=2500):
     await p.wait_for_timeout(ms)
     await p.evaluate("document.querySelectorAll('[data-sonner-toaster]').forEach(e => e.style.display = 'none')")
+    # Daily quote is a real film quote: hide it so screenshots carry no third-party content
+    await p.evaluate("document.querySelectorAll('[data-testid=daily-quote]').forEach(e => e.style.visibility = 'hidden')")
     await p.mouse.move(5, 5)
     await p.wait_for_timeout(400)
 
