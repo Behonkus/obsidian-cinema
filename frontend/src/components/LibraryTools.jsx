@@ -1,9 +1,10 @@
 import {
   Wrench, ChevronDown, CheckSquare, FilePlus2, FileDown, Image, Sparkles, Wand2, Pause,
-  AlertTriangle, Layers, FileEdit, Loader2, FolderPlus, BookOpen,
+  AlertTriangle, Layers, FileEdit, Loader2, BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { openUserGuide } from "@/lib/userGuide";
+import { HelpLink } from "@/components/HelpLink";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -48,7 +49,7 @@ export const LibraryTools = (p) => {
             <DropdownMenuSeparator />
           </>
         )}
-        <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">Metadata</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center justify-between">Metadata <HelpLink chapter="updating" label="Metadata tools" /></DropdownMenuLabel>
         <Item icon={p.fetchingPosters ? Loader2 : Image} spin={p.fetchingPosters} label={p.fetchingPosters ? 'Fetching posters…' : 'Fetch posters'} hint="Find posters for titles that don't have one" count={p.missingPoster} onSelect={p.onFetchPosters} disabled={p.fetchingPosters} testid="fetch-posters-btn" />
         {p.needsDetails > 0 && <Item icon={Sparkles} label={p.fetchingCast ? 'Enriching… ' + p.castProgress + '%' : 'Enrich details'} hint="Add cast, director, runtime and ratings" count={p.needsDetails} onSelect={p.onEnrich} disabled={p.fetchingCast || p.fetchingPosters} testid="enrich-metadata-btn" />}
         {p.fixCount != null && <Item icon={Wand2} label={p.fixRun ? 'Fixing ' + p.fixRun.done + '/' + p.fixRun.total : 'Fix missing info'} hint="Fill gaps from TMDB and Wikidata" count={p.fixCount} onSelect={p.onFix} disabled={!!p.fixRun || p.fixCount === 0} testid="fix-missing-btn" />}
@@ -67,7 +68,6 @@ export const LibraryTools = (p) => {
         <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">Library</DropdownMenuLabel>
         {p.hasTitles && <Item icon={CheckSquare} label="Select titles" hint="Pick several titles to move them to another category" onSelect={p.onSelect} testid="select-mode-btn" />}
         <Item icon={FilePlus2} label="Add files…" hint="Pick single video files, e.g. one film in Downloads" onSelect={p.onAddFiles} testid="add-files-btn" />
-        <Item icon={FolderPlus} label="Add folders…" hint="Pick one or more folders; every subfolder (seasons, extras) is included and rescanned on Update Library" onSelect={p.onAddFolders} testid="add-folders-btn" />
         {p.hasTitles && <Item icon={FileDown} label="Export list as PDF" hint="Print or share what's currently shown" onSelect={p.onPdf} testid="pdf-export-trigger" />}
         <Item icon={BookOpen} label="User Guide" hint="How to add folders, keep your library updated, fix problems and more" onSelect={openUserGuide} testid="tools-user-guide" />
       </DropdownMenuContent>

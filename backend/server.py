@@ -2906,7 +2906,7 @@ CHANGELOG = [
             "Clear messages when a folder can't be found or opened, instead of \"empty\"",
             "Folder type is now Step 1 at the top, so Scan is never mysteriously greyed out",
             "New \"Choose with Windows\u2026\" button opens the standard Windows folder picker",
-            "New \"Add folders\u2026\" in the Tools menu: pick several folders at once, every season subfolder included",
+            "Add Folder can now add several folders in one go (\"Add another folder\", or tick several in the Windows picker), every season subfolder included",
             "Folders you drag onto the library now include all their subfolders and are rescanned on Update Library",
             "New welcome guide on an empty library walks you through adding your first folder in three steps",
             "Update Library no longer removes titles from a drive that's unplugged, asleep or unreachable \u2014 it keeps them and tells you which folder it couldn't reach",
@@ -2914,6 +2914,7 @@ CHANGELOG = [
             "New Offline Drives filter (sidebar and library bar) lists everything on disconnected drives, grouped by drive, so you know what to plug in",
             "Give your drives nicknames like \"Blue USB\" or \"Living-room NAS\" (in the offline view or Manage Directories) so you know exactly which one to plug in",
             "New User Guide (PDF), opened from Settings or the Tools menu \u2014 the latest online version, or the copy saved with the app when you're offline",
+            "Small \"?\" help links next to Add Folder, folder types, Update Library, offline drives and key settings open the User Guide at the right page",
         ],
     },
     {

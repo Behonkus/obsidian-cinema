@@ -11,7 +11,8 @@ import {
   Search,
   Loader2,
   ArrowRight,
-  FolderSearch
+  FolderSearch,
+  FolderPlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { HelpLink } from "@/components/HelpLink";
 
 var SKIP_NAMING_TIP_KEY = 'obsidian_cinema_skip_naming_tip';
 
@@ -104,6 +106,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound, label, testId }) 
   var [currentPath, setCurrentPath] = useState('');
   var [typedPath, setTypedPath] = useState('');
   var [listError, setListError] = useState('');
+  var [queue, setQueue] = useState([]);
   var [items, setItems] = useState([]);
   var [loading, setLoading] = useState(false);
   var [isOpen, setIsOpen] = useState(false);
@@ -187,35 +190,53 @@ export default function LocalDirectoryBrowser({ onMoviesFound, label, testId }) 
 
   var chooseWithWindows = async function() {
     try {
-      var res = await window.electronAPI.openFolderDialog({ title: 'Choose a folder with your movie files' });
-      if (res && !res.canceled && res.filePaths && res.filePaths[0]) navigateTo(res.filePaths[0]);
+      var res = await window.electronAPI.openFolderDialog({ properties: ['openDirectory', 'multiSelections'], title: 'Choose one or more folders with your movie files' });
+      if (!res || res.canceled || !res.filePaths || !res.filePaths.length) return;
+      var picks = res.filePaths;
+      // Several picked: queue all but the last, open the last one
+      if (picks.length > 1) setQueue(function(q) { return q.concat(picks.slice(0, -1).filter(function(d) { return q.indexOf(d) < 0; })); });
+      navigateTo(picks[picks.length - 1]);
     } catch (err) {
       toast.error('Could not open the Windows folder picker');
     }
   };
 
+  var currentOk = !!currentPath && !listError;
+  var targets = queue.concat(currentOk && queue.indexOf(currentPath) < 0 ? [currentPath] : []);
+
+  var queueCurrent = function() {
+    if (!currentOk) return;
+    setQueue(function(q) { return q.indexOf(currentPath) < 0 ? q.concat([currentPath]) : q; });
+    navigateTo('');
+  };
+
   var scanCurrentFolder = async function() {
-    if (!currentPath) {
+    if (!targets.length) {
       toast.error('Please select a folder first');
       return;
     }
 
     setScanning(true);
     try {
-      var movies = await window.electronAPI.scanForVideos(currentPath, true);
+      var movies = [];
+      for (var i = 0; i < targets.length; i++) {
+        var found = await window.electronAPI.scanForVideos(targets[i], true);
+        movies = movies.concat(found || []);
+      }
 
       if (movies.length > 0) {
         toast.success('Found ' + movies.length + ' video files in ' + scanElapsed + 's!');
       } else {
-        toast.info('No video files found in this folder.');
+        toast.info(targets.length > 1 ? 'No video files found in these folders.' : 'No video files found in this folder.');
       }
 
       if (onMoviesFound && movies.length > 0) {
-        onMoviesFound(movies, currentPath, importType);
+        onMoviesFound(movies, targets, importType);
       }
 
       setIsOpen(false);
       setImportType(null);
+      setQueue([]);
     } catch (err) {
       console.error('Scan failed:', err);
       toast.error('Failed to scan folder');
@@ -317,23 +338,24 @@ export default function LocalDirectoryBrowser({ onMoviesFound, label, testId }) 
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={isOpen} onOpenChange={function(open) { if (!scanning) { setIsOpen(open); if (!open) setImportType(null); } }}>
+      <Dialog open={isOpen} onOpenChange={function(open) { if (!scanning) { setIsOpen(open); if (!open) { setImportType(null); setQueue([]); } } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <HardDrive className="w-5 h-5" />
-              Browse Local Drives
+              Add Folders
+              <HelpLink chapter="adding" label="Adding your collection" />
             </DialogTitle>
             <DialogDescription>
-              Select a folder and what it contains, then scan
+              Choose what the folders contain, pick one or more folders, then scan
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 relative flex-1 min-h-0 overflow-y-auto pr-1">
-            {scanning && <ScanningOverlay path={currentPath} elapsed={scanElapsed} />}
+            {scanning && <ScanningOverlay path={targets.length > 1 ? targets.length + " folders" : (targets[0] || currentPath)} elapsed={scanElapsed} />}
 
             <div className={'rounded-lg p-3 border transition-colors ' + (importType ? 'border-border bg-secondary/30' : 'border-amber-500/50 bg-amber-500/5')} data-testid="scan-type-step">
-              <p className="text-xs font-medium mb-2">{importType ? 'Step 1 · Folder type' : 'Step 1 · Choose what this folder contains'}</p>
+              <p className="text-xs font-medium mb-2 flex items-center gap-1">{importType ? 'Step 1 · Folder type' : 'Step 1 · Choose what this folder contains'} <HelpLink chapter="types" label="Folder types" /></p>
               <ImportTypePicker value={importType} onChange={setImportType} testPrefix="scan-type" />
             </div>
 
@@ -384,22 +406,39 @@ export default function LocalDirectoryBrowser({ onMoviesFound, label, testId }) 
               )}
             </ScrollArea>
 
-            {currentPath && !scanning && !listError && (
-              <div className="p-2 bg-secondary/50 rounded-lg overflow-hidden" data-testid="browse-selected">
-                <p className="text-xs text-muted-foreground">Selected folder:</p>
-                <p className="font-mono text-xs truncate" title={currentPath}>{currentPath}</p>
-                <p className="text-[10px] text-muted-foreground/70 mt-0.5">All subfolders (seasons, extras…) will be included in this scan.</p>
+            {!scanning && targets.length > 0 && (
+              <div className="p-2 bg-secondary/50 rounded-lg overflow-hidden space-y-1" data-testid="browse-selected">
+                <p className="text-xs text-muted-foreground">{targets.length === 1 ? 'Folder to scan:' : targets.length + ' folders to scan:'}</p>
+                {targets.map(function(d) {
+                  var queued = queue.indexOf(d) >= 0;
+                  return (
+                    <div key={d} className="flex items-center gap-2 min-w-0" data-testid="browse-target">
+                      <p className="font-mono text-xs truncate flex-1" title={d}>{d}</p>
+                      {queued && (
+                        <button type="button" onClick={function() { setQueue(function(q) { return q.filter(function(x) { return x !== d; }); }); }} className="text-[10px] text-muted-foreground hover:text-destructive shrink-0" data-testid="browse-target-remove">Remove</button>
+                      )}
+                    </div>
+                  );
+                })}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <p className="text-[10px] text-muted-foreground/70">All subfolders (seasons, extras…) are included.</p>
+                  {currentOk && (
+                    <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px] gap-1" onClick={queueCurrent} data-testid="browse-add-another">
+                      <FolderPlus className="w-3 h-3" /> Add another folder
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2 shrink-0">
-            <Button variant="outline" onClick={function() { setIsOpen(false); setImportType(null); }} disabled={scanning} className="w-full sm:w-auto">
+            <Button variant="outline" onClick={function() { setIsOpen(false); setImportType(null); setQueue([]); }} disabled={scanning} className="w-full sm:w-auto">
               Cancel
             </Button>
             <Button 
               onClick={scanCurrentFolder}
-              disabled={!currentPath || !!listError || !importType || scanning}
+              disabled={!targets.length || !importType || scanning}
               data-testid="scan-folder-btn"
               className="gap-2 w-full sm:w-auto"
             >
@@ -411,7 +450,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound, label, testId }) 
               ) : (
                 <>
                   <Search className="w-4 h-4" />
-                  {!importType ? 'Choose a type first' : importType !== 'movies' ? 'Scan for Shows' : 'Scan for Movies'}
+                  {!importType ? 'Choose a type first' : (targets.length > 1 ? 'Scan ' + targets.length + ' folders' : importType !== 'movies' ? 'Scan for Shows' : 'Scan for Movies')}
                 </>
               )}
             </Button>

@@ -92,6 +92,7 @@ import { useEffectsLevel } from "@/lib/effects";
 import { getPosterColor } from "@/lib/posterColor";
 import { rootOf, loadDriveNames, driveLabel, DRIVE_NAMES_KEY } from "@/lib/driveRoots";
 import { DriveNameEditor } from "@/components/DriveNameEditor";
+import { HelpLink } from "@/components/HelpLink";
 import { PosterBackdrop } from "@/components/PosterBackdrop";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
@@ -1184,7 +1185,7 @@ export default function LocalLibraryPage() {
     fetchAbortRef.current = true;
   };
 
-  const handleMoviesFound = (newMovies, dirPath, importType) => addFolders([dirPath], newMovies, importType);
+  const handleMoviesFound = (newMovies, dirPaths, importType) => addFolders(Array.isArray(dirPaths) ? dirPaths : [dirPaths], newMovies, importType);
 
   // Adds scanned folders as library folders (so Update Library rescans them) plus the videos found
   const addFolders = (dirPaths, newMovies, importType) => {
@@ -1243,25 +1244,7 @@ export default function LocalLibraryPage() {
   };
 
   const [showFilesType, setShowFilesType] = useState(false);
-  const [pickMode, setPickMode] = useState('files');
-  const addIndividualFiles = () => { dropPathsRef.current = null; dropDirsRef.current = null; setDropCount(0); setPickMode('files'); setShowFilesType(true); };
-  const addFolderPicks = () => { dropPathsRef.current = null; dropDirsRef.current = null; setDropCount(0); setPickMode('folders'); setShowFilesType(true); };
-  const scanFolders = async (dirs, importType) => {
-    const tid = toast.loading(`Scanning ${dirs.length === 1 ? dirs[0] : dirs.length + ' folders'} and all subfolders…`);
-    const found = [];
-    for (const d of dirs) {
-      const vids = await window.electronAPI.scanForVideos(d, true).catch(() => []);
-      found.push(...(vids || []));
-    }
-    toast.dismiss(tid);
-    addFolders(dirs, found, importType);
-  };
-  const pickFolders = async (importType) => {
-    if (!isElectron() || !window.electronAPI?.openFolderDialog) return;
-    const res = await window.electronAPI.openFolderDialog({ properties: ['openDirectory', 'multiSelections'], title: 'Select folders to add (subfolders included)' }).catch(() => null);
-    if (!res || res.canceled || !res.filePaths?.length) return;
-    scanFolders(res.filePaths, importType);
-  };
+  const addIndividualFiles = () => { dropPathsRef.current = null; dropDirsRef.current = null; setDropCount(0); setShowFilesType(true); };
 
   // Drag & drop: video files (or the videos directly inside a dropped folder) are added after picking a type
   const dropPathsRef = useRef(null);
@@ -1300,7 +1283,6 @@ export default function LocalLibraryPage() {
     if (fresh.length === 0 && dirVideos === 0) { toast.info('Those files are already in your library'); return; }
     dropPathsRef.current = fresh.length ? fresh : null;
     dropDirsRef.current = dirs.length ? { dirs, found: dirFound } : null;
-    setPickMode('files');
     setDropCount(fresh.length + dirVideos);
     setShowFilesType(true);
   };
@@ -1312,7 +1294,7 @@ export default function LocalLibraryPage() {
     setDropCount(0);
     if (droppedDirs) addFolders(droppedDirs.dirs, droppedDirs.found, type);
     if (dropped) pickIndividualFiles(type, dropped);
-    if (!dropped && !droppedDirs) { if (pickMode === 'folders') pickFolders(type); else pickIndividualFiles(type); }
+    if (!dropped && !droppedDirs) pickIndividualFiles(type);
   };
 
   const pickIndividualFiles = async (importType, droppedPaths) => {
@@ -2099,7 +2081,7 @@ export default function LocalLibraryPage() {
         </div>
       )}
       {/* Dialogs driven by the toolbar */}
-      <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={onFilesTypePicked} dropCount={dropCount} mode={pickMode} />
+      <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={onFilesTypePicked} dropCount={dropCount} />
       <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} onLeave={() => setSelectedMovie(null)} />
       <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
       <MergePickerDialog movie={mergeTarget} movies={movies} onClose={() => setMergeTarget(null)} onMerge={mergeManual} />
@@ -2141,6 +2123,7 @@ export default function LocalLibraryPage() {
                 <span className="text-xs">{isRescanning ? 'Scanning...' : 'Update Library'}</span>
               </Button>
             )}
+            {directories.length > 0 && <HelpLink chapter="updating" label="Keeping your library up to date" className="-ml-1" />}
             <LibraryTools
               hasTitles={movies.length > 0}
               needsReview={libraryCounts.needsReview}
@@ -2166,7 +2149,6 @@ export default function LocalLibraryPage() {
               onToggleAutoFill={toggleAutoEnrich}
               onSelect={() => setSelectMode(true)}
               onAddFiles={handleAddFiles}
-              onAddFolders={addFolderPicks}
               onPdf={() => setShowPdf(true)}
             />
           </>
@@ -2533,10 +2515,10 @@ export default function LocalLibraryPage() {
       ) : movies.length === 0 ? (
         <WelcomeGuide
           addFolderButton={<LocalDirectoryBrowser onMoviesFound={handleMoviesFound} label="Add your first folder" testId="welcome-add-folder-btn" />}
-          onAddFolders={isElectron() ? addFolderPicks : null}
         />
       ) : quickFilter === 'offline' ? (
         <div className="space-y-8" data-testid="offline-groups">
+          <p className="text-xs text-muted-foreground flex items-center gap-1">Titles on drives that aren't connected right now, grouped by drive. <HelpLink chapter="drives" label="Offline drives" /></p>
           {Object.keys(offlineByDrive).length === 0 && (
             <Card className="p-8 text-center text-sm text-muted-foreground" data-testid="offline-none">All your drives are connected — nothing to plug in.</Card>
           )}
@@ -3455,7 +3437,7 @@ export default function LocalLibraryPage() {
       <AlertDialog open={showDirManager} onOpenChange={(open) => { if (!open) setShowDirManager(false); }}>
         <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Manage Directories</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">Manage Directories <HelpLink chapter="types" label="Folder types and drives" /></AlertDialogTitle>
             <AlertDialogDescription>
               Reorder, rename, or remove directories. Drag order is saved. Your actual files and folders on disk are never modified.
             </AlertDialogDescription>

@@ -1,0 +1,18 @@
+{
+ "welcome": 3,
+ "install": 4,
+ "tmdb": 5,
+ "adding": 6,
+ "types": 8,
+ "browsing": 9,
+ "details": 10,
+ "tv": 11,
+ "updating": 12,
+ "drives": 13,
+ "collections": 14,
+ "settings": 15,
+ "backups": 16,
+ "pro": 17,
+ "troubleshooting": 18,
+ "help": 19
+}

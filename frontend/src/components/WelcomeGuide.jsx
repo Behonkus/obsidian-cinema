@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { Film, FolderOpen, ScanSearch, Network, MousePointerClick, FolderPlus } from "lucide-react";
+import { Film, FolderOpen, ScanSearch, Network, MousePointerClick } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HelpLink } from "@/components/HelpLink";
 
 const STEPS = [
   { icon: Film, title: "Choose the type", text: "Tell us what's in the folder: Movies, TV Shows, Documentaries or Animations. TV shows become one card per show, with every season inside." },
@@ -9,11 +10,11 @@ const STEPS = [
 ];
 
 // Three-step guide shown while the library is empty
-export const WelcomeGuide = ({ addFolderButton, onAddFolders }) => (
+export const WelcomeGuide = ({ addFolderButton }) => (
   <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-8 md:p-10 space-y-8" data-testid="welcome-guide">
     <div className="space-y-2 max-w-xl">
       <p className="text-xs uppercase tracking-[0.2em] text-primary">Welcome to Obsidian Cinema</p>
-      <h2 className="text-2xl md:text-3xl font-bold font-[Outfit]">Add your first folder in three steps</h2>
+      <h2 className="text-2xl md:text-3xl font-bold font-[Outfit] flex items-center gap-2">Add your first folder in three steps <HelpLink chapter="adding" label="Adding your collection" /></h2>
       <p className="text-sm text-muted-foreground">Point Obsidian Cinema at the movie files you already own and it turns them into a poster wall.</p>
     </div>
 
@@ -39,11 +40,6 @@ export const WelcomeGuide = ({ addFolderButton, onAddFolders }) => (
 
     <div className="flex flex-wrap items-center gap-3" data-testid="welcome-actions">
       {addFolderButton}
-      {onAddFolders && (
-        <Button variant="outline" size="sm" className="h-9 rounded-full px-4 gap-1.5 text-xs" onClick={onAddFolders} data-testid="welcome-add-folders-btn">
-          <FolderPlus className="w-4 h-4" /> Add several folders at once
-        </Button>
-      )}
     </div>
 
     <div className="grid md:grid-cols-2 gap-3 text-sm">

@@ -157,10 +157,9 @@ shot("02-tmdb-key", "Settings \u203a TMDB API Key with a key saved.")
 p("Until a key is added, the library shows an \u201cAdd your TMDB API key\u201d banner and titles appear without posters.")
 
 h1("Adding your collection")
-p("When your library is empty, the Library page shows a three-step welcome guide. There are four ways to add files:")
+p("When your library is empty, the Library page shows a three-step welcome guide. There are three ways to add files:")
 table([["Method", "Best for", "Rescanned by Update Library?"],
-       ["<b>Add Folder</b> (top of the Library)", "Your main movie or TV folder, one at a time", "Yes"],
-       ["<b>Tools \u203a Add folders\u2026</b>", "Several folders at once, e.g. one per drive", "Yes"],
+       ["<b>Add Folder</b> (top of the Library)", "Your movie or TV folders \u2013 one, or several at once", "Yes"],
        ["<b>Drag and drop</b> a folder onto the window", "Quick adding from Windows Explorer", "Yes"],
        ["<b>Tools \u203a Add files\u2026</b> (or drop single files)", "A few loose files, e.g. one film in Downloads", "No"]], [62, 62, 46])
 h2("Add Folder, step by step")
@@ -170,7 +169,9 @@ steps(["Click <b>Add Folder</b>.",
        "<b>Step 2 \u2013 pick the folder</b>: click a drive and open folders, or type a path such as <font face='Mono'>E:\\TV Shows</font> "
        "or <font face='Mono'>\\\\NAS\\Media</font> and press <b>Enter</b>. You can also click <b>Choose with Windows\u2026</b> "
        "to use the normal Windows folder picker.",
-       "Click <b>Scan for Movies</b> (or <b>Scan for Shows</b>). Every subfolder, such as seasons and extras, is included.",
+       "To add more folders of the same type, click <b>Add another folder</b> and pick the next one. "
+       "<b>Choose with Windows\u2026</b> also lets you tick several folders at once.",
+       "Click <b>Scan</b>. Every subfolder, such as seasons and extras, is included.",
        "Posters, cast and ratings are fetched automatically in the background."])
 shot("03-add-folder", "The Add Folder window: Step 1 type picker, path box, drive list and Scan button.")
 box("Add the top folder of a collection (for example <font face='Mono'>E:\\TV Shows</font>) rather than single seasons. "
@@ -238,7 +239,7 @@ bullets(["adds new video files and matches them with TMDB;",
          "removes titles whose files you deleted;",
          "offers to merge new episodes into the shows you already have."])
 box("Files added with <b>Add files\u2026</b> are not inside a library folder, so Update Library does not look next to them. "
-    "If you added TV seasons one at a time, add the show\u2019s main folder once with <b>Tools \u203a Add folders\u2026</b>. Existing "
+    "If you added TV seasons one at a time, add the show\u2019s main folder once with <b>Add Folder</b>. Existing "
     "titles are not duplicated.", "warn")
 p("If a drive or NAS can\u2019t be reached during Update Library, its titles are kept and a message says which folder was "
   "skipped. Connect it and click Update Library again.")
@@ -313,7 +314,7 @@ faq("Typing a path says the folder can\u2019t be found or opened.",
 faq("The Scan button is greyed out.",
     "Choose the folder type in Step 1 (Movies, TV Shows, Documentaries or Animations) and make sure a folder is selected.")
 faq("New episodes don\u2019t appear after Update Library.",
-    "Update Library only rescans library folders. Add the show\u2019s main folder with <b>Add Folder</b> or <b>Tools \u203a Add folders\u2026</b>, then run it again.")
+    "Update Library only rescans library folders. Add the show\u2019s main folder with <b>Add Folder</b>, then run it again.")
 faq("Titles have no posters.",
     "Add your TMDB API key (chapter 3), then use <b>Tools \u203a Fetch posters</b>. Check your internet connection.")
 faq("A title is matched to the wrong movie.",
@@ -335,9 +336,15 @@ p("Visit the Obsidian Cinema website for the FAQ and the latest version. If you 
 
 # ───────────────────────── Layout ─────────────────────────
 
+PAGES = {}
+KEYS = ["welcome", "install", "tmdb", "adding", "types", "browsing", "details", "tv", "updating", "drives",
+        "collections", "settings", "backups", "pro", "troubleshooting", "help"]
+
+
 class Doc(BaseDocTemplate):
     def afterFlowable(self, f):
         if hasattr(f, "_toc"):
+            PAGES[KEYS[int(f._toc.split(".")[0]) - 1]] = self.page
             key = "ch%d" % id(f)
             self.canv.bookmarkPage(key)
             self.canv.addOutlineEntry(f._toc, key, 0)
@@ -381,6 +388,9 @@ def build():
             flow.append(PageBreak())
         flow.append(f)
     doc.multiBuild(flow)
+    import json
+    with open("/app/frontend/src/lib/guidePages.json", "w") as fh:
+        json.dump(PAGES, fh, indent=1)
 
 
 if __name__ == "__main__":

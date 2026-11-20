@@ -37,7 +37,7 @@ Obsidian Cinema sits between a file manager and a full media server. Point it at
 - **Drag & drop (new in 1.7.1)** — drop video files or folders onto the library to add them.
 - **Cleaner library toolbar (new in 1.7.2)** — just Add Folder, Update Library and a Tools menu up top (with a badge when something needs your attention), plus a sticky search and filter bar that stays in view while you scroll.
 - **New visual effects (new in 1.7.2)** — posters tilt, glow and catch the light on hover, cards fade in as they load, the background softly takes on the colours of the poster you hover, and the details window and Play button are tinted to match. Choose Auto, Full or Lite in Settings; Auto keeps big libraries smooth.
-- **Easier importing (new in 1.7.3)** — Add Folder lists every drive (USB, external, mapped network), opens typed and network paths, and has a "Choose with Windows…" button; "Add folders…" adds several folders at once with all season subfolders, and dragged folders are scanned in full and rescanned on Update Library.
+- **Easier importing (new in 1.7.3)** — Add Folder lists every drive (USB, external, mapped network), opens typed and network paths, and has a "Choose with Windows…" button; Add Folder can add several folders at once with all season subfolders, and dragged folders are scanned in full and rescanned on Update Library.
 - **AI-powered recommendations** — personalized movie suggestions based on your viewing and browsing activity, powered by GPT-4o.
 - **One-click playback** in your default media player (VLC, MPC, Windows Media Player — your choice).
 - **Favorites** — star movies with an animated confetti burst. Persists across sessions and survives updates.

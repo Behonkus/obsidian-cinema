@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { openUserGuide } from "@/lib/userGuide";
+import { HelpLink } from "@/components/HelpLink";
 import { BookOpen } from "lucide-react";
 import { EffectsSetting } from "@/components/EffectsSetting";
 import { useNavigate } from "react-router-dom";
@@ -803,6 +804,7 @@ export default function SettingsPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Key className="w-4 h-4 text-primary" />
                 TMDB API Key
+                <HelpLink chapter="tmdb" label="Getting a free TMDB API key" />
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-3 space-y-3">
@@ -1416,6 +1418,7 @@ export default function SettingsPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-destructive" />
                 Library Management
+                <HelpLink chapter="backups" label="Backups and restoring" />
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-3">
