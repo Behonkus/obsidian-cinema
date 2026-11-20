@@ -3435,14 +3435,14 @@ export default function LocalLibraryPage() {
 
       {/* Directory Manager Dialog */}
       <AlertDialog open={showDirManager} onOpenChange={(open) => { if (!open) setShowDirManager(false); }}>
-        <AlertDialogContent className="max-w-lg">
+        <AlertDialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">Manage Directories <HelpLink chapter="types" label="Folder types and drives" /></AlertDialogTitle>
             <AlertDialogDescription>
               Reorder, rename, or remove directories. Drag order is saved. Your actual files and folders on disk are never modified.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-2 max-h-80 overflow-y-auto px-1">
+          <div className="space-y-2 max-h-[34vh] min-h-0 overflow-y-auto px-1 shrink" data-testid="dir-manager-list">
             {directories.map(function(dir, i) {
               var count = libraryCounts.dirCounts[dir] || 0;
               var label = dir.split(/[\\/]/).pop() || dir;
@@ -3564,8 +3564,9 @@ export default function LocalLibraryPage() {
             })()}
           </div>
           {libraryRoots.length > 0 && (
-            <div className="space-y-2 pt-1" data-testid="drives-section">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground px-1">Drives</p>
+            <div className="space-y-2 pt-1 min-h-0 flex flex-col" data-testid="drives-section">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground px-1 shrink-0">Drives <span className="normal-case tracking-normal">({libraryRoots.length})</span></p>
+              <div className="space-y-2 max-h-[26vh] overflow-y-auto pr-1" data-testid="drives-list">
               {libraryRoots.map(root => {
                 const off = offlineRoots.has(root);
                 const n = movies.filter(m => rootOf(m.file_path) === root).length;
@@ -3580,6 +3581,7 @@ export default function LocalLibraryPage() {
                   </div>
                 );
               })}
+              </div>
             </div>
           )}
           <AlertDialogFooter>
