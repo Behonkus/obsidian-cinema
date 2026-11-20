@@ -86,6 +86,7 @@ import { CollectionAssigner } from "@/components/CollectionAssigner";
 import { PopcornAnimation, ClapperAnimation, FireworksOverlay, ConfettiBurst, SparkleHover, useMilestone } from "@/components/FunEffects";
 import PdfExportDialog from "@/components/PdfExportDialog";
 import { LibraryHeader } from "@/components/LibraryHeader";
+import { WelcomeGuide } from "@/components/WelcomeGuide";
 import { LibraryTools } from "@/components/LibraryTools";
 import { useEffectsLevel } from "@/lib/effects";
 import { getPosterColor } from "@/lib/posterColor";
@@ -2427,16 +2428,10 @@ export default function LocalLibraryPage() {
           )}
         </div>
       ) : movies.length === 0 ? (
-        <Card className="p-8">
-          <div className="text-center space-y-4">
-            <PopcornAnimation size="lg" />
-            <h2 className="text-xl font-semibold">No Movies Yet</h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Click "Browse Local Drives" above to scan a folder for video files. 
-              The app will find all movies and add them to your library.
-            </p>
-          </div>
-        </Card>
+        <WelcomeGuide
+          addFolderButton={<LocalDirectoryBrowser onMoviesFound={handleMoviesFound} label="Add your first folder" testId="welcome-add-folder-btn" />}
+          onAddFolders={isElectron() ? addFolderPicks : null}
+        />
       ) : (
         sortBy === 'directory' ? (
           /* Grouped by directory view */

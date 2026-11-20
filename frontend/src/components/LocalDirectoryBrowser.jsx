@@ -98,7 +98,7 @@ function ScanningOverlay({ path, elapsed }) {
   );
 }
 
-export default function LocalDirectoryBrowser({ onMoviesFound }) {
+export default function LocalDirectoryBrowser({ onMoviesFound, label, testId }) {
   var [importType, setImportType] = useState(null);
   var [drives, setDrives] = useState([]);
   var [currentPath, setCurrentPath] = useState('');
@@ -278,9 +278,9 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
 
   return (
     <>
-      <Button onClick={handleBrowseClick} className="oc-cta gap-2 h-9 rounded-full px-4 text-xs" data-testid="browse-local-drives-btn" title="Browse local and network drives for a folder of your movie files">
+      <Button onClick={handleBrowseClick} className="oc-cta gap-2 h-9 rounded-full px-4 text-xs" data-testid={testId || "browse-local-drives-btn"} title="Browse local and network drives for a folder of your movie files">
         <FolderOpen className="w-4 h-4" />
-        Add Folder
+        {label || 'Add Folder'}
       </Button>
 
       {/* Naming Convention Tip */}

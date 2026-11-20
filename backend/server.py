@@ -2908,6 +2908,7 @@ CHANGELOG = [
             "New \"Choose with Windows\u2026\" button opens the standard Windows folder picker",
             "New \"Add folders\u2026\" in the Tools menu: pick several folders at once, every season subfolder included",
             "Folders you drag onto the library now include all their subfolders and are rescanned on Update Library",
+            "New welcome guide on an empty library walks you through adding your first folder in three steps",
         ],
     },
     {
