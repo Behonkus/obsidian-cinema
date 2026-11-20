@@ -2898,6 +2898,19 @@ async def admin_get_stats(request: Request, session_token: Optional[str] = Cooki
 
 CHANGELOG = [
     {
+        "version": "1.7.3",
+        "date": "2026-06",
+        "highlights": [
+            "Add Folder now lists every drive: USB, external and mapped network drives (newer Windows 11 only showed C: and D:)",
+            "Typed paths open when you press Enter or Go, including network paths like \\\\NAS\\Media",
+            "Clear messages when a folder can't be found or opened, instead of \"empty\"",
+            "Folder type is now Step 1 at the top, so Scan is never mysteriously greyed out",
+            "New \"Choose with Windows\u2026\" button opens the standard Windows folder picker",
+            "New \"Add folders\u2026\" in the Tools menu: pick several folders at once, every season subfolder included",
+            "Folders you drag onto the library now include all their subfolders and are rescanned on Update Library",
+        ],
+    },
+    {
         "version": "1.7.2",
         "date": "2026-06",
         "highlights": [

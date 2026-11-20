@@ -31,20 +31,20 @@ export const ImportTypePicker = ({ value, onChange, testPrefix = "import-type" }
 );
 
 // Asks the type before picking individual files (or for files dropped on the library)
-export const ImportTypeDialog = ({ open, onOpenChange, onPick, dropCount }) => {
+export const ImportTypeDialog = ({ open, onOpenChange, onPick, dropCount, mode }) => {
   const [type, setType] = useState(null);
   const close = (o) => { if (!o) setType(null); onOpenChange(o); };
   return (
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className="max-w-md" data-testid="files-type-dialog">
         <DialogHeader>
-          <DialogTitle>Add files as…</DialogTitle>
-          <DialogDescription>{dropCount ? `Choose the type for the ${dropCount} dropped ${dropCount === 1 ? 'item' : 'items'}.` : "Choose the type for the files you're about to pick."}</DialogDescription>
+          <DialogTitle>{mode === 'folders' && !dropCount ? 'Add folders as…' : 'Add files as…'}</DialogTitle>
+          <DialogDescription>{dropCount ? `Choose the type for the ${dropCount} dropped ${dropCount === 1 ? 'file' : 'files'}.` : mode === 'folders' ? "Choose the type for the folders you're about to pick. Every subfolder is included." : "Choose the type for the files you're about to pick."}</DialogDescription>
         </DialogHeader>
         <ImportTypePicker value={type} onChange={setType} testPrefix="files-type" />
         <DialogFooter>
           <Button variant="outline" onClick={() => close(false)} data-testid="files-type-cancel">Cancel</Button>
-          <Button disabled={!type} onClick={() => { const t = type; close(false); onPick(t); }} data-testid="files-type-continue">{dropCount ? 'Add to library' : 'Choose files'}</Button>
+          <Button disabled={!type} onClick={() => { const t = type; close(false); onPick(t); }} data-testid="files-type-continue">{dropCount ? 'Add to library' : mode === 'folders' ? 'Choose folders' : 'Choose files'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

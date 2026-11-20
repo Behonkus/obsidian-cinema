@@ -155,3 +155,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 ## 2026-06 — Add Folder fixes (customer report)
 - electron.js getWindowsDrives: probes A–Z (wmic removed on new Windows 11 caused C:/D: fallback); listDirectory throws readable errors.
 - LocalDirectoryBrowser: Step 1 type picker on top (highlighted until chosen, button reads 'Choose a type first'), typed path opens on Enter/Go (was never navigated), UNC paths + Up, 'Choose with Windows…' native picker, error vs empty states. Tested via simulated electronAPI.
+
+## 2026-06 — v1.7.3 hotfix: Add folders + drop folders
+- Tools > 'Add folders…' (multi-select native folder picker, recursive scan, saved as library folders with chosen type). Dropped folders now scanned recursively once and saved as library folders. addFolders() replaces handleMoviesFound internals (functional state updates).
+- package.json 1.7.3, CHANGELOG 1.7.3 (Add Folder fixes + folders), gift email + marketing updated. Regression suite iter51 54/54 pass.

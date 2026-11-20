@@ -1170,12 +1170,13 @@ export default function LocalLibraryPage() {
     fetchAbortRef.current = true;
   };
 
-  const handleMoviesFound = (newMovies, dirPath, importType) => {
-    // Add directory if not already added
-    if (!directories.includes(dirPath)) {
-      setDirectories([...directories, dirPath]);
-    }
-    if (importType) applyImportType([dirPath], importType);
+  const handleMoviesFound = (newMovies, dirPath, importType) => addFolders([dirPath], newMovies, importType);
+
+  // Adds scanned folders as library folders (so Update Library rescans them) plus the videos found
+  const addFolders = (dirPaths, newMovies, importType) => {
+    const fresh = dirPaths.filter(d => !directories.some(r => d === r || inDir(d, r)));
+    if (fresh.length) setDirectories(prev => [...prev, ...fresh.filter(d => !prev.includes(d))]);
+    if (importType) applyImportType(fresh.length ? fresh : dirPaths, importType);
 
     // Merge movies, avoiding duplicates by file path
     const existingPaths = allLibraryPaths(movies);
@@ -1204,9 +1205,10 @@ export default function LocalLibraryPage() {
       }
     }
     
-    setMovies([...movies, ...uniqueNewMovies]);
+    if (uniqueNewMovies.length === 0) { toast.info('No new video files found — they may already be in your library'); return; }
+    setMovies(prev => { const known = allLibraryPaths(prev); return [...prev, ...uniqueNewMovies.filter(m => !known.has(m.file_path))]; });
     queueAutoMatch(uniqueNewMovies);
-    toast.success(`Added ${uniqueNewMovies.length} new movies to library`);
+    toast.success(`Added ${uniqueNewMovies.length} new ${uniqueNewMovies.length === 1 ? 'file' : 'files'} to library`);
   };
 
   const handleAddFiles = () => {
@@ -1227,10 +1229,29 @@ export default function LocalLibraryPage() {
   };
 
   const [showFilesType, setShowFilesType] = useState(false);
-  const addIndividualFiles = () => { dropPathsRef.current = null; setDropCount(0); setShowFilesType(true); };
+  const [pickMode, setPickMode] = useState('files');
+  const addIndividualFiles = () => { dropPathsRef.current = null; dropDirsRef.current = null; setDropCount(0); setPickMode('files'); setShowFilesType(true); };
+  const addFolderPicks = () => { dropPathsRef.current = null; dropDirsRef.current = null; setDropCount(0); setPickMode('folders'); setShowFilesType(true); };
+  const scanFolders = async (dirs, importType) => {
+    const tid = toast.loading(`Scanning ${dirs.length === 1 ? dirs[0] : dirs.length + ' folders'} and all subfolders…`);
+    const found = [];
+    for (const d of dirs) {
+      const vids = await window.electronAPI.scanForVideos(d, true).catch(() => []);
+      found.push(...(vids || []));
+    }
+    toast.dismiss(tid);
+    addFolders(dirs, found, importType);
+  };
+  const pickFolders = async (importType) => {
+    if (!isElectron() || !window.electronAPI?.openFolderDialog) return;
+    const res = await window.electronAPI.openFolderDialog({ properties: ['openDirectory', 'multiSelections'], title: 'Select folders to add (subfolders included)' }).catch(() => null);
+    if (!res || res.canceled || !res.filePaths?.length) return;
+    scanFolders(res.filePaths, importType);
+  };
 
   // Drag & drop: video files (or the videos directly inside a dropped folder) are added after picking a type
   const dropPathsRef = useRef(null);
+  const dropDirsRef = useRef(null);
   const [dropCount, setDropCount] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const VIDEO_EXT = /\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|3gp|ts)$/i;
@@ -1248,26 +1269,36 @@ export default function LocalLibraryPage() {
     setDragOver(false);
     const dropped = Array.from(e.dataTransfer.files || []).map(f => f.path).filter(Boolean);
     const paths = [];
+    const dirs = [];
+    const dirFound = [];
+    let dirVideos = 0;
+    const known = allLibraryPaths(movies);
     for (const p of dropped) {
       if (VIDEO_EXT.test(p)) paths.push(p);
       else if (window.electronAPI?.scanForVideos) {
-        const inside = await window.electronAPI.scanForVideos(p, false).catch(() => []);
-        (inside || []).forEach(v => paths.push(v.file_path));
+        // Dropped folders are scanned with every subfolder (seasons, extras…)
+        const inside = await window.electronAPI.scanForVideos(p, true).catch(() => []);
+        if (inside && inside.length) { dirs.push(p); dirFound.push(...inside); dirVideos += inside.filter(v => !known.has(v.file_path)).length; }
       }
     }
-    if (paths.length === 0) { toast.info('No video files found in what you dropped'); return; }
-    const known = allLibraryPaths(movies);
     const fresh = [...new Set(paths)].filter(p => !known.has(p));
-    if (fresh.length === 0) { toast.info('Those files are already in your library'); return; }
-    dropPathsRef.current = fresh;
-    setDropCount(dropPathsRef.current.length);
+    if (fresh.length === 0 && dirs.length === 0) { toast.info(paths.length ? 'Those files are already in your library' : 'No video files found in what you dropped'); return; }
+    if (fresh.length === 0 && dirVideos === 0) { toast.info('Those files are already in your library'); return; }
+    dropPathsRef.current = fresh.length ? fresh : null;
+    dropDirsRef.current = dirs.length ? { dirs, found: dirFound } : null;
+    setPickMode('files');
+    setDropCount(fresh.length + dirVideos);
     setShowFilesType(true);
   };
   const onFilesTypePicked = (type) => {
     const dropped = dropPathsRef.current;
+    const droppedDirs = dropDirsRef.current;
     dropPathsRef.current = null;
+    dropDirsRef.current = null;
     setDropCount(0);
-    pickIndividualFiles(type, dropped || undefined);
+    if (droppedDirs) addFolders(droppedDirs.dirs, droppedDirs.found, type);
+    if (dropped) pickIndividualFiles(type, dropped);
+    if (!dropped && !droppedDirs) { if (pickMode === 'folders') pickFolders(type); else pickIndividualFiles(type); }
   };
 
   const pickIndividualFiles = async (importType, droppedPaths) => {
@@ -1977,7 +2008,7 @@ export default function LocalLibraryPage() {
         </div>
       )}
       {/* Dialogs driven by the toolbar */}
-      <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={onFilesTypePicked} dropCount={dropCount} />
+      <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={onFilesTypePicked} dropCount={dropCount} mode={pickMode} />
       <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} onLeave={() => setSelectedMovie(null)} />
       <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
       <MergePickerDialog movie={mergeTarget} movies={movies} onClose={() => setMergeTarget(null)} onMerge={mergeManual} />
@@ -2044,6 +2075,7 @@ export default function LocalLibraryPage() {
               onToggleAutoFill={toggleAutoEnrich}
               onSelect={() => setSelectMode(true)}
               onAddFiles={handleAddFiles}
+              onAddFolders={addFolderPicks}
               onPdf={() => setShowPdf(true)}
             />
           </>
