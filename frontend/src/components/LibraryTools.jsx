@@ -1,8 +1,9 @@
 import {
   Wrench, ChevronDown, CheckSquare, FilePlus2, FileDown, Image, Sparkles, Wand2, Pause,
-  AlertTriangle, Layers, FileEdit, Loader2, FolderPlus,
+  AlertTriangle, Layers, FileEdit, Loader2, FolderPlus, BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { openUserGuide } from "@/lib/userGuide";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -68,6 +69,7 @@ export const LibraryTools = (p) => {
         <Item icon={FilePlus2} label="Add files…" hint="Pick single video files, e.g. one film in Downloads" onSelect={p.onAddFiles} testid="add-files-btn" />
         <Item icon={FolderPlus} label="Add folders…" hint="Pick one or more folders; every subfolder (seasons, extras) is included and rescanned on Update Library" onSelect={p.onAddFolders} testid="add-folders-btn" />
         {p.hasTitles && <Item icon={FileDown} label="Export list as PDF" hint="Print or share what's currently shown" onSelect={p.onPdf} testid="pdf-export-trigger" />}
+        <Item icon={BookOpen} label="User Guide" hint="How to add folders, keep your library updated, fix problems and more" onSelect={openUserGuide} testid="tools-user-guide" />
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { openUserGuide } from "@/lib/userGuide";
+import { BookOpen } from "lucide-react";
 import { EffectsSetting } from "@/components/EffectsSetting";
 import { useNavigate } from "react-router-dom";
 import { useLicense } from "@/context/LicenseContext";
@@ -1935,6 +1937,18 @@ export default function SettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 rounded-lg bg-primary/5 border border-primary/20" data-testid="settings-user-guide">
+                <div className="flex items-center gap-3 min-w-0">
+                  <BookOpen className="w-5 h-5 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">User Guide</p>
+                    <p className="text-xs text-muted-foreground">Step-by-step help for adding folders, TV shows, drives, backups and troubleshooting.</p>
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" className="gap-1.5" onClick={openUserGuide} data-testid="settings-user-guide-btn">
+                  <BookOpen className="w-4 h-4" /> Open User Guide
+                </Button>
+              </div>
               <div className="grid md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <h4 className="font-medium text-foreground mb-2">Library</h4>

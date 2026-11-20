@@ -536,6 +536,29 @@ ipcMain.handle('dialog:openFolder', async (event, options) => {
 });
 
 // IPC Handlers for external links and file opening
+// User Guide: open the latest online copy, or the copy bundled with the app when offline
+ipcMain.handle('help:openGuide', async (event, onlineUrl) => {
+  if (onlineUrl) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 4000);
+      const res = await fetch(onlineUrl, { method: 'HEAD', signal: ctrl.signal });
+      clearTimeout(t);
+      if (res.ok) { await shell.openExternal(onlineUrl); return { source: 'online' }; }
+    } catch (e) { /* offline: fall back to bundled copy */ }
+  }
+  try {
+    const bundled = path.join(__dirname, 'Obsidian-Cinema-User-Guide.pdf');
+    // Files inside app.asar can't be opened by other programs, so copy it out first
+    const out = path.join(app.getPath('temp'), 'Obsidian-Cinema-User-Guide.pdf');
+    fs.writeFileSync(out, fs.readFileSync(bundled));
+    const err = await shell.openPath(out);
+    return err ? { source: 'none', error: err } : { source: 'offline' };
+  } catch (e) {
+    return { source: 'none', error: e.message };
+  }
+});
+
 ipcMain.handle('shell:openExternal', (event, urlOrPath) => {
   // Check if it's a file path (Windows style)
   if (urlOrPath.match(/^[A-Za-z]:\\/)) {

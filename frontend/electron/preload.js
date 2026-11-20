@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // External links and file opening
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
+  openGuide: (onlineUrl) => ipcRenderer.invoke('help:openGuide', onlineUrl),
   openPath: (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
   showItemInFolder: (filePath) => ipcRenderer.invoke('shell:showItemInFolder', filePath),
   

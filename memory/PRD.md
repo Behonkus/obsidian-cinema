@@ -168,3 +168,4 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 ## 2026-06 — User Guide PDF
 - /app/scripts/build_user_guide.py (reportlab) -> /app/frontend/public/Obsidian-Cinema-User-Guide.pdf (19 pages, 16 chapters incl. troubleshooting, TOC + bookmarks). Screenshot placeholders 01-installer…08-stats; drop images in /app/docs/guide_screenshots/<id>.png and rerun script.
 - Landing: nav 'User Guide' link, footer download link, FAQ 'Is there a user guide?'.
+- In-app User Guide: Tools > User Guide + Settings About card button; IPC help:openGuide HEADs online PDF (4s), else copies bundled build/Obsidian-Cinema-User-Guide.pdf out of asar to temp and opens. lib/userGuide.js. In 1.7.3 changelog.
