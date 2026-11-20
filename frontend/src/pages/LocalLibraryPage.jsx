@@ -90,7 +90,8 @@ import { WelcomeGuide } from "@/components/WelcomeGuide";
 import { LibraryTools } from "@/components/LibraryTools";
 import { useEffectsLevel } from "@/lib/effects";
 import { getPosterColor } from "@/lib/posterColor";
-import { rootOf } from "@/lib/driveRoots";
+import { rootOf, loadDriveNames, driveLabel, DRIVE_NAMES_KEY } from "@/lib/driveRoots";
+import { DriveNameEditor } from "@/components/DriveNameEditor";
 import { PosterBackdrop } from "@/components/PosterBackdrop";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
@@ -301,7 +302,7 @@ const MovieCard = memo(function MovieCard({ movie, gridSize, onOpen, onPlayMovie
             </span>
           )}
           {offline && (
-            <span className="absolute bottom-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded-md bg-black/75 backdrop-blur-sm text-[10px] font-medium text-amber-300 flex items-center gap-1" title={'The drive for this title (' + rootOf(movie.file_path) + ') is not connected'} data-testid={`offline-badge-${movie.id}`}>
+            <span className="absolute bottom-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded-md bg-black/75 backdrop-blur-sm text-[10px] font-medium text-amber-300 flex items-center gap-1" title={(typeof offline === 'string' ? offline : rootOf(movie.file_path)) + ' is not connected'} data-testid={`offline-badge-${movie.id}`}>
               <HardDrive className="w-3 h-3" /> Drive offline
             </span>
           )}
@@ -1454,7 +1455,7 @@ export default function LocalLibraryPage() {
 
   const offlineGuard = (path) => {
     const r = rootOf(path);
-    if (r && offlineRef.current.has(r)) { toast.error(`${r} isn't connected — plug in the drive (or wake your NAS) to play this`); return true; }
+    if (r && offlineRef.current.has(r)) { toast.error(`${driveLabel(r, driveNamesRef.current)} isn't connected — plug it in (or wake your NAS) to play this`); return true; }
     return false;
   };
 
@@ -1686,6 +1687,18 @@ export default function LocalLibraryPage() {
   };
   // Drives / shares that aren't reachable right now (checked on open, every minute, after Update Library)
   const [offlineRoots, setOfflineRoots] = useState(() => new Set());
+  const [driveNames, setDriveNames] = useState(loadDriveNames);
+  const driveNamesRef = useRef(driveNames);
+  driveNamesRef.current = driveNames;
+  const setDriveName = (root, name) => {
+    setDriveNames(prev => {
+      const next = { ...prev };
+      if (name) next[root] = name; else delete next[root];
+      localStorage.setItem(DRIVE_NAMES_KEY, JSON.stringify(next));
+      return next;
+    });
+    toast.success(name ? `${root} is now "${name}"` : `Nickname removed from ${root}`);
+  };
   const offlineRef = useRef(offlineRoots);
   const libraryRoots = useMemo(() => {
     const set = new Set();
@@ -1700,7 +1713,7 @@ export default function LocalLibraryPage() {
     const next = new Set(libraryRoots.filter(r => res[r] === false));
     const prev = offlineRef.current;
     if (next.size === prev.size && [...next].every(r => prev.has(r))) return;
-    [...prev].filter(r => !next.has(r)).forEach(r => toast.success(`${r} is back online`));
+    [...prev].filter(r => !next.has(r)).forEach(r => toast.success(`${driveLabel(r, driveNamesRef.current)} is back online`));
     offlineRef.current = next;
     setOfflineRoots(next);
   }, [rootsKey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2204,7 +2217,7 @@ export default function LocalLibraryPage() {
             type="button"
             onClick={() => setSearchParams(quickFilter === 'offline' ? {} : { qf: 'offline' })}
             className={'oc-chip-in h-7 px-2.5 rounded-full text-[11px] flex items-center gap-1.5 transition-colors ' + (quickFilter === 'offline' ? 'bg-amber-500 text-black' : 'bg-amber-500/15 text-amber-300 hover:bg-amber-500/25')}
-            title={'Not connected: ' + [...offlineRoots].join(', ')}
+            title={'Not connected: ' + [...offlineRoots].map(r => driveLabel(r, driveNames)).join(', ')}
             data-testid="offline-drives-chip"
           >
             <HardDrive className="w-3 h-3" />
@@ -2535,14 +2548,17 @@ export default function LocalLibraryPage() {
               <div key={root} data-testid={`offline-group-${root.replace(/[^a-zA-Z0-9]/g, '')}`}>
                 <div className="flex items-center gap-3 mb-3">
                   <span className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-300 flex items-center justify-center"><HardDrive className="w-4 h-4" /></span>
-                  <div>
-                    <h3 className="font-semibold font-mono">{root}</h3>
-                    <p className="text-xs text-muted-foreground">{list.length} {list.length === 1 ? 'title' : 'titles'} · plug in this drive (or wake your NAS) to play them</p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <DriveNameEditor root={root} name={driveNames[root]} onSave={setDriveName} testid={`drive-name-${root.replace(/[^a-zA-Z0-9]/g, '')}`} />
+                      <span className="font-mono text-xs text-muted-foreground">{root}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{list.length} {list.length === 1 ? 'title' : 'titles'} · plug in {driveNames[root] ? `"${driveNames[root]}"` : 'this drive'} (or wake your NAS) to play them</p>
                   </div>
                 </div>
                 <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
                   {list.map((movie, i) => (
-                    <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} offline />
+                    <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} offline={driveLabel(root, driveNames)} />
                   ))}
                 </div>
               </div>
@@ -2569,7 +2585,7 @@ export default function LocalLibraryPage() {
                 </div>
                 <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
                   {dirMovies.map((movie, i) => (
-                    <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} offline={offlineRoots.size > 0 && offlineRoots.has(rootOf(movie.file_path))} />
+                    <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} offline={offlineRoots.size > 0 && offlineRoots.has(rootOf(movie.file_path)) && driveLabel(rootOf(movie.file_path), driveNames)} />
                   ))}
                 </div>
               </div>
@@ -2578,7 +2594,7 @@ export default function LocalLibraryPage() {
         ) : (
         <div className={`grid ${GRID_SIZES[gridSize].cols} ${GRID_SIZES[gridSize].gap}`}>
           {displayedMovies.map((movie, i) => (
-            <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} offline={offlineRoots.size > 0 && offlineRoots.has(rootOf(movie.file_path))} />
+            <MovieCard index={i} key={movie.id} movie={movie} gridSize={gridSize} onOpen={openMovieDetailCb} onPlayMovie={playMovieCb} isFavorite={favoriteSet.has(movie.id)} onToggleFav={toggleFavorite} category={categoryOf(movie)} onMove={moveToCategory} selectMode={selectMode} selected={selectMode && selectedIds.has(movie.id)} onSelect={toggleSelect} fx={fx} onHover={hoverPoster} offline={offlineRoots.size > 0 && offlineRoots.has(rootOf(movie.file_path)) && driveLabel(rootOf(movie.file_path), driveNames)} />
           ))}
         </div>
         )
@@ -3285,7 +3301,7 @@ export default function LocalLibraryPage() {
               <div className="flex gap-2">
                 <Button className={'flex-1 ' + (detailOffline ? 'opacity-60' : 'oc-play-glow')} variant={detailOffline ? 'secondary' : 'default'} onClick={() => playMovie(selectedMovie)} data-testid="detail-play-btn">
                   {detailOffline ? <HardDrive className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-                  {detailOffline ? `Drive offline (${rootOf(selectedMovie.file_path)})` : isMultiPart(selectedMovie) ? 'Play a Part…' : 'Play (Default Player)'}
+                  {detailOffline ? `Drive offline · ${driveLabel(rootOf(selectedMovie.file_path), driveNames)}` : isMultiPart(selectedMovie) ? 'Play a Part…' : 'Play (Default Player)'}
                 </Button>
                 <Button variant="outline" onClick={() => setMergeTarget(selectedMovie)} title="Merge other cards into this one as parts" data-testid="merge-parts-btn">
                   <Layers className="w-4 h-4" />
@@ -3565,6 +3581,25 @@ export default function LocalLibraryPage() {
               );
             })()}
           </div>
+          {libraryRoots.length > 0 && (
+            <div className="space-y-2 pt-1" data-testid="drives-section">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground px-1">Drives</p>
+              {libraryRoots.map(root => {
+                const off = offlineRoots.has(root);
+                const n = movies.filter(m => rootOf(m.file_path) === root).length;
+                const id = root.replace(/[^a-zA-Z0-9]/g, '');
+                return (
+                  <div key={root} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50" data-testid={`drive-row-${id}`}>
+                    <span className={'w-2 h-2 rounded-full shrink-0 ' + (off ? 'bg-amber-400' : 'bg-emerald-400')} title={off ? 'Not connected' : 'Connected'} />
+                    <HardDrive className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="font-mono text-xs w-28 truncate shrink-0" title={root}>{root}</span>
+                    <div className="flex-1 min-w-0 text-sm"><DriveNameEditor root={root} name={driveNames[root]} onSave={setDriveName} testid={`drive-mgr-name-${id}`} /></div>
+                    <span className="text-xs text-muted-foreground shrink-0">{off ? 'offline · ' : ''}{n} {n === 1 ? 'title' : 'titles'}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>Close</AlertDialogCancel>
           </AlertDialogFooter>
