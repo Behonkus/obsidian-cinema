@@ -151,3 +151,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 
 ## 2026-06 — v1.7.2 release prep
 - package.json 1.7.2; backend CHANGELOG 1.7.2 entry (toolbar + visual effects only, per user); Admin gift email intro + download line; marketing_materials.md (v1.7.2 bullets, '500 of your own files' wording throughout).
+
+## 2026-06 — Add Folder fixes (customer report)
+- electron.js getWindowsDrives: probes A–Z (wmic removed on new Windows 11 caused C:/D: fallback); listDirectory throws readable errors.
+- LocalDirectoryBrowser: Step 1 type picker on top (highlighted until chosen, button reads 'Choose a type first'), typed path opens on Enter/Go (was never navigated), UNC paths + Up, 'Choose with Windows…' native picker, error vs empty states. Tested via simulated electronAPI.

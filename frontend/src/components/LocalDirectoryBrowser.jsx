@@ -9,7 +9,9 @@ import {
   ChevronRight,
   Folder,
   Search,
-  Loader2
+  Loader2,
+  ArrowRight,
+  FolderSearch
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,6 +102,8 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
   var [importType, setImportType] = useState(null);
   var [drives, setDrives] = useState([]);
   var [currentPath, setCurrentPath] = useState('');
+  var [typedPath, setTypedPath] = useState('');
+  var [listError, setListError] = useState('');
   var [items, setItems] = useState([]);
   var [loading, setLoading] = useState(false);
   var [isOpen, setIsOpen] = useState(false);
@@ -127,10 +131,10 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
   };
 
   useEffect(function() {
-    if (isElectron()) {
+    if (isElectron() && isOpen) {
       loadDrives();
     }
-  }, []);
+  }, [isOpen]);
 
   // Scan elapsed timer
   useEffect(function() {
@@ -161,16 +165,32 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
   };
 
   var navigateTo = async function(navPath) {
+    var target = (navPath || '').trim().replace(/^"|"$/g, '');
+    if (!target) { setCurrentPath(''); setTypedPath(''); setItems([]); setListError(''); return; }
+    if (/^[a-zA-Z]:$/.test(target)) target += '\\';
     setLoading(true);
+    setCurrentPath(target);
+    setTypedPath(target);
     try {
-      var contents = await window.electronAPI.listDirectory(navPath);
+      var contents = await window.electronAPI.listDirectory(target);
       setItems(contents);
-      setCurrentPath(navPath);
+      setListError('');
     } catch (err) {
       console.error('Failed to list directory:', err);
-      toast.error('Cannot access this folder');
+      var msg = String((err && err.message) || '').split('Error: ').pop() || 'Cannot open this folder';
+      setItems([]);
+      setListError(msg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  var chooseWithWindows = async function() {
+    try {
+      var res = await window.electronAPI.openFolderDialog({ title: 'Choose a folder with your movie files' });
+      if (res && !res.canceled && res.filePaths && res.filePaths[0]) navigateTo(res.filePaths[0]);
+    } catch (err) {
+      toast.error('Could not open the Windows folder picker');
     }
   };
 
@@ -206,14 +226,14 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
 
   var goUp = function() {
     if (!currentPath) return;
+    var unc = /^[\\/]{2}/.test(currentPath);
     var parts = currentPath.split(/[/\\]/).filter(Boolean);
-    if (parts.length > 1) {
+    // Network paths stop at \\server\share; drives stop at the drive list
+    if (parts.length > (unc ? 2 : 1)) {
       parts.pop();
-      var newPath = parts.join('\\') + '\\';
-      navigateTo(newPath);
+      navigateTo((unc ? '\\\\' : '') + parts.join('\\') + '\\');
     } else {
-      setCurrentPath('');
-      setItems([]);
+      navigateTo('');
     }
   };
 
@@ -227,6 +247,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
         key={drive.path}
         onClick={function() { navigateTo(drive.path); }}
         className="w-full flex items-center gap-2 p-2 hover:bg-secondary rounded-lg text-left transition-colors"
+        data-testid={'drive-' + drive.name.replace(':', '')}
       >
         <HardDrive className="w-5 h-5 text-blue-400" />
         <span className="font-medium">{drive.name}</span>
@@ -308,23 +329,36 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 relative flex-1 min-h-0">
+          <div className="space-y-3 relative flex-1 min-h-0 overflow-y-auto pr-1">
             {scanning && <ScanningOverlay path={currentPath} elapsed={scanElapsed} />}
 
-            <div className="flex items-center gap-2 min-w-0">
-              <Input 
-                value={currentPath} 
-                onChange={function(e) { setCurrentPath(e.target.value); }}
-                placeholder="Path..."
-                className="flex-1 font-mono text-sm min-w-0"
-                disabled={scanning}
-              />
-              <Button variant="outline" size="sm" onClick={goUp} disabled={!currentPath || scanning}>
-                Up
-              </Button>
+            <div className={'rounded-lg p-3 border transition-colors ' + (importType ? 'border-border bg-secondary/30' : 'border-amber-500/50 bg-amber-500/5')} data-testid="scan-type-step">
+              <p className="text-xs font-medium mb-2">{importType ? 'Step 1 · Folder type' : 'Step 1 · Choose what this folder contains'}</p>
+              <ImportTypePicker value={importType} onChange={setImportType} testPrefix="scan-type" />
             </div>
 
-            <ScrollArea className="h-[250px] border rounded-lg p-2">
+            <p className="text-xs font-medium">Step 2 · Pick the folder</p>
+            <form className="flex items-center gap-2 min-w-0" onSubmit={function(e) { e.preventDefault(); navigateTo(typedPath); }}>
+              <Input
+                value={typedPath}
+                onChange={function(e) { setTypedPath(e.target.value); }}
+                placeholder={"Type a path, e.g. E:\\TV Shows or \\\\NAS\\Media, then press Enter"}
+                className="flex-1 font-mono text-sm min-w-0"
+                disabled={scanning}
+                data-testid="browse-path-input"
+              />
+              <Button type="submit" variant="outline" size="sm" disabled={!typedPath.trim() || scanning} data-testid="browse-path-go">
+                Go <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={goUp} disabled={!currentPath || scanning} data-testid="browse-up-btn">
+                Up
+              </Button>
+            </form>
+            <Button type="button" variant="secondary" size="sm" className="w-full gap-2" onClick={chooseWithWindows} disabled={scanning} data-testid="choose-with-windows-btn">
+              <FolderSearch className="w-4 h-4" /> Choose with Windows…
+            </Button>
+
+            <ScrollArea className="h-[220px] border rounded-lg p-2">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -336,25 +370,26 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {items.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      Folder is empty or cannot be accessed
+                  {listError ? (
+                    <div className="text-center py-8 space-y-1" data-testid="browse-error">
+                      <p className="text-sm text-destructive">{listError}: <span className="font-mono">{currentPath}</span></p>
+                      <p className="text-xs text-muted-foreground">Check the path, or use Choose with Windows… Network drives may not show when the app runs as administrator.</p>
+                    </div>
+                  ) : items.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8" data-testid="browse-empty">
+                      This folder is empty
                     </p>
                   ) : itemButtons}
                 </div>
               )}
             </ScrollArea>
 
-            {currentPath && !scanning && (
-              <div className="p-2 bg-secondary/50 rounded-lg overflow-hidden">
+            {currentPath && !scanning && !listError && (
+              <div className="p-2 bg-secondary/50 rounded-lg overflow-hidden" data-testid="browse-selected">
                 <p className="text-xs text-muted-foreground">Selected folder:</p>
                 <p className="font-mono text-xs truncate" title={currentPath}>{currentPath}</p>
-                <p className="text-[10px] text-muted-foreground/70 mt-0.5">All subdirectories will be included in this scan.</p>
+                <p className="text-[10px] text-muted-foreground/70 mt-0.5">All subfolders (seasons, extras…) will be included in this scan.</p>
               </div>
-            )}
-
-            {currentPath && !scanning && (
-              <ImportTypePicker value={importType} onChange={setImportType} testPrefix="scan-type" />
             )}
           </div>
 
@@ -364,7 +399,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
             </Button>
             <Button 
               onClick={scanCurrentFolder}
-              disabled={!currentPath || !importType || scanning}
+              disabled={!currentPath || !!listError || !importType || scanning}
               data-testid="scan-folder-btn"
               className="gap-2 w-full sm:w-auto"
             >
@@ -376,7 +411,7 @@ export default function LocalDirectoryBrowser({ onMoviesFound }) {
               ) : (
                 <>
                   <Search className="w-4 h-4" />
-                  {importType && importType !== 'movies' ? 'Scan for Shows' : 'Scan for Movies'}
+                  {!importType ? 'Choose a type first' : importType !== 'movies' ? 'Scan for Shows' : 'Scan for Movies'}
                 </>
               )}
             </Button>

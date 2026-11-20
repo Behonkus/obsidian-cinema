@@ -20,31 +20,17 @@ const VIDEO_EXTENSIONS = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm
 
 // ============ LOCAL FILE SYSTEM OPERATIONS ============
 
-// Get list of available drives (Windows)
-function getWindowsDrives() {
-  try {
-    const drives = [];
-    // Use wmic to get drive letters
-    const output = execSync('wmic logicaldisk get caption', { encoding: 'utf8' });
-    const lines = output.split('\n').filter(line => line.trim());
-    lines.forEach(line => {
-      const drive = line.trim();
-      if (drive && drive.match(/^[A-Z]:$/)) {
-        drives.push({
-          name: drive,
-          path: drive + '\\'
-        });
-      }
-    });
-    return drives;
-  } catch (err) {
-    console.error('Error getting drives:', err);
-    // Fallback to common drives
-    return [
-      { name: 'C:', path: 'C:\\' },
-      { name: 'D:', path: 'D:\\' }
-    ];
-  }
+// Get list of available drives (Windows). wmic is removed on newer Windows 11,
+// so probe every drive letter instead (covers USB, external and mapped network drives).
+async function getWindowsDrives() {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const probe = (l) => Promise.race([
+    fs.promises.access(l + ':\\').then(() => true, () => false),
+    new Promise(res => setTimeout(() => res(false), 2000)),
+  ]);
+  const found = await Promise.all(letters.map(probe));
+  const drives = letters.filter((l, i) => found[i]).map(l => ({ name: l + ':', path: l + ':\\' }));
+  return drives.length ? drives : [{ name: 'C:', path: 'C:\\' }];
 }
 
 // List contents of a directory
@@ -72,7 +58,7 @@ function listDirectory(dirPath) {
       });
   } catch (err) {
     console.error('Error listing directory:', err);
-    return [];
+    throw new Error(err.code === 'ENOENT' ? 'Folder not found' : (err.code === 'EPERM' || err.code === 'EACCES') ? 'Access denied' : 'Cannot open this folder');
   }
 }
 
@@ -131,7 +117,7 @@ function scanForVideos(dirPath, recursive = true) {
 
 // IPC Handlers for local file system
 ipcMain.handle('fs:getDrives', () => {
-  return getWindowsDrives();
+  return process.platform === 'win32' ? getWindowsDrives() : [{ name: '/', path: '/' }];
 });
 
 ipcMain.handle('fs:listDirectory', (event, dirPath) => {
