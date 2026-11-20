@@ -775,7 +775,7 @@ export default function StatsPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard icon={Film} label="Total Movies" value={stats.total} delay={0} />
+        <StatCard icon={Film} label="Total Media" value={stats.total} delay={0} />
         <StatCard icon={FolderOpen} label="Directories" value={stats.dirCount} delay={0.03} color="text-amber-400" />
         <StatCard icon={Image} label="Poster Coverage" value={stats.posterPct + '%'} sub={posterSub} delay={0.06} color="text-green-400" />
         <StatCard icon={Star} label="Avg Rating" value={stats.avgRating ? stats.avgRating.toFixed(1) : '\u2014'} sub={ratingSub} delay={0.09} color="text-amber-400" />
