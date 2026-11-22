@@ -62,6 +62,9 @@ function listDirectory(dirPath) {
   }
 }
 
+const SYSTEM_DIRS = new Set(['$recycle.bin', 'system volume information', 'config.msi', 'recovery', '$winreagent',
+  'windowsapps', 'msocache', 'found.000', '$sysreset', '$windows.~bt', '$windows.~ws', 'documents and settings', 'perflogs', '$getcurrent']);
+
 // Scan directory for video files
 function scanForVideos(dirPath, recursive = true, failed = null) {
   const videos = [];
@@ -74,10 +77,8 @@ function scanForVideos(dirPath, recursive = true, failed = null) {
         const fullPath = path.join(currentPath, item.name);
         
         if (item.isDirectory() && recursive) {
-          // Skip system folders
-          if (item.name.startsWith('.') || 
-              item.name === '$RECYCLE.BIN' || 
-              item.name === 'System Volume Information') {
+          // Skip hidden and Windows system folders (never contain your media, often locked)
+          if (item.name.startsWith('.') || SYSTEM_DIRS.has(item.name.toLowerCase())) {
             continue;
           }
           scan(fullPath);
@@ -108,7 +109,7 @@ function scanForVideos(dirPath, recursive = true, failed = null) {
       }
     } catch (err) {
       console.error('Error scanning:', currentPath, err.message);
-      if (failed) failed.push(currentPath);
+      if (failed) failed.push({ path: currentPath, code: err.code || 'ERR' });
     }
   }
   
@@ -147,7 +148,7 @@ ipcMain.handle('fs:scanForVideos', (event, dirPath, recursive) => {
 ipcMain.handle('fs:rescanFolder', (event, dirPath) => {
   const failed = [];
   const videos = scanForVideos(dirPath, true, failed);
-  return { videos, failed, reachable: !failed.includes(dirPath) };
+  return { videos, failed, reachable: !failed.some(f => f.path === dirPath) };
 });
 
 ipcMain.handle('fs:pathExists', (event, checkPath) => {

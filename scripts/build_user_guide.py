@@ -328,6 +328,11 @@ faq("The Scan button is greyed out.",
     "Choose the folder type in Step 1 (Movies, TV Shows, Documentaries or Animations) and make sure a folder is selected.")
 faq("New episodes don\u2019t appear after Update Library.",
     "Update Library only rescans library folders. Add the show\u2019s main folder with <b>Add Folder</b>, then run it again.")
+faq("Update Library says some folders couldn\u2019t be opened, but all my drives are connected.",
+    "Click <b>Show which</b> on the message, or the amber <b>folders skipped</b> chip in the library bar, to see each folder and why. "
+    "\u201cAccess denied\u201d usually means a protected or private folder \u2013 if it holds media, right-click it in Explorer \u203a "
+    "Properties \u203a Security and give your account Read access; otherwise it\u2019s safe to ignore. Nothing is removed from your library "
+    "because of these folders.")
 faq("Titles have no posters.",
     "Add your TMDB API key (chapter 3), then use <b>Tools \u203a Fetch posters</b>. Check your internet connection.")
 faq("A title is matched to the wrong movie.",

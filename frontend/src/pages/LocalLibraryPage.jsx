@@ -93,6 +93,7 @@ import { getPosterColor } from "@/lib/posterColor";
 import { rootOf, loadDriveNames, driveLabel, DRIVE_NAMES_KEY } from "@/lib/driveRoots";
 import { DriveNameEditor } from "@/components/DriveNameEditor";
 import { HelpLink } from "@/components/HelpLink";
+import { ScanIssuesDialog } from "@/components/ScanIssuesDialog";
 import { PosterBackdrop } from "@/components/PosterBackdrop";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
@@ -493,6 +494,9 @@ export default function LocalLibraryPage() {
   const [dirToRename, setDirToRename] = useState(null);
   const [dirNewPath, setDirNewPath] = useState('');
   const [showDirManager, setShowDirManager] = useState(false);
+  // Folders the last Update Library couldn't open (offline drive, access denied…)
+  const [scanIssues, setScanIssues] = useState([]);
+  const [showScanIssues, setShowScanIssues] = useState(false);
   const [visibleCount, setVisibleCount] = useState(100);
   const fetchAbortRef = useRef(false);
   const fetchCountRef = useRef({ fetched: 0, found: 0, total: 0 });
@@ -1362,22 +1366,22 @@ export default function LocalLibraryPage() {
     try {
       let allScanned = [];
       // Folders we couldn't read: their titles are kept, never treated as deleted
-      const unreadable = [];
+      const issues = [];
       for (const dir of directories) {
         try {
           if (window.electronAPI.rescanFolder) {
             const res = await window.electronAPI.rescanFolder(dir);
             allScanned = allScanned.concat(res.videos || []);
-            unreadable.push(...(res.failed || []));
+            (res.failed || []).forEach(f => issues.push(typeof f === 'string' ? { path: f, code: 'ERR' } : f));
           } else {
             allScanned = allScanned.concat(await window.electronAPI.scanForVideos(dir, true));
           }
         } catch (e) {
           console.error('Failed to scan:', dir, e);
-          unreadable.push(dir);
+          issues.push({ path: dir, code: 'ERR' });
         }
       }
-      const offlineRoots = directories.filter(d => unreadable.includes(d));
+      const unreadable = issues.map(i => i.path);
 
       const scannedPaths = new Set(allScanned.map(f => f.file_path));
       const dirSet = new Set(directories);
@@ -1423,9 +1427,15 @@ export default function LocalLibraryPage() {
         toast.success(`Library updated: ${parts.join(', ')}`);
       }
       checkDrives();
-      if (unreadable.length > 0) {
-        const where = offlineRoots.length ? offlineRoots.join(', ') : unreadable.length + ' subfolder' + (unreadable.length === 1 ? '' : 's');
-        toast.warning(`Couldn't reach ${where} — titles there were kept. Connect the drive and run Update Library again.`, { duration: 9000 });
+      const known = allLibraryPaths(movies);
+      const detailed = issues.map(i => ({ ...i, kept: [...known].filter(p => p === i.path || inDir(p, i.path)).length, root: directories.includes(i.path) }));
+      setScanIssues(detailed);
+      if (detailed.length > 0) {
+        const n = detailed.length;
+        toast.warning(`${n} ${n === 1 ? 'folder' : 'folders'} couldn't be opened — any titles in them were kept.`, {
+          duration: 12000,
+          action: { label: 'Show which', onClick: () => setShowScanIssues(true) },
+        });
       }
     } catch (err) {
       console.error('Rescan all failed:', err);
@@ -2081,6 +2091,7 @@ export default function LocalLibraryPage() {
         </div>
       )}
       {/* Dialogs driven by the toolbar */}
+      <ScanIssuesDialog open={showScanIssues} onClose={() => setShowScanIssues(false)} issues={scanIssues} onDismiss={() => { setScanIssues([]); setShowScanIssues(false); }} />
       <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={onFilesTypePicked} dropCount={dropCount} />
       <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} onLeave={() => setSelectedMovie(null)} />
       <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
@@ -2194,6 +2205,11 @@ export default function LocalLibraryPage() {
           </>
         )}
         <div className="flex-1" />
+        {scanIssues.length > 0 && (
+          <button type="button" onClick={() => setShowScanIssues(true)} className="oc-chip-in h-7 px-2.5 rounded-full text-[11px] flex items-center gap-1.5 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-colors" title="Folders the last Update Library couldn't open" data-testid="scan-issues-chip">
+            <AlertTriangle className="w-3 h-3" /> {scanIssues.length} {scanIssues.length === 1 ? 'folder' : 'folders'} skipped
+          </button>
+        )}
         {offlineRoots.size > 0 && (
           <button
             type="button"
