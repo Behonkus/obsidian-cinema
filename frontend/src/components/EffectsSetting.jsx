@@ -32,14 +32,39 @@ const GlowColorPicker = ({ value, onPick }) => (
   </div>
 );
 
+const PRESETS = [
+  { id: 'cinema', label: 'Cinema', glow: 50, color: 'poster' },
+  { id: 'neon', label: 'Neon', glow: 100, color: 'poster' },
+  { id: 'calm', label: 'Calm', glow: 25, color: 'accent' },
+  { id: 'off', label: 'Off', glow: 0 },
+];
+
+const presetMatches = (p, glow, color) => (p.id === 'off' ? glow === 0 : p.glow === glow && p.color === color);
+
+const GlowPresets = ({ glow, color, onPick }) => (
+  <div className="flex flex-wrap gap-1.5" data-testid="glow-presets">
+    {PRESETS.map(p => {
+      const on = presetMatches(p, glow, color);
+      return (
+        <button key={p.id} type="button" onClick={() => onPick(p)} data-testid={`glow-preset-${p.id}`} aria-pressed={on}
+          className={'px-3 h-7 rounded-full border text-xs font-medium transition-colors ' + (on ? 'bg-primary border-primary text-primary-foreground' : 'border-border text-muted-foreground hover:text-foreground hover:border-primary/50')}>
+          {p.label}
+        </button>
+      );
+    })}
+  </div>
+);
+
 const GlowSlider = () => {
   const [glow, setGlow] = useState(getGlowPref);
   const [color, setColor] = useState(getGlowColorPref);
   const pickColor = (v) => { setColor(v); setGlowColorPref(v); };
+  const pickPreset = (p) => { change([p.glow]); if (p.color) pickColor(p.color); };
   const change = ([v]) => { setGlow(v); setGlowPref(v); };
   return (
     <div className="pt-2 flex items-center gap-5" data-testid="glow-setting">
     <div className="flex-1 min-w-0 space-y-2">
+      <GlowPresets glow={glow} color={color} onPick={pickPreset} />
       <div className="flex items-center justify-between max-w-xs text-xs">
         <span className="font-medium text-foreground">Poster glow</span>
         <span className="text-muted-foreground" data-testid="glow-value">{glowLabel(glow)} · {glow}%</span>
