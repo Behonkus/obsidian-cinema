@@ -3,6 +3,7 @@ import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { getEffectsPref, setEffectsPref, LITE_THRESHOLD, getGlowPref, setGlowPref } from "@/lib/effects";
+import { GlowPreview } from "@/components/GlowPreview";
 
 const OPTIONS = [
   { id: 'auto', label: 'Auto', hint: `Full effects, lighter above ${LITE_THRESHOLD.toLocaleString()} titles` },
@@ -16,14 +17,17 @@ const GlowSlider = () => {
   const [glow, setGlow] = useState(getGlowPref);
   const change = ([v]) => { setGlow(v); setGlowPref(v); };
   return (
-    <div className="pt-2 space-y-2" data-testid="glow-setting">
-      <div className="flex items-center justify-between text-xs">
+    <div className="pt-2 flex items-center gap-5" data-testid="glow-setting">
+    <div className="flex-1 min-w-0 space-y-2">
+      <div className="flex items-center justify-between max-w-xs text-xs">
         <span className="font-medium text-foreground">Poster glow</span>
         <span className="text-muted-foreground" data-testid="glow-value">{glowLabel(glow)} · {glow}%</span>
       </div>
       <Slider value={[glow]} onValueChange={change} min={0} max={100} step={5} className="max-w-xs" data-testid="glow-slider" aria-label="Poster glow strength" />
       <div className="flex justify-between max-w-xs text-[10px] text-muted-foreground"><span>Off</span><span>Subtle</span><span>Vivid</span></div>
       <p className="text-[11px] text-muted-foreground">How strongly the background takes on the colours of the poster you hover.</p>
+    </div>
+    <GlowPreview glow={glow} />
     </div>
   );
 };
@@ -33,7 +37,7 @@ export const EffectsSetting = () => {
   const pick = (id) => { setEffectsPref(id); setPref(id); };
   const hint = OPTIONS.find(o => o.id === pref).hint;
   return (
-    <Card className="bg-card border-border" data-testid="effects-setting-card">
+    <Card className="bg-card border-border h-full" data-testid="effects-setting-card">
       <CardHeader className="pb-1 pt-3 px-4">
         <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-primary" />

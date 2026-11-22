@@ -797,9 +797,8 @@ export default function SettingsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className={!isElectron() ? "md:col-span-2" : ""}
         >
-          <Card className="bg-card border-border">
+          <Card className="bg-card border-border h-full">
             <CardHeader className="pb-1 pt-3 px-4">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Key className="w-4 h-4 text-primary" />
@@ -937,6 +936,12 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {!isElectron() && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <EffectsSetting />
+          </motion.div>
+        )}
         
         {/* Appearance Card - Desktop Only */}
         {isElectron() && (
@@ -1401,9 +1406,11 @@ export default function SettingsPage() {
           </motion.div>
         )}
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.275 }}>
-          <EffectsSetting />
-        </motion.div>
+        {isElectron() && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.275 }}>
+            <EffectsSetting />
+          </motion.div>
+        )}
 
         {/* Library Management Card - Desktop Only */}
         {isElectron() && (
