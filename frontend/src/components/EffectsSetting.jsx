@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { getEffectsPref, setEffectsPref, LITE_THRESHOLD, getGlowPref, setGlowPref } from "@/lib/effects";
+import { getEffectsPref, setEffectsPref, LITE_THRESHOLD, getGlowPref, setGlowPref, getGlowColorPref, setGlowColorPref } from "@/lib/effects";
 import { GlowPreview } from "@/components/GlowPreview";
 
 const OPTIONS = [
@@ -13,8 +13,29 @@ const OPTIONS = [
 
 const glowLabel = (v) => (v === 0 ? 'Off' : v < 35 ? 'Subtle' : v < 70 ? 'Soft' : 'Vivid');
 
+const COLOR_OPTIONS = [
+  { id: 'poster', label: "Poster's colours" },
+  { id: 'accent', label: 'Accent theme colour' },
+];
+
+const GlowColorPicker = ({ value, onPick }) => (
+  <div className="space-y-1" data-testid="glow-color-setting">
+    <span className="text-xs font-medium text-foreground">Glow colour</span>
+    <div className="flex rounded-full border border-border p-0.5 bg-secondary/40 w-fit">
+      {COLOR_OPTIONS.map(o => (
+        <button key={o.id} type="button" onClick={() => onPick(o.id)} data-testid={`glow-color-${o.id}`}
+          className={'px-3 h-7 rounded-full text-xs font-medium transition-colors ' + (value === o.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
 const GlowSlider = () => {
   const [glow, setGlow] = useState(getGlowPref);
+  const [color, setColor] = useState(getGlowColorPref);
+  const pickColor = (v) => { setColor(v); setGlowColorPref(v); };
   const change = ([v]) => { setGlow(v); setGlowPref(v); };
   return (
     <div className="pt-2 flex items-center gap-5" data-testid="glow-setting">
@@ -25,9 +46,10 @@ const GlowSlider = () => {
       </div>
       <Slider value={[glow]} onValueChange={change} min={0} max={100} step={5} className="max-w-xs" data-testid="glow-slider" aria-label="Poster glow strength" />
       <div className="flex justify-between max-w-xs text-[10px] text-muted-foreground"><span>Off</span><span>Subtle</span><span>Vivid</span></div>
-      <p className="text-[11px] text-muted-foreground">How strongly the background takes on the colours of the poster you hover.</p>
+      <p className="text-[11px] text-muted-foreground">{color === 'accent' ? 'How strongly the background, details window and Play button glow in your accent colour.' : 'How strongly the background takes on the colours of the poster you hover.'}</p>
+      <GlowColorPicker value={color} onPick={pickColor} />
     </div>
-    <GlowPreview glow={glow} />
+    <GlowPreview glow={glow} color={color} />
     </div>
   );
 };

@@ -2904,6 +2904,7 @@ CHANGELOG = [
             "Brighter poster glow: the background takes on richer, more vivid colours from the poster you hover",
             "The colour wash now flows behind the sidebar too, which turns softly see-through so the whole window glows",
             "New Poster glow slider in Settings \u203a Library Visual Effects: choose anything from Off through Subtle to Vivid, with a live sample poster that shows the strength as you drag",
+            "New Glow colour choice: follow each poster's colours, or always glow in your accent theme colour (background, details window and Play button)",
         ],
     },
     {

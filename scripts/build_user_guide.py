@@ -227,7 +227,7 @@ bullets(["Click a poster to open its details. Hover and click <b>Play</b> to sta
          "Click the star to add a favourite.",
          "Hovering a poster tilts it and tints the whole window with its colours, including behind the sidebar. Large libraries use lighter effects automatically "
          "(see Settings \u203a Library Visual Effects).",
-         "Use the <b>Poster glow</b> slider in Settings \u203a Library Visual Effects to make the glow stronger, softer or turn it off."])
+         "Use the <b>Poster glow</b> slider in Settings \u203a Library Visual Effects to make the glow stronger, softer or turn it off, and <b>Glow colour</b> to follow each poster\u2019s colours or always use your accent theme colour."])
 
 h1("Title details and playback")
 shot("05-details", "The details window with poster, plot, cast, ratings and Play button.")

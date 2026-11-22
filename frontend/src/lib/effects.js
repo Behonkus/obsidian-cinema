@@ -13,6 +13,18 @@ export const setGlowPref = (v) => localStorage.setItem(GLOW_KEY, String(v));
 // 0 = off, 50 = soft, 100 = vivid (1.5x the 1.7.4 glow)
 export const glowFactor = (v) => (v / 100) * 1.5;
 
+export const GLOW_COLOR_KEY = 'obsidian_cinema_glow_color';
+export const getGlowColorPref = () => localStorage.getItem(GLOW_COLOR_KEY) || 'poster';
+export const setGlowColorPref = (v) => localStorage.setItem(GLOW_COLOR_KEY, v);
+
+// Current accent theme colour (--primary is "H S% L%") as [r, g, b]
+export function accentRgb() {
+  const [h, s, l] = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim().split(/\s+/).map(parseFloat);
+  const S = s / 100, L = l / 100, a = S * Math.min(L, 1 - L);
+  const f = (n) => { const k = (n + h / 30) % 12; return Math.round(255 * (L - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); };
+  return [f(0), f(8), f(4)];
+}
+
 // 'full' or 'lite'; auto turns effects down on big libraries
 export function useEffectsLevel(count) {
   const [pref] = useState(getEffectsPref);

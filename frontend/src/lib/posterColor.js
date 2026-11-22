@@ -1,4 +1,5 @@
 import { thumbUrl } from "@/lib/tmdbMatcher";
+import { getGlowColorPref, accentRgb } from "@/lib/effects";
 
 const cache = new Map();
 
@@ -43,6 +44,7 @@ function fromTitle(title) {
 }
 
 export async function getPosterColor(posterUrl, title) {
+  if (getGlowColorPref() === 'accent') return accentRgb();
   const key = posterUrl || title;
   if (cache.has(key)) return cache.get(key);
   let rgb = null;

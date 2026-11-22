@@ -1,9 +1,11 @@
-import { glowFactor } from "@/lib/effects";
+import { glowFactor, accentRgb } from "@/lib/effects";
 
-const RGB = [236, 72, 153];
+const POSTER_RGB = [236, 72, 153];
 
 // Made-up sample poster that glows at the chosen strength
-export const GlowPreview = ({ glow }) => (
+export const GlowPreview = ({ glow, color }) => {
+  const RGB = color === 'accent' ? accentRgb() : POSTER_RGB;
+  return (
   <div className="relative w-36 h-36 shrink-0 rounded-xl overflow-hidden border border-border bg-background flex items-center justify-center" data-testid="glow-preview">
     <div
       aria-hidden="true"
@@ -15,7 +17,7 @@ export const GlowPreview = ({ glow }) => (
       className="relative w-16 h-24 rounded-md overflow-hidden shadow-lg"
       style={{
         background: 'linear-gradient(160deg, #f472b6 0%, #db2777 35%, #7c3aed 70%, #1e1b4b 100%)',
-        boxShadow: glow > 0 ? `0 0 ${10 + glow * 0.3}px rgb(236 72 153 / ${glowFactor(glow) * 0.5})` : 'none',
+        boxShadow: glow > 0 ? `0 0 ${10 + glow * 0.3}px rgb(${RGB.join(' ')} / ${glowFactor(glow) * 0.5})` : 'none',
         transition: 'box-shadow 0.3s ease',
       }}
       data-testid="glow-preview-poster"
@@ -25,4 +27,5 @@ export const GlowPreview = ({ glow }) => (
       <p className="absolute bottom-1.5 inset-x-0 text-center text-[7px] font-bold tracking-[0.2em] text-white">NEON TIDE</p>
     </div>
   </div>
-);
+  );
+};
