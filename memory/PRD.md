@@ -189,3 +189,5 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 ## 2026-06 — v1.7.5: Poster pop-out
 - Details window poster has an always-visible, gently pulsing corner button (poster-popout-btn, .oc-pop-btn) opening components/PosterLightbox.jsx (portal, role=dialog so detail Esc skips): original-size poster, title + year, prev/next arrows + ←/→ over current filteredMovies with posters, "N of M" counter; closes with X, Esc, click outside (details stays open).
 - package.json 1.7.5; CHANGELOG 1.7.5; gift email, marketing, User Guide PDF (VERSION 1.7.5) updated.
+- Slideshow (1.7.5): PosterLightbox play/pause (Space), SlideshowControls.jsx (4/6/10s, default 6, localStorage obsidian_cinema_slideshow_speed; shuffle keeps current first), controls fade after 2.5s idle while playing, preloads next poster.
+- Settings layout (1.7.5): two stacked columns (items-start, no gaps): left TMDB, License, App Updates, Duplicate Detection; right Appearance, Visual Effects (web: TMDB | Effects). Library Management + About full width below.

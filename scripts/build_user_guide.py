@@ -236,7 +236,8 @@ bullets(["<b>Play (Default Player)</b> opens the file in your default video play
          "<b>Reset Metadata</b> clears the match so the title can be matched again.",
          "Ratings show where they came from (TMDB, or IMDb via Wikidata when TMDB has no rating).",
          "Click the small pulsing button in the poster\u2019s lower corner to see the poster full size with its title and year. "
-         "Use the arrows or \u2190 \u2192 keys to flip through the titles in your current view; close with X, Esc or a click outside."])
+         "Use the arrows or \u2190 \u2192 keys to flip through the titles in your current view; close with X, Esc or a click outside.",
+         "Press <b>Slideshow</b> (or Space) to flip through posters automatically like a cinema lobby display. Choose 4, 6 or 10 seconds per poster and turn on shuffle; the controls fade away until you move the mouse."])
 box("If a title shows the wrong movie, open <b>Tools \u203a Check uncertain matches</b>. It lists titles the app was unsure about so you can "
     "pick the right match.", "tip")
 
