@@ -1,4 +1,4 @@
-# Obsidian Cinema — Marketing Materials (Updated v1.7.4)
+# Obsidian Cinema — Marketing Materials (Updated v1.7.5)
 
 ---
 
@@ -39,6 +39,7 @@ Obsidian Cinema sits between a file manager and a full media server. Point it at
 - **New visual effects (new in 1.7.2)** — posters tilt, glow and catch the light on hover, cards fade in as they load, the background softly takes on the colours of the poster you hover, and the details window and Play button are tinted to match. Choose Auto, Full or Lite in Settings; Auto keeps big libraries smooth.
 - **Easier importing (new in 1.7.3)** — Add Folder lists every drive (USB, external, mapped network), opens typed and network paths, and has a "Choose with Windows…" button; Add Folder can add several folders at once with all season subfolders, and dragged folders are scanned in full and rescanned on Update Library.
 - **Brighter poster glow (new in 1.7.4)** — hovering a poster washes the whole window in its colours, now more vivid and flowing behind a softly see-through sidebar. A new Poster glow slider in Settings lets you pick anything from Off to Vivid, with a live preview, and the glow can follow each poster's colours or your accent theme colour, with one-tap Cinema, Neon, Calm and Off presets.
+- **Poster pop-out (new in 1.7.5)** — tap the small corner button on a title's poster to see it big and sharp with its title and year, then flip through your library's posters with the arrow keys.
 - **AI-powered recommendations** — personalized movie suggestions based on your viewing and browsing activity, powered by GPT-4o.
 - **One-click playback** in your default media player (VLC, MPC, Windows Media Player — your choice).
 - **Favorites** — star movies with an animated confetti burst. Persists across sessions and survives updates.
@@ -89,7 +90,7 @@ Obsidian Cinema scans your local and network drives, automatically fetches movie
 
 ### Key Facts
 - **Platform:** Windows (Electron-based desktop app)
-- **Version:** 1.7.4
+- **Version:** 1.7.5
 - **Price:** Free (500 of your own files, 3 collections) / Pro $25 one-time (no library limit)
 - **Data Source:** TMDB for posters, metadata, and cast data
 - **AI Engine:** GPT-4o for personalized movie recommendations

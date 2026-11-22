@@ -2898,6 +2898,14 @@ async def admin_get_stats(request: Request, session_token: Optional[str] = Cooki
 
 CHANGELOG = [
     {
+        "version": "1.7.5",
+        "date": "2026-06",
+        "highlights": [
+            "New pop-out button on the poster in the details window: view the poster big and sharp, with its title and year",
+            "Flip through the posters of everything in your current view with the arrows or the \u2190 \u2192 keys; close with X, Esc or a click outside",
+        ],
+    },
+    {
         "version": "1.7.4",
         "date": "2026-06",
         "highlights": [

@@ -96,6 +96,8 @@ import { HelpLink } from "@/components/HelpLink";
 import { ScanIssuesDialog } from "@/components/ScanIssuesDialog";
 import { FolderX } from "lucide-react";
 import { PosterBackdrop } from "@/components/PosterBackdrop";
+import { PosterLightbox } from "@/components/PosterLightbox";
+import { Expand } from "lucide-react";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
 import { FilmographyDialog } from "@/components/FilmographyDialog";
@@ -412,6 +414,7 @@ export default function LocalLibraryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [quickFilter, setQuickFilter] = useState(() => searchParams.get('qf') || null);
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [posterPopId, setPosterPopId] = useState(null);
   const [tmdbApiKey, setTmdbApiKey] = useState('');
   const [fetchingPosters, setFetchingPosters] = useState(false);
   const [fetchProgress, setFetchProgress] = useState(0);
@@ -2114,6 +2117,9 @@ export default function LocalLibraryPage() {
       {/* Dialogs driven by the toolbar */}
       <ScanIssuesDialog open={showScanIssues} onClose={() => setShowScanIssues(false)} issues={scanIssues} onDismiss={() => { setScanIssues([]); setShowScanIssues(false); }} onSkip={skipFolder} />
       <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={onFilesTypePicked} dropCount={dropCount} />
+      {selectedMovie && posterPopId === selectedMovie.id && (
+        <PosterLightbox movies={filteredMovies} startMovie={selectedMovie} onClose={() => setPosterPopId(null)} />
+      )}
       <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} onLeave={() => setSelectedMovie(null)} />
       <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
       <MergePickerDialog movie={mergeTarget} movies={movies} onClose={() => setMergeTarget(null)} onMerge={mergeManual} />
@@ -2709,6 +2715,16 @@ export default function LocalLibraryPage() {
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Image className="w-5 h-5 text-white" />
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setPosterPopId(selectedMovie.id); }}
+                        className="oc-pop-btn absolute bottom-1 right-1 z-10 p-1 rounded-md bg-black/70 border border-white/20 text-white hover:bg-primary hover:border-primary"
+                        title="View poster larger"
+                        aria-label="View poster larger"
+                        data-testid="poster-popout-btn"
+                      >
+                        <Expand className="w-3 h-3" />
+                      </button>
                     </>
                   ) : (
                     <div className="text-center p-2">

@@ -185,3 +185,7 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Live glow preview (1.7.4): components/GlowPreview.jsx (made-up 'Neon Tide' gradient poster + wash scaled by slider). Settings: TMDB card no longer full width on web; EffectsSetting sits beside it (web), desktop keeps old position.
 - Glow colour choice (1.7.4): localStorage obsidian_cinema_glow_color ('poster' default | 'accent'); getPosterColor returns accentRgb() (from --primary) when accent, so backdrop, details tint and Play glow all follow. GlowColorPicker in EffectsSetting; GlowPreview uses chosen colour. Changelog/guide/marketing updated.
 - Glow presets (1.7.4): EffectsSetting GlowPresets — Cinema(50,poster) Neon(100,poster) Calm(25,accent) Off(0, keeps colour); highlighted only when slider+colour match. Changelog/guide/marketing updated.
+
+## 2026-06 — v1.7.5: Poster pop-out
+- Details window poster has an always-visible, gently pulsing corner button (poster-popout-btn, .oc-pop-btn) opening components/PosterLightbox.jsx (portal, role=dialog so detail Esc skips): original-size poster, title + year, prev/next arrows + ←/→ over current filteredMovies with posters, "N of M" counter; closes with X, Esc, click outside (details stays open).
+- package.json 1.7.5; CHANGELOG 1.7.5; gift email, marketing, User Guide PDF (VERSION 1.7.5) updated.

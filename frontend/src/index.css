@@ -436,3 +436,13 @@ code {
 /* ── Offline drive ── */
 .oc-offline .oc-poster, .oc-offline .poster-placeholder { filter: grayscale(0.85) brightness(0.55); transition: filter 0.4s ease; }
 .oc-offline:hover .oc-poster { filter: grayscale(0.6) brightness(0.7); }
+
+/* ── Poster pop-out ── */
+@keyframes ocPopPulse { 0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.55); } 50% { box-shadow: 0 0 0 5px hsl(var(--primary) / 0); } }
+.oc-pop-btn { animation: ocPopPulse 2.4s ease-in-out infinite; transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease; }
+.oc-pop-btn:hover { transform: scale(1.12); animation: none; }
+.oc-lightbox { animation: ocFadeIn 0.2s ease both; }
+.oc-lightbox-img { animation: ocLightIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes ocFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ocLightIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .oc-pop-btn, .oc-lightbox, .oc-lightbox-img { animation: none; } }

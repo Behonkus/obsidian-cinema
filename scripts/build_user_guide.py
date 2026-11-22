@@ -14,7 +14,7 @@ from reportlab.platypus import (BaseDocTemplate, PageTemplate, Frame, Paragraph,
                                 Table, TableStyle, Image, KeepTogether, NextPageTemplate)
 from reportlab.platypus.tableofcontents import TableOfContents
 
-VERSION = "1.7.4"
+VERSION = "1.7.5"
 OUT = "/app/frontend/public/Obsidian-Cinema-User-Guide.pdf"
 SHOTS = "/app/docs/guide_screenshots"
 
@@ -234,7 +234,9 @@ shot("05-details", "The details window with poster, plot, cast, ratings and Play
 bullets(["<b>Play (Default Player)</b> opens the file in your default video player.",
          "Click any actor or the director to see their films in your library and films you don\u2019t have yet.",
          "<b>Reset Metadata</b> clears the match so the title can be matched again.",
-         "Ratings show where they came from (TMDB, or IMDb via Wikidata when TMDB has no rating)."])
+         "Ratings show where they came from (TMDB, or IMDb via Wikidata when TMDB has no rating).",
+         "Click the small pulsing button in the poster\u2019s lower corner to see the poster full size with its title and year. "
+         "Use the arrows or \u2190 \u2192 keys to flip through the titles in your current view; close with X, Esc or a click outside."])
 box("If a title shows the wrong movie, open <b>Tools \u203a Check uncertain matches</b>. It lists titles the app was unsure about so you can "
     "pick the right match.", "tip")
 
