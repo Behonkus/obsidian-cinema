@@ -6,6 +6,13 @@ export const LITE_THRESHOLD = 3000;
 export const getEffectsPref = () => localStorage.getItem(EFFECTS_KEY) || 'auto';
 export const setEffectsPref = (v) => localStorage.setItem(EFFECTS_KEY, v);
 
+export const GLOW_KEY = 'obsidian_cinema_glow';
+export const GLOW_DEFAULT = 50;
+export const getGlowPref = () => { const v = Number(localStorage.getItem(GLOW_KEY)); return localStorage.getItem(GLOW_KEY) === null || Number.isNaN(v) ? GLOW_DEFAULT : v; };
+export const setGlowPref = (v) => localStorage.setItem(GLOW_KEY, String(v));
+// 0 = off, 50 = soft, 100 = vivid (1.5x the 1.7.4 glow)
+export const glowFactor = (v) => (v / 100) * 1.5;
+
 // 'full' or 'lite'; auto turns effects down on big libraries
 export function useEffectsLevel(count) {
   const [pref] = useState(getEffectsPref);

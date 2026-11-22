@@ -2903,6 +2903,7 @@ CHANGELOG = [
         "highlights": [
             "Brighter poster glow: the background takes on richer, more vivid colours from the poster you hover",
             "The colour wash now flows behind the sidebar too, which turns softly see-through so the whole window glows",
+            "New Poster glow slider in Settings \u203a Library Visual Effects: choose anything from Off through Subtle to Vivid",
         ],
     },
     {

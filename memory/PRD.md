@@ -181,3 +181,4 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Brighter poster backdrop glow + colour wash behind a translucent, blurred sidebar (PosterBackdrop.jsx, Layout.jsx).
 - package.json 1.7.4; backend CHANGELOG 1.7.4 entry; gift email (AdminPage), marketing_materials.md and User Guide PDF (build_user_guide.py VERSION 1.7.4, glow text) updated.
 - Desktop users get it only after a new desktop release is built from 1.7.4.
+- Poster glow slider (1.7.4): EffectsSetting.jsx GlowSlider (0–100, step 5, default 50 'Soft'; 0 = Off); localStorage obsidian_cinema_glow; lib/effects.js getGlowPref/glowFactor (x1.5 at 100); PosterBackdrop sets --oc-k used in .oc-backdrop alphas. Changelog, guide PDF, marketing, gift email updated.

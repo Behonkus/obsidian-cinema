@@ -226,7 +226,8 @@ h2("Posters and favourites")
 bullets(["Click a poster to open its details. Hover and click <b>Play</b> to start it straight away.",
          "Click the star to add a favourite.",
          "Hovering a poster tilts it and tints the whole window with its colours, including behind the sidebar. Large libraries use lighter effects automatically "
-         "(see Settings \u203a Library Visual Effects)."])
+         "(see Settings \u203a Library Visual Effects).",
+         "Use the <b>Poster glow</b> slider in Settings \u203a Library Visual Effects to make the glow stronger, softer or turn it off."])
 
 h1("Title details and playback")
 shot("05-details", "The details window with poster, plot, cast, ratings and Play button.")
@@ -293,7 +294,7 @@ h1("Settings")
 table([["Section", "What you can change"],
        ["TMDB API Key", "Add or replace your key."],
        ["Appearance", "Choose an accent colour theme (Crimson, Ocean Blue, Emerald and more)."],
-       ["Library Visual Effects", "Auto (lighter effects above 3,000 titles), Full or Lite."],
+       ["Library Visual Effects", "Auto (lighter effects above 3,000 titles), Full or Lite, plus a Poster glow slider from Off to Vivid."],
        ["Library Management", "Backups, restore and library maintenance."],
        ["Duplicate Detection", "Find files that appear more than once."],
        ["License", "Activate or check your Pro license."],
