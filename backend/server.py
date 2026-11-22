@@ -2903,8 +2903,9 @@ CHANGELOG = [
         "highlights": [
             "New pop-out button on the poster in the details window: view the poster big and sharp, with its title and year",
             "Flip through the posters of everything in your current view with the arrows or the \u2190 \u2192 keys; close with X, Esc or a click outside",
-            "Slideshow mode in the enlarged poster view: posters change every 4, 6 or 10 seconds like a cinema lobby display, in library order or shuffled; controls fade away until you move the mouse (Space to play or pause)",
+            "Slideshow mode in the enlarged poster view: posters change every 6, 10 or 15 seconds (10 by default) like a cinema lobby display, in library order or shuffled; controls fade away until you move the mouse (Space to play or pause)",
             "Full-screen Lobby Mode turns a spare TV into a cinema lobby display: slow poster zooms over a blurred backdrop of the poster, with a \"Now Showing\" banner (title, year, rating); Esc or X leaves",
+            "Lobby playlists: open Lobby Mode from the new sidebar item (or the enlarged poster) and pick All titles, Favourites, the current view, any collection or any genre, with shuffle and speed choices",
             "Tidier Settings: Library Visual Effects now sits under Appearance, and App Updates sits under License, with no gaps between cards",
         ],
     },

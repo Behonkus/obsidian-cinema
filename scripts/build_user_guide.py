@@ -237,8 +237,8 @@ bullets(["<b>Play (Default Player)</b> opens the file in your default video play
          "Ratings show where they came from (TMDB, or IMDb via Wikidata when TMDB has no rating).",
          "Click the small pulsing button in the poster\u2019s lower corner to see the poster full size with its title and year. "
          "Use the arrows or \u2190 \u2192 keys to flip through the titles in your current view; close with X, Esc or a click outside.",
-         "Press <b>Slideshow</b> (or Space) to flip through posters automatically like a cinema lobby display. Choose 4, 6 or 10 seconds per poster and turn on shuffle; the controls fade away until you move the mouse.",
-         "<b>Lobby Mode</b> goes full screen with slow poster zooms over a blurred copy of the poster and a \u201cNow Showing\u201d banner \u2014 great on a spare TV. Press Esc or the X to leave."])
+         "Press <b>Slideshow</b> (or Space) to flip through posters automatically like a cinema lobby display. Choose 6, 10 (default) or 15 seconds per poster and turn on shuffle; the controls fade away until you move the mouse.",
+         "<b>Lobby Mode</b> goes full screen with slow poster zooms over a blurred copy of the poster and a \u201cNow Showing\u201d banner \u2014 great on a spare TV. Open it from <b>Lobby Mode</b> in the sidebar or from the enlarged poster, then pick a playlist (All titles, Favourites, the current view, a collection or a genre), shuffle and speed. Press Esc or the X to leave."])
 box("If a title shows the wrong movie, open <b>Tools \u203a Check uncertain matches</b>. It lists titles the app was unsure about so you can "
     "pick the right match.", "tip")
 

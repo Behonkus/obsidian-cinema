@@ -1,6 +1,9 @@
 import { Play, Pause, Shuffle, Tv } from "lucide-react";
 
-const SPEEDS = [4, 6, 10];
+export const SPEEDS = [6, 10, 15];
+const SPEED_KEY = 'obsidian_cinema_slideshow_speed';
+export const getSlideshowSpeed = () => { const v = Number(localStorage.getItem(SPEED_KEY)); return SPEEDS.includes(v) ? v : 10; };
+export const setSlideshowSpeed = (v) => localStorage.setItem(SPEED_KEY, String(v));
 
 export const SlideshowControls = ({ playing, onPlay, shuffle, onShuffle, speed, onSpeed, onLobby, className = '' }) => (
   <div className={'flex items-center gap-2 rounded-full bg-white/10 border border-white/10 p-1 ' + className} data-testid="slideshow-controls">

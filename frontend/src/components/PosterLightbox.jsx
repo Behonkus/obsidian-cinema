@@ -2,10 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { thumbUrl } from "@/lib/tmdbMatcher";
-import { SlideshowControls } from "@/components/SlideshowControls";
+import { SlideshowControls, getSlideshowSpeed, setSlideshowSpeed } from "@/components/SlideshowControls";
 import { LobbyView } from "@/components/LobbyView";
 
-const SPEED_KEY = 'obsidian_cinema_slideshow_speed';
 const IDLE_MS = 2500;
 
 const shuffledFrom = (n, first) => {
@@ -28,18 +27,18 @@ function useIdle(active) {
 }
 
 // Full-size poster viewer; arrows flip through the titles currently shown, play runs a lobby-style slideshow
-export const PosterLightbox = ({ movies, startMovie, onClose }) => {
+export const PosterLightbox = ({ movies, startMovie, onClose, onLobby, autoLobby = false, initialShuffle = false, initialSpeed }) => {
   const list = useMemo(() => {
     const withPosters = movies.filter(m => m.poster_path);
     return withPosters.some(m => m.id === startMovie.id) ? withPosters : [startMovie];
   }, [movies, startMovie]);
   const start = Math.max(0, list.findIndex(m => m.id === startMovie.id));
-  const [order, setOrder] = useState(() => [...Array(list.length).keys()]);
-  const [pos, setPos] = useState(start);
-  const [playing, setPlaying] = useState(false);
-  const [shuffle, setShuffle] = useState(false);
-  const [speed, setSpeed] = useState(() => Number(localStorage.getItem(SPEED_KEY)) || 6);
-  const [lobby, setLobby] = useState(false);
+  const [order, setOrder] = useState(() => (initialShuffle ? shuffledFrom(list.length, Math.floor(Math.random() * list.length)) : [...Array(list.length).keys()]));
+  const [pos, setPos] = useState(initialShuffle ? 0 : start);
+  const [playing, setPlaying] = useState(autoLobby);
+  const [shuffle, setShuffle] = useState(initialShuffle);
+  const [speed, setSpeed] = useState(() => initialSpeed || getSlideshowSpeed());
+  const [lobby, setLobby] = useState(autoLobby);
   const [idle, wake] = useIdle(playing);
   const m = list[order[pos]];
   const many = list.length > 1;
@@ -58,7 +57,12 @@ export const PosterLightbox = ({ movies, startMovie, onClose }) => {
   const exitLobby = useCallback(() => {
     setLobby(false); setPlaying(false);
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
-  }, []);
+    if (autoLobby) onClose();
+  }, [autoLobby, onClose]);
+
+  useEffect(() => {
+    if (autoLobby) document.documentElement.requestFullscreen?.().catch(() => {});
+  }, [autoLobby]);
 
   useEffect(() => {
     if (!lobby) return undefined;
@@ -67,7 +71,7 @@ export const PosterLightbox = ({ movies, startMovie, onClose }) => {
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, [lobby, exitLobby]);
 
-  const pickSpeed = (s) => { setSpeed(s); localStorage.setItem(SPEED_KEY, String(s)); };
+  const pickSpeed = (s) => { setSpeed(s); setSlideshowSpeed(s); };
 
   useEffect(() => {
     if (!playing) return undefined;
@@ -109,7 +113,7 @@ export const PosterLightbox = ({ movies, startMovie, onClose }) => {
         </figcaption>
         {many && (
           <SlideshowControls className={'transition-opacity duration-500' + hide} playing={playing} onPlay={() => setPlaying(p => !p)}
-            shuffle={shuffle} onShuffle={toggleShuffle} speed={speed} onSpeed={pickSpeed} onLobby={enterLobby} />
+            shuffle={shuffle} onShuffle={toggleShuffle} speed={speed} onSpeed={pickSpeed} onLobby={onLobby || enterLobby} />
         )}
       </figure>
       {many && <NavButton side="right" onClick={() => go(1)} hide={hide} />}

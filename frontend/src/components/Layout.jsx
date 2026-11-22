@@ -303,6 +303,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         { path: "/", icon: Film, label: "Library" },
         { path: "/stats", icon: BarChart3, label: "Stats" },
         { path: "/collections", icon: FolderHeart, label: "Collections" },
+        { path: "/?lobby=1", icon: Tv, label: "Lobby Mode", lobby: true },
         { path: "/settings", icon: Settings, label: "Settings" },
       ]
     : [
@@ -368,12 +369,12 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             to={item.path}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 ${
-                isActive
+                isActive && !item.lobby
                   ? "bg-primary/20 text-primary"
                   : "text-muted-foreground hover:bg-white/5 hover:text-white"
               } ${collapsed ? "justify-center" : ""}`
             }
-            data-testid={`nav-${item.label.toLowerCase()}`}
+            data-testid={`nav-${item.label.toLowerCase().replace(/ /g, "-")}`}
           >
             <item.icon className="w-5 h-5 flex-shrink-0" />
             <AnimatePresence mode="wait">

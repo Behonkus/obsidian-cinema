@@ -97,6 +97,7 @@ import { ScanIssuesDialog } from "@/components/ScanIssuesDialog";
 import { FolderX } from "lucide-react";
 import { PosterBackdrop } from "@/components/PosterBackdrop";
 import { PosterLightbox } from "@/components/PosterLightbox";
+import { LobbyPicker } from "@/components/LobbyPicker";
 import { Expand } from "lucide-react";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
@@ -415,6 +416,8 @@ export default function LocalLibraryPage() {
   const [quickFilter, setQuickFilter] = useState(() => searchParams.get('qf') || null);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [posterPopId, setPosterPopId] = useState(null);
+  const [lobbyPick, setLobbyPick] = useState(null);
+  const [lobbyRun, setLobbyRun] = useState(null);
   const [tmdbApiKey, setTmdbApiKey] = useState('');
   const [fetchingPosters, setFetchingPosters] = useState(false);
   const [fetchProgress, setFetchProgress] = useState(0);
@@ -1925,6 +1928,16 @@ export default function LocalLibraryPage() {
     if (qf !== quickFilter) setQuickFilter(qf);
   }, [searchParams]);
 
+  // ?lobby=1 (sidebar) opens the Lobby Mode playlist picker
+  useEffect(() => {
+    if (!searchParams.get('lobby')) return;
+    setLobbyPick({ view: null });
+    const next = new URLSearchParams(searchParams);
+    next.delete('lobby');
+    setSearchParams(next, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   // ?open=<id> (e.g. from a Stats filmography) opens that title's detail window
   useEffect(() => {
     const openId = searchParams.get('open');
@@ -2118,7 +2131,14 @@ export default function LocalLibraryPage() {
       <ScanIssuesDialog open={showScanIssues} onClose={() => setShowScanIssues(false)} issues={scanIssues} onDismiss={() => { setScanIssues([]); setShowScanIssues(false); }} onSkip={skipFolder} />
       <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={onFilesTypePicked} dropCount={dropCount} />
       {selectedMovie && posterPopId === selectedMovie.id && (
-        <PosterLightbox movies={filteredMovies} startMovie={selectedMovie} onClose={() => setPosterPopId(null)} />
+        <PosterLightbox movies={filteredMovies} startMovie={selectedMovie} onClose={() => setPosterPopId(null)}
+          onLobby={() => { setPosterPopId(null); setLobbyPick({ view: filteredMovies }); }} />
+      )}
+      <LobbyPicker open={!!lobbyPick} onOpenChange={(o) => !o && setLobbyPick(null)} movies={movies} favorites={favorites}
+        collections={collections} currentView={lobbyPick?.view} onStart={(cfg) => { setLobbyPick(null); setLobbyRun(cfg); }} />
+      {lobbyRun && (
+        <PosterLightbox movies={lobbyRun.movies} startMovie={lobbyRun.movies[0]} autoLobby initialShuffle={lobbyRun.shuffle}
+          initialSpeed={lobbyRun.speed} onClose={() => setLobbyRun(null)} />
       )}
       <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} onLeave={() => setSelectedMovie(null)} />
       <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
