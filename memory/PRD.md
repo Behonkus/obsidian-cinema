@@ -176,3 +176,8 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Always skip folder: localStorage obsidian_cinema_skipped_folders; passed to fs:rescanFolder(dir, skipList) (electron skips matching subfolders, case-insensitive); skipped paths kept from removal; Manage Directories 'Skipped folders' with Scan again.
 - Enrich details stuck fix: tmdbGet meta.status; 404 retries other media type; both 404 -> details_unavailable=tmdb_id + needs_review (excluded from counts/bg auto-fill); toasts for gone/failed.
 - Backdrop glow brighter (0.34/0.22 + left 0.30 wash); sidebar bg-background/60 + blur-2xl so glow shows behind it.
+
+## 2026-06 — v1.7.4: Brighter poster glow
+- Brighter poster backdrop glow + colour wash behind a translucent, blurred sidebar (PosterBackdrop.jsx, Layout.jsx).
+- package.json 1.7.4; backend CHANGELOG 1.7.4 entry; gift email (AdminPage), marketing_materials.md and User Guide PDF (build_user_guide.py VERSION 1.7.4, glow text) updated.
+- Desktop users get it only after a new desktop release is built from 1.7.4.

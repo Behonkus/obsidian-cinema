@@ -14,7 +14,7 @@ from reportlab.platypus import (BaseDocTemplate, PageTemplate, Frame, Paragraph,
                                 Table, TableStyle, Image, KeepTogether, NextPageTemplate)
 from reportlab.platypus.tableofcontents import TableOfContents
 
-VERSION = "1.7.3"
+VERSION = "1.7.4"
 OUT = "/app/frontend/public/Obsidian-Cinema-User-Guide.pdf"
 SHOTS = "/app/docs/guide_screenshots"
 
@@ -225,7 +225,7 @@ p("Favorites, No Poster, No Rating, No Year, No Genre, Recently Added and, when 
 h2("Posters and favourites")
 bullets(["Click a poster to open its details. Hover and click <b>Play</b> to start it straight away.",
          "Click the star to add a favourite.",
-         "Hovering a poster tilts it and tints the background with its colours. Large libraries use lighter effects automatically "
+         "Hovering a poster tilts it and tints the whole window with its colours, including behind the sidebar. Large libraries use lighter effects automatically "
          "(see Settings \u203a Library Visual Effects)."])
 
 h1("Title details and playback")

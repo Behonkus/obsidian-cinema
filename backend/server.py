@@ -2898,6 +2898,14 @@ async def admin_get_stats(request: Request, session_token: Optional[str] = Cooki
 
 CHANGELOG = [
     {
+        "version": "1.7.4",
+        "date": "2026-06",
+        "highlights": [
+            "Brighter poster glow: the background takes on richer, more vivid colours from the poster you hover",
+            "The colour wash now flows behind the sidebar too, which turns softly see-through so the whole window glows",
+        ],
+    },
+    {
         "version": "1.7.3",
         "date": "2026-06",
         "highlights": [

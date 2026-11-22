@@ -625,7 +625,7 @@ Recipient: ${gift.email}
 
 Hey there,
 
-Great news — release 1.7.3 makes adding your collection easier than ever: every drive (USB, external and network) shows in Add Folder, and you can add several folders at once with all their season subfolders. It follows 1.7.2, which gave your library a cleaner look: a tidy toolbar with a single Tools menu, a search and filter bar that stays in view, and new visual effects — posters that tilt and glow on hover, a background that takes on the colours of the poster you're looking at, and a details window tinted to match. It builds on 1.7.0 and 1.7.1: whole TV shows in one card, folder types for Movies, TV Shows, Documentaries and Animations, Director Insights, automatic matching and much more. But...
+Great news — release 1.7.4 makes your library glow brighter than ever: hover any poster and the whole window, sidebar included, takes on its colours. It follows 1.7.3, which made adding your collection easier than ever: every drive (USB, external and network) shows in Add Folder, and you can add several folders at once with all their season subfolders. Before that, 1.7.2 gave your library a cleaner look: a tidy toolbar with a single Tools menu, a search and filter bar that stays in view, and new visual effects — posters that tilt and glow on hover, a background that takes on the colours of the poster you're looking at, and a details window tinted to match. It builds on 1.7.0 and 1.7.1: whole TV shows in one card, folder types for Movies, TV Shows, Documentaries and Animations, Director Insights, automatic matching and much more. But...
 
 You've just been gifted a complimentary Obsidian Cinema PRO license! Consider this your all-access pass to the full cinematic experience.
 
@@ -634,7 +634,7 @@ ${gift.key}
 
 Here's how to activate it:
 
-If you haven't grabbed the latest Obsidian Cinema yet, download v1.7.3 here:
+If you haven't grabbed the latest Obsidian Cinema yet, download v1.7.4 here:
 https://www.obsidiancinema.com
 
 1. Download and Install the newest version of Obsidian Cinema
