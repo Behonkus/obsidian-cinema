@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { thumbUrl } from "@/lib/tmdbMatcher";
 import { SlideshowControls } from "@/components/SlideshowControls";
+import { LobbyView } from "@/components/LobbyView";
 
 const SPEED_KEY = 'obsidian_cinema_slideshow_speed';
 const IDLE_MS = 2500;
@@ -38,6 +39,7 @@ export const PosterLightbox = ({ movies, startMovie, onClose }) => {
   const [playing, setPlaying] = useState(false);
   const [shuffle, setShuffle] = useState(false);
   const [speed, setSpeed] = useState(() => Number(localStorage.getItem(SPEED_KEY)) || 6);
+  const [lobby, setLobby] = useState(false);
   const [idle, wake] = useIdle(playing);
   const m = list[order[pos]];
   const many = list.length > 1;
@@ -49,6 +51,22 @@ export const PosterLightbox = ({ movies, startMovie, onClose }) => {
     setPos(shuffle ? cur : 0);
     setShuffle(!shuffle);
   };
+  const enterLobby = () => {
+    setLobby(true); setPlaying(true);
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  };
+  const exitLobby = useCallback(() => {
+    setLobby(false); setPlaying(false);
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!lobby) return undefined;
+    const onFs = () => { if (!document.fullscreenElement) exitLobby(); };
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, [lobby, exitLobby]);
+
   const pickSpeed = (s) => { setSpeed(s); localStorage.setItem(SPEED_KEY, String(s)); };
 
   useEffect(() => {
@@ -65,14 +83,14 @@ export const PosterLightbox = ({ movies, startMovie, onClose }) => {
   useEffect(() => {
     const onKey = (e) => {
       wake();
-      if (e.key === 'Escape') { e.stopPropagation(); onClose(); }
+      if (e.key === 'Escape') { e.stopPropagation(); if (lobby) exitLobby(); else onClose(); }
       else if (e.key === 'ArrowRight') go(1);
       else if (e.key === 'ArrowLeft') go(-1);
       else if (e.key === ' ' && many) { e.preventDefault(); setPlaying(p => !p); }
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [go, many, onClose, wake]);
+  }, [go, many, onClose, wake, lobby, exitLobby]);
 
   const hide = idle ? ' opacity-0 pointer-events-none' : ' opacity-100';
   return createPortal(
@@ -91,10 +109,11 @@ export const PosterLightbox = ({ movies, startMovie, onClose }) => {
         </figcaption>
         {many && (
           <SlideshowControls className={'transition-opacity duration-500' + hide} playing={playing} onPlay={() => setPlaying(p => !p)}
-            shuffle={shuffle} onShuffle={toggleShuffle} speed={speed} onSpeed={pickSpeed} />
+            shuffle={shuffle} onShuffle={toggleShuffle} speed={speed} onSpeed={pickSpeed} onLobby={enterLobby} />
         )}
       </figure>
       {many && <NavButton side="right" onClick={() => go(1)} hide={hide} />}
+      {lobby && <LobbyView movie={m} speed={speed} idle={idle} onWake={wake} onExit={exitLobby} />}
     </div>,
     document.body
   );

@@ -446,3 +446,12 @@ code {
 @keyframes ocFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ocLightIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .oc-pop-btn, .oc-lightbox, .oc-lightbox-img { animation: none; } }
+
+/* ── Lobby Mode ── */
+.oc-lobby { animation: ocFadeIn 0.5s ease both; }
+.oc-lobby-bg { animation: ocFadeIn 1.2s ease both; }
+.oc-lobby-poster { animation-name: ocFadeIn, ocKenBurns; animation-timing-function: ease, linear; animation-fill-mode: both, forwards; }
+@keyframes ocKenBurns { from { transform: scale(1); } to { transform: scale(1.08); } }
+.oc-lobby-banner { animation: ocBannerIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s both; }
+@keyframes ocBannerIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .oc-lobby-poster { animation: none; } }

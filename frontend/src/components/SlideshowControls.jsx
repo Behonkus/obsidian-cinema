@@ -1,8 +1,8 @@
-import { Play, Pause, Shuffle } from "lucide-react";
+import { Play, Pause, Shuffle, Tv } from "lucide-react";
 
 const SPEEDS = [4, 6, 10];
 
-export const SlideshowControls = ({ playing, onPlay, shuffle, onShuffle, speed, onSpeed, className = '' }) => (
+export const SlideshowControls = ({ playing, onPlay, shuffle, onShuffle, speed, onSpeed, onLobby, className = '' }) => (
   <div className={'flex items-center gap-2 rounded-full bg-white/10 border border-white/10 p-1 ' + className} data-testid="slideshow-controls">
     <button type="button" onClick={onPlay} aria-label={playing ? 'Pause slideshow' : 'Play slideshow'}
       className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:brightness-110 transition-[filter]" data-testid="slideshow-play-btn">
@@ -21,5 +21,9 @@ export const SlideshowControls = ({ playing, onPlay, shuffle, onShuffle, speed, 
         </button>
       ))}
     </div>
+    <button type="button" onClick={onLobby} title="Full-screen Lobby Mode"
+      className="flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors" data-testid="lobby-mode-btn">
+      <Tv className="w-3.5 h-3.5" /> Lobby Mode
+    </button>
   </div>
 );
