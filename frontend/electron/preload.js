@@ -31,7 +31,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDrives: () => ipcRenderer.invoke('fs:getDrives'),
   listDirectory: (dirPath) => ipcRenderer.invoke('fs:listDirectory', dirPath),
   checkRoots: (roots) => ipcRenderer.invoke('fs:checkRoots', roots),
-  rescanFolder: (dirPath) => ipcRenderer.invoke('fs:rescanFolder', dirPath),
+  rescanFolder: (dirPath, skipList) => ipcRenderer.invoke('fs:rescanFolder', dirPath, skipList),
   scanForVideos: (dirPath, recursive) => ipcRenderer.invoke('fs:scanForVideos', dirPath, recursive),
   pathExists: (checkPath) => ipcRenderer.invoke('fs:pathExists', checkPath),
   renameFile: (oldPath, newName) => ipcRenderer.invoke('fs:renameFile', oldPath, newName),

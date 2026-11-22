@@ -94,6 +94,7 @@ import { rootOf, loadDriveNames, driveLabel, DRIVE_NAMES_KEY } from "@/lib/drive
 import { DriveNameEditor } from "@/components/DriveNameEditor";
 import { HelpLink } from "@/components/HelpLink";
 import { ScanIssuesDialog } from "@/components/ScanIssuesDialog";
+import { FolderX } from "lucide-react";
 import { PosterBackdrop } from "@/components/PosterBackdrop";
 import { fetchFullMetadata, fetchDetails, parseFilename, runPool, thumbUrl, normalizeLibraryGenres } from "@/lib/tmdbMatcher";
 import { filmography, pairFilmography, filmDirectors } from "@/lib/peopleStats";
@@ -496,6 +497,14 @@ export default function LocalLibraryPage() {
   const [showDirManager, setShowDirManager] = useState(false);
   // Folders the last Update Library couldn't open (offline drive, access denied…)
   const [scanIssues, setScanIssues] = useState([]);
+  const [skippedFolders, setSkippedFolders] = useState(() => { try { return JSON.parse(localStorage.getItem('obsidian_cinema_skipped_folders') || '[]'); } catch (e) { return []; } });
+  const saveSkipped = (list) => { setSkippedFolders(list); localStorage.setItem('obsidian_cinema_skipped_folders', JSON.stringify(list)); };
+  const skipFolder = (path) => {
+    if (!skippedFolders.includes(path)) saveSkipped([...skippedFolders, path]);
+    setScanIssues(prev => prev.filter(i => i.path !== path));
+    toast.success(`Update Library will skip ${path} from now on`);
+  };
+  const unskipFolder = (path) => { saveSkipped(skippedFolders.filter(p => p !== path)); toast.success(`${path} will be scanned again on the next Update Library`); };
   const [showScanIssues, setShowScanIssues] = useState(false);
   const [visibleCount, setVisibleCount] = useState(100);
   const fetchAbortRef = useRef(false);
@@ -1370,7 +1379,7 @@ export default function LocalLibraryPage() {
       for (const dir of directories) {
         try {
           if (window.electronAPI.rescanFolder) {
-            const res = await window.electronAPI.rescanFolder(dir);
+            const res = await window.electronAPI.rescanFolder(dir, skippedFolders);
             allScanned = allScanned.concat(res.videos || []);
             (res.failed || []).forEach(f => issues.push(typeof f === 'string' ? { path: f, code: 'ERR' } : f));
           } else {
@@ -1381,7 +1390,8 @@ export default function LocalLibraryPage() {
           issues.push({ path: dir, code: 'ERR' });
         }
       }
-      const unreadable = issues.map(i => i.path);
+      // Unreadable and skipped folders both keep their titles
+      const unreadable = issues.map(i => i.path).concat(skippedFolders);
 
       const scannedPaths = new Set(allScanned.map(f => f.file_path));
       const dirSet = new Set(directories);
@@ -2091,7 +2101,7 @@ export default function LocalLibraryPage() {
         </div>
       )}
       {/* Dialogs driven by the toolbar */}
-      <ScanIssuesDialog open={showScanIssues} onClose={() => setShowScanIssues(false)} issues={scanIssues} onDismiss={() => { setScanIssues([]); setShowScanIssues(false); }} />
+      <ScanIssuesDialog open={showScanIssues} onClose={() => setShowScanIssues(false)} issues={scanIssues} onDismiss={() => { setScanIssues([]); setShowScanIssues(false); }} onSkip={skipFolder} />
       <ImportTypeDialog open={showFilesType} onOpenChange={setShowFilesType} onPick={onFilesTypePicked} dropCount={dropCount} />
       <FilmographyDialog person={person} movies={movies} onClose={() => setPerson(null)} onLeave={() => setSelectedMovie(null)} />
       <PartsPlayDialog movie={partsMovie} onClose={() => setPartsMovie(null)} onPlayPart={playPart} />
@@ -3579,6 +3589,20 @@ export default function LocalLibraryPage() {
               );
             })()}
           </div>
+          {skippedFolders.length > 0 && (
+            <div className="space-y-2 pt-1" data-testid="skipped-section">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground px-1">Skipped folders <span className="normal-case tracking-normal">({skippedFolders.length}) · never scanned by Update Library</span></p>
+              <div className="space-y-1.5 max-h-[18vh] overflow-y-auto pr-1">
+                {skippedFolders.map(f => (
+                  <div key={f} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50" data-testid="skipped-row">
+                    <FolderX className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="font-mono text-xs truncate flex-1" title={f}>{f}</span>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => unskipFolder(f)} data-testid="skipped-unskip">Scan again</Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {libraryRoots.length > 0 && (
             <div className="space-y-2 pt-1 min-h-0 flex flex-col" data-testid="drives-section">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground px-1 shrink-0">Drives <span className="normal-case tracking-normal">({libraryRoots.length})</span></p>

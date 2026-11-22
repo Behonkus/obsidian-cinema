@@ -66,7 +66,7 @@ const SYSTEM_DIRS = new Set(['$recycle.bin', 'system volume information', 'confi
   'windowsapps', 'msocache', 'found.000', '$sysreset', '$windows.~bt', '$windows.~ws', 'documents and settings', 'perflogs', '$getcurrent']);
 
 // Scan directory for video files
-function scanForVideos(dirPath, recursive = true, failed = null) {
+function scanForVideos(dirPath, recursive = true, failed = null, skip = null) {
   const videos = [];
   
   function scan(currentPath) {
@@ -81,6 +81,8 @@ function scanForVideos(dirPath, recursive = true, failed = null) {
           if (item.name.startsWith('.') || SYSTEM_DIRS.has(item.name.toLowerCase())) {
             continue;
           }
+          // Folders the user chose to always skip
+          if (skip && skip.has(fullPath.toLowerCase())) continue;
           scan(fullPath);
         } else if (item.isFile()) {
           const ext = path.extname(item.name).toLowerCase();
@@ -145,9 +147,10 @@ ipcMain.handle('fs:scanForVideos', (event, dirPath, recursive) => {
 });
 
 // Rescan that also reports folders it couldn't read (offline drive, sleeping NAS, no access)
-ipcMain.handle('fs:rescanFolder', (event, dirPath) => {
+ipcMain.handle('fs:rescanFolder', (event, dirPath, skipList) => {
   const failed = [];
-  const videos = scanForVideos(dirPath, true, failed);
+  const skip = new Set((skipList || []).map(p => String(p).replace(/[\\/]+$/, '').toLowerCase()));
+  const videos = scanForVideos(dirPath, true, failed, skip);
   return { videos, failed, reachable: !failed.some(f => f.path === dirPath) };
 });
 

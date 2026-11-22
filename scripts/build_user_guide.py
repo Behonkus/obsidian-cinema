@@ -331,8 +331,8 @@ faq("New episodes don\u2019t appear after Update Library.",
 faq("Update Library says some folders couldn\u2019t be opened, but all my drives are connected.",
     "Click <b>Show which</b> on the message, or the amber <b>folders skipped</b> chip in the library bar, to see each folder and why. "
     "\u201cAccess denied\u201d usually means a protected or private folder \u2013 if it holds media, right-click it in Explorer \u203a "
-    "Properties \u203a Security and give your account Read access; otherwise it\u2019s safe to ignore. Nothing is removed from your library "
-    "because of these folders.")
+    "Properties \u203a Security and give your account Read access; otherwise click <b>Always skip this folder</b> so it\u2019s never scanned or flagged again (undo it under "
+    "<b>Manage Directories \u203a Skipped folders</b>). Nothing is removed from your library because of these folders.")
 faq("Titles have no posters.",
     "Add your TMDB API key (chapter 3), then use <b>Tools \u203a Fetch posters</b>. Check your internet connection.")
 faq("A title is matched to the wrong movie.",
