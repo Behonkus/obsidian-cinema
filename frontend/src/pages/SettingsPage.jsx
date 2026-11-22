@@ -1221,11 +1221,6 @@ export default function SettingsPage() {
         )}
         </div>
         <div className="space-y-4">
-        {!isElectron() && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <EffectsSetting />
-          </motion.div>
-        )}
 
         {/* Appearance Card - Desktop Only */}
         {isElectron() && (
