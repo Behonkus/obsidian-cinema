@@ -718,7 +718,14 @@ export default function LocalLibraryPage() {
   // Fetch full details (cast, director, runtime...) for a movie that already has tmdb_id
   const fetchDetailsForMovie = async (movie) => {
     if (!tmdbApiKey || !movie.tmdb_id) return null;
-    const d = await fetchDetails(movie.tmdb_id, movie.media_type, tmdbApiKey);
+    const meta = {};
+    let d = await fetchDetails(movie.tmdb_id, movie.media_type, tmdbApiKey, meta);
+    // The saved id may belong to the other type (movie vs TV), or no longer exist on TMDB
+    if (!d && meta.status === 404) {
+      const meta2 = {};
+      d = await fetchDetails(movie.tmdb_id, movie.media_type === 'tv' ? 'movie' : 'tv', tmdbApiKey, meta2);
+      if (!d && meta2.status === 404) return { details_unavailable: movie.tmdb_id, needs_review: true };
+    }
     if (!d) return null;
     const keep = {};
     if (d.media_type === 'tv' && isMultiPart(movie)) keep.parts = (await attachEpisodes(movie.parts, d.tmdb_id, tmdbApiKey)).parts;
@@ -1076,7 +1083,7 @@ export default function LocalLibraryPage() {
       toast.error('Please add your TMDB API key in Settings first');
       return;
     }
-    const needDetails = movies.filter(m => m.tmdb_id && !m.metadata_updated_at);
+    const needDetails = movies.filter(m => m.tmdb_id && !m.metadata_updated_at && m.details_unavailable !== m.tmdb_id);
     if (needDetails.length === 0) {
       toast.info('All matched movies already have full details');
       return;
@@ -1087,20 +1094,24 @@ export default function LocalLibraryPage() {
     setCastFetchProgress(0);
     let done = 0;
     let enriched = 0;
+    let gone = 0;
     let lastFlush = Date.now();
     await runPool(needDetails, m => fetchDetailsForMovie(m), {
       concurrency: 8,
       shouldStop: () => fetchAbortRef.current,
       onResult: (movie, data) => {
         done++;
-        if (data) { queueUpdate(movie.id, data); enriched++; }
+        if (data) { queueUpdate(movie.id, data); if (data.details_unavailable) gone++; else enriched++; }
         if (Date.now() - lastFlush > 1500) { lastFlush = Date.now(); flushUpdates(); setCastFetchProgress(Math.round((done / needDetails.length) * 100)); }
       },
     });
     flushUpdates();
     setCastFetchProgress(100);
     setFetchingCast(false);
-    toast.success('Full details added for ' + enriched + ' of ' + done + ' movies');
+    const failed = done - enriched - gone;
+    toast.success('Full details added for ' + enriched + ' of ' + done + ' titles');
+    if (gone > 0) toast.warning(`${gone} ${gone === 1 ? 'title has' : 'titles have'} a TMDB match that no longer exists — find ${gone === 1 ? 'it' : 'them'} under Tools › Check uncertain matches and use Fix Match`, { duration: 12000 });
+    if (failed > 0) toast.error(`${failed} ${failed === 1 ? 'title' : 'titles'} couldn't be reached on TMDB — check your internet connection and TMDB key, then try again`, { duration: 10000 });
   };
 
 
@@ -1885,7 +1896,7 @@ export default function LocalLibraryPage() {
     movies.forEach(m => {
       if (!m.poster_path) missingPoster++;
       if (m.needs_review) needsReview++;
-      if (m.tmdb_id && !m.metadata_updated_at) needsDetails++;
+      if (m.tmdb_id && !m.metadata_updated_at && m.details_unavailable !== m.tmdb_id) needsDetails++;
     });
     typedDirs.forEach(d => { dirCounts[d] = 0; });
     const catCounts = {};
@@ -1929,7 +1940,7 @@ export default function LocalLibraryPage() {
   const [autoEnrich, setAutoEnrich] = useState(() => localStorage.getItem(AUTO_ENRICH_KEY) !== 'off');
   const [bgEnrich, setBgEnrich] = useState(null);
   // Missing details, or a film fetched before AKA titles / director photos existed
-  const needsBg = (m) => m.tmdb_id && !bgTriedRef.current.has(m.id) && (!m.metadata_updated_at || (m.media_type !== 'tv' && !isSeries(m) && m.aka === undefined));
+  const needsBg = (m) => m.tmdb_id && m.details_unavailable !== m.tmdb_id && !bgTriedRef.current.has(m.id) && (!m.metadata_updated_at || (m.media_type !== 'tv' && !isSeries(m) && m.aka === undefined));
   const bgPending = useMemo(
     () => movies.filter(needsBg).length,
     // eslint-disable-next-line react-hooks/exhaustive-deps

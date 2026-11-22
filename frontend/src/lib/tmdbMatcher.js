@@ -139,7 +139,7 @@ async function throttle() {
   lastRequests.push(Date.now());
 }
 
-export async function tmdbGet(path, apiKey, params = {}, attempt = 0) {
+export async function tmdbGet(path, apiKey, params = {}, attempt = 0, meta = null) {
   await throttle();
   const qs = new URLSearchParams({ api_key: apiKey, ...params }).toString();
   try {
@@ -147,15 +147,17 @@ export async function tmdbGet(path, apiKey, params = {}, attempt = 0) {
     if (resp.status === 429 && attempt < 4) {
       const wait = (parseInt(resp.headers.get('Retry-After') || '1', 10) || 1) * 1000;
       await new Promise(r => setTimeout(r, wait + attempt * 500));
-      return tmdbGet(path, apiKey, params, attempt + 1);
+      return tmdbGet(path, apiKey, params, attempt + 1, meta);
     }
+    if (meta) meta.status = resp.status;
     if (!resp.ok) return null;
     return await resp.json();
   } catch (e) {
     if (attempt < 2) {
       await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
-      return tmdbGet(path, apiKey, params, attempt + 1);
+      return tmdbGet(path, apiKey, params, attempt + 1, meta);
     }
+    if (meta) meta.status = 'network';
     return null;
   }
 }
@@ -286,8 +288,8 @@ function akaTitles(d) {
 }
 
 // Single request for all rich metadata
-export async function fetchMovieDetails(tmdbId, apiKey) {
-  const d = await tmdbGet(`/movie/${tmdbId}`, apiKey, { append_to_response: 'credits,release_dates,external_ids,alternative_titles' });
+export async function fetchMovieDetails(tmdbId, apiKey, meta = null) {
+  const d = await tmdbGet(`/movie/${tmdbId}`, apiKey, { append_to_response: 'credits,release_dates,external_ids,alternative_titles' }, 0, meta);
   if (!d || !d.id) return null;
   const crew = (d.credits && d.credits.crew) || [];
   const directorCrew = crew.filter(c => c.job === 'Director');
@@ -340,8 +342,8 @@ export async function fetchMovieDetails(tmdbId, apiKey) {
 }
 
 // Same fields as fetchMovieDetails, for a TMDB TV series (documentaries, mini-series)
-export async function fetchTvDetails(tvId, apiKey) {
-  const d = await tmdbGet(`/tv/${tvId}`, apiKey, { append_to_response: 'credits,content_ratings,external_ids' });
+export async function fetchTvDetails(tvId, apiKey, meta = null) {
+  const d = await tmdbGet(`/tv/${tvId}`, apiKey, { append_to_response: 'credits,content_ratings,external_ids' }, 0, meta);
   if (!d || !d.id) return null;
   const ratings = (d.content_ratings && d.content_ratings.results) || [];
   const us = ratings.find(r => r.iso_3166_1 === 'US');
@@ -384,8 +386,8 @@ export async function fetchTvDetails(tvId, apiKey) {
   };
 }
 
-export function fetchDetails(tmdbId, mediaType, apiKey) {
-  return mediaType === 'tv' ? fetchTvDetails(tmdbId, apiKey) : fetchMovieDetails(tmdbId, apiKey);
+export function fetchDetails(tmdbId, mediaType, apiKey, meta = null) {
+  return mediaType === 'tv' ? fetchTvDetails(tmdbId, apiKey, meta) : fetchMovieDetails(tmdbId, apiKey, meta);
 }
 
 // Match + details. Never overwrites a user-set year/title; returns merge-ready fields.
