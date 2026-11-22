@@ -399,8 +399,9 @@ code {
 @property --oc-b { syntax: '<number>'; inherits: true; initial-value: 72; }
 .oc-backdrop {
   background:
-    radial-gradient(ellipse 70% 55% at 35% 0%, rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.20), transparent 70%),
-    radial-gradient(ellipse 55% 45% at 100% 100%, rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.12), transparent 70%);
+    radial-gradient(ellipse 75% 60% at 35% 0%, rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.34), transparent 72%),
+    radial-gradient(ellipse 30% 70% at 0% 45%, rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.30), transparent 75%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgb(var(--oc-r) var(--oc-g) var(--oc-b) / 0.22), transparent 72%);
   transition: opacity 0.7s ease, --oc-r 0.9s ease, --oc-g 0.9s ease, --oc-b 0.9s ease;
 }
 @media (prefers-reduced-motion: reduce) { .oc-backdrop { transition: opacity 0.3s ease; } }

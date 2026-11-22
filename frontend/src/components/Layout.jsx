@@ -323,7 +323,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       initial={false}
       animate={{ width: collapsed ? 80 : 256 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="fixed left-0 top-0 h-full bg-background/95 backdrop-blur-xl border-r border-border z-50 flex flex-col py-6"
+      className="fixed left-0 top-0 h-full bg-background/60 backdrop-blur-2xl border-r border-border z-50 flex flex-col py-6"
       data-testid="sidebar"
     >
       {/* Logo */}

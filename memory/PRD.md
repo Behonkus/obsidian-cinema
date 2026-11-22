@@ -175,3 +175,4 @@ Build "Obsidian Cinema"—an installable Windows desktop app (Electron) that sca
 - Scan issues: electron failed entries {path, code}; SYSTEM_DIRS skip list; ScanIssuesDialog.jsx (Show which toast action + 'N folders skipped' chip, reasons per error code, kept counts, Show in Explorer, Dismiss). Guide troubleshooting entry + 1.7.3 changelog.
 - Always skip folder: localStorage obsidian_cinema_skipped_folders; passed to fs:rescanFolder(dir, skipList) (electron skips matching subfolders, case-insensitive); skipped paths kept from removal; Manage Directories 'Skipped folders' with Scan again.
 - Enrich details stuck fix: tmdbGet meta.status; 404 retries other media type; both 404 -> details_unavailable=tmdb_id + needs_review (excluded from counts/bg auto-fill); toasts for gone/failed.
+- Backdrop glow brighter (0.34/0.22 + left 0.30 wash); sidebar bg-background/60 + blur-2xl so glow shows behind it.
